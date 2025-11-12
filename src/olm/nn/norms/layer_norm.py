@@ -13,7 +13,7 @@ class LayerNorm(NormBase):
         self.gamma = nn.Parameter(torch.full((d_model,), 1, device=device, dtype=dtype))
         self.beta = nn.Parameter(torch.full((d_model,), 0, device=device, dtype=dtype))
 
-    def forward(self, x:torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (batch_size, sequence_length, d_model)
         in_dtype = x.dtype
         x = x.to(torch.float32)
