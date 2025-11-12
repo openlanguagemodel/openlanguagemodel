@@ -8,7 +8,7 @@ class NormBase(nn.Module, ABC):
     """
     def __init__(self, d_model: int, device=None, dtype=None):
         super().__init__()
-        if not dtype: dtype = torch.float32
+        if dtype is None: dtype = torch.float32
         self.d_model = d_model
         self.device = device
         self.dtype = dtype
