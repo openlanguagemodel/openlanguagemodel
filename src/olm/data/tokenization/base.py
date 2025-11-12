@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
 import torch
-from typing import List
-
-
 class TokenizerBase(ABC):
     def __init__(self):
         pass
