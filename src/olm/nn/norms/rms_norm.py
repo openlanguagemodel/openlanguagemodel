@@ -11,7 +11,7 @@ class RMSNorm(NormBase):
         self.eps = eps
         self.weight = nn.Parameter(torch.full((d_model,), 1, device=device, dtype=dtype))
 
-    def forward(self, x:torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (batch_size, sequence_length, d_model)
         in_dtype = x.dtype
         x = x.to(torch.float32)
