@@ -6,10 +6,9 @@ from olm.nn.norms.base import NormBase
 @NORMS.register("layer_norm")
 class LayerNorm(NormBase):
     """LayerNorm layer as described in https://arxiv.org/abs/1607.06450"""
-    def __init__(self, d_model: int, context_length: int, eps: float=1e-5, device=None, dtype=None):
+    def __init__(self, d_model: int, eps: float=1e-5, device=None, dtype=None):
         super().__init__(d_model, device=device, dtype=dtype)
         self.eps = eps
-        self.context_length = context_length
         self.gamma = nn.Parameter(torch.full((d_model,), 1, device=device, dtype=dtype))
         self.beta = nn.Parameter(torch.full((d_model,), 0, device=device, dtype=dtype))
 
