@@ -1,5 +1,4 @@
 # src/olm/nn/embeddings/positional/rope.py
-import math
 import torch
 import torch.nn as nn
 from typing import Optional
