@@ -36,7 +36,4 @@ class HFTokenizerTrainCustom(TokenizerBase):
         # Squeeze and convert tensor to a 1D list of integers for decoding
         token_list: List[int] = tokens.squeeze().cpu().tolist()
 
-        return self.tokenizer.decode(
-            token_list, 
-            skip_special_tokens=True
-        )
+        return self.tokenizer.decode(token_list)
