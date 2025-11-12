@@ -19,15 +19,9 @@ class HFTokenizerTrainCustom(TokenizerBase):
         Encodes a single string into a 1D PyTorch tensor of input IDs. 
         Padding is implicitly disabled for single inputs.
         """
-        encoded_data = self.tokenizer(
-            text, 
-            add_special_tokens=True, 
-            return_tensors='pt', 
-            # Padding is not needed for single strings, so we rely on default (False)
-            truncation=False
-        )
-        # Squeeze to flatten the tensor from (1, N) to (N,)
-        return encoded_data['input_ids'].squeeze(0)
+        encoding = self.tokenizer.encode(text)
+        # encoding.ids is a list of token IDs
+        return torch.tensor(encoding.ids, dtype=torch.long)
 
     def decode(self, tokens: torch.Tensor) -> str:
         """Decodes a single 1D tensor of token IDs back into a string."""
