@@ -4,9 +4,9 @@ from olm.core.registry import ACTIVATIONS
 from olm.nn.activations.base import ActivationBase
 
 
-@ACTIVATIONS.register("relu")
-class ReLU(ActivationBase):
-	"""Rectified Linear Unit wrapper around ``torch.nn.functional.relu``."""
+@ACTIVATIONS.register("silu")
+class SiLU(ActivationBase):
+	"""``SiLU`` (or Swish) activation."""
 
 	def forward(self, x):
-		return F.relu(x)
+		return F.silu(x)

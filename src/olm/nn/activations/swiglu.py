@@ -1,14 +1,15 @@
-# src/olm/nn/activations/swiglu.py
-import torch, torch.nn as nn
+import torch
+
 from olm.core.registry import ACTIVATIONS
+from olm.nn.activations.base import ActivationBase
+
+import torch.nn.functional as F
 
 
 @ACTIVATIONS.register("swiglu")
-class SwiGLU(nn.Module):
-    def __init__(self):
-        super().__init__()
-    
+class SwiGLU(ActivationBase):
+    """SwiGLU activation: (x1 * SiLU(x2)) where x is split evenly along last dim."""
+
     def forward(self, x):
-        x, gate = x.chunk(2, dim=-1)
-        swish_gate = gate * torch.sigmoid(gate)
-        return x * swish_gate
+        value, gate = x.chunk(2, dim=-1)
+        return value * F.silu(gate)
