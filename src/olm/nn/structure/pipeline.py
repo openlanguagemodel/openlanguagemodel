@@ -8,16 +8,13 @@ Block([
     Encoder(),
     Embedding(),
     Repeat(lambda: Block(
-            Parallel([
+            Residual(
                 Block([
                     LayerNorm(),
                     LinearProjection(),
                     RoPe(),
                     MHA(),
-
-                ]), 
-                Residual()], 
-                merge='ADD'
+                ])
             ),
             LayerNorm(),
             SwiGLU(),
@@ -30,4 +27,5 @@ Block([
     SigmoidLinear(),
     Decoder()
 ])
+
 
