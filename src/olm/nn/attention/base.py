@@ -5,10 +5,34 @@ from abc import ABC, abstractmethod
 class AttentionBase(nn.Module, ABC):
     """
     Abstract base class for attention mechanisms.
-    All attention variants (multi-head, linear, etc.)
-    should inherit from this and implement `compute_attention`.
+
+    Provides the common structure for attention layers, including QKV projections
+    and output projection. Subclasses must implement the specific attention logic
+    in `compute_attention`.
+
+    Attributes:
+        embed_dim (int): Total dimension of the model.
+        num_heads (int): Number of parallel attention heads.
+        head_dim (int): Dimension of each attention head.
+        scale (float): Scaling factor for dot products (1 / sqrt(head_dim)).
+        dropout (nn.Dropout): Dropout layer applied to attention weights.
+        q_proj (nn.Linear): Linear projection for Query.
+        k_proj (nn.Linear): Linear projection for Key.
+        v_proj (nn.Linear): Linear projection for Value.
+        out_proj (nn.Linear): Linear projection for Output.
     """
     def __init__(self, embed_dim, num_heads, dropout=0.0):
+        """
+        Initializes the AttentionBase.
+
+        Args:
+            embed_dim (int): Total dimension of the model.
+            num_heads (int): Number of parallel attention heads.
+            dropout (float, optional): Dropout probability. Defaults to 0.0.
+
+        Raises:
+            AssertionError: If embed_dim is not divisible by num_heads.
+        """
         super().__init__()
         assert embed_dim % num_heads == 0, "embed_dim must be divisible by num_heads"
         
@@ -28,10 +52,33 @@ class AttentionBase(nn.Module, ABC):
 
     @abstractmethod
     def compute_attention(self, q, k, v, mask=None):
-        """Each subclass implements its own attention mechanism."""
+        """
+        Computes the attention scores and output.
+
+        Args:
+            q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
+            k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
+            v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
+            mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+        Returns:
+            torch.Tensor: The attention output [batch, heads, seq, head_dim].
+        """
         pass
 
     def forward(self, x, mask=None):
+        """
+        Standard forward pass for attention layers.
+
+        Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+        Args:
+            x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+            mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+        Returns:
+            torch.Tensor: Output tensor [batch, seq, embed_dim].
+        """
         B, N, D = x.shape
         q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
         k = self.k_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
