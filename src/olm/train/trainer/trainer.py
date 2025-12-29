@@ -9,6 +9,26 @@ from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
 
 class Trainer:
+    """
+    Manages the training loop for Open Language Model (OLM) architectures.
+
+    This trainer handles the core training logic including:
+    - Automatic Mixed Precision (AMP) scaling
+    - Gradient accumulation
+    - Device management (moving data/models to GPU)
+    - Optimization steps
+
+    Attributes:
+        model (Pipeline): The model to train.
+        optimizer (torch.optim.Optimizer): The optimizer to use.
+        dataloader (Dataset): The data provider.
+        device (str): The device to train on (e.g., 'cuda', 'cpu').
+        context_length (int): The maximum sequence length for training.
+        grad_accum_steps (int): Number of steps to accumulate gradients before updating.
+        use_amp (bool): Whether to use Automatic Mixed Precision.
+        scaler (GradScaler): Gradient scaler for AMP.
+        loss (LossBase): The loss function instance.
+    """
     def __init__(
         self,
         model: Type[Pipeline],
@@ -20,6 +40,19 @@ class Trainer:
         use_amp: bool = True,
         loss: Type[LossBase] = CrossEntropyLoss,
     ):
+        """
+        Initializes the Trainer.
+
+        Args:
+            model (Type[Pipeline]): The model architecture to train.
+            optimizer (Type[torch.optim.Optimizer]): The optimizer class or instance.
+            dataloader (Type[Dataset]): The dataset iterator.
+            device (str): Target device ('cuda' or 'cpu').
+            context_length (int): Maximum sequence length.
+            grad_accum_steps (int, optional): Steps for gradient accumulation. Defaults to 1.
+            use_amp (bool, optional): Enable Automatic Mixed Precision. Defaults to True.
+            loss (Type[LossBase], optional): Loss function class. Defaults to CrossEntropyLoss.
+        """
         self.model = model.to(device)
         self.optimizer = optimizer
         self.dataloader = dataloader
@@ -31,6 +64,20 @@ class Trainer:
         self.loss = loss()
 
     def train(self, epochs: int):
+        """
+        Executes the training loop for a specified number of epochs.
+
+        Iterates through the dataloader, computes loss, scales gradients (if AMP is enabled),
+        and updates model parameters. Handles gradient accumulation.
+
+        Args:
+            epochs (int): The number of complete passes through the dataset.
+
+        Side Effects:
+            - Updates `self.model` parameters.
+            - Prints training progress (implicit in loop, though not currently implemented).
+            - Modifies optimizer state.
+        """
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
 
