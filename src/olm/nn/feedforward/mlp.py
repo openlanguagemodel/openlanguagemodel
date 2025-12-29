@@ -4,10 +4,32 @@ from .base import FeedForwardBase
 
 class MLP(FeedForwardBase):
     """
-    Standard MLP (Multi-Layer Perceptron) for Transformer blocks.
-    Structure: Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+    Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
+
+    Implements a position-wise feed-forward network consisting of two linear transformations
+    with a non-linear activation function in between.
+
+    Structure:
+        Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+
+    Attributes:
+        hidden_dim (int): Dimension of the inner hidden layer.
+        up_proj (nn.Linear): Projection from embedding dim to hidden dim.
+        act (nn.Module): Activation function.
+        down_proj (nn.Linear): Projection from hidden dim to embedding dim.
+        dropout (nn.Dropout): Dropout layer.
     """
     def __init__(self, embed_dim, hidden_dim=None, activation_fn=nn.GELU(), dropout=0.0, bias=True):
+        """
+        Initializes the MLP.
+
+        Args:
+            embed_dim (int): The input and output dimension.
+            hidden_dim (int, optional): The inner dimension. Defaults to 4 * embed_dim.
+            activation_fn (nn.Module, optional): Activation function. Defaults to nn.GELU().
+            dropout (float, optional): Dropout probability. Defaults to 0.0.
+            bias (bool, optional): Whether to use bias in linear layers. Defaults to True.
+        """
         super().__init__(embed_dim)
         
         # Default hidden_dim to 4 * embed_dim if not provided
