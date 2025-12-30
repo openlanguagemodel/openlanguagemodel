@@ -2,9 +2,10 @@
 import torch
 import torch.nn as nn
 from typing import Optional
+from olm.nn.embeddings.positional.base import PositionalEmbeddingBase
 
 
-class RotaryPositionalEmbedding(nn.Module):
+class RotaryPositionalEmbedding(PositionalEmbeddingBase):
     """
     Rotary Positional Embedding (RoPE) as described in
     “RoFormer: Enhanced Transformer with Rotary Position Embedding” (arXiv 2104.09864).
@@ -106,7 +107,7 @@ class RotaryPositionalEmbedding(nn.Module):
         return x_rot
 
 
-class PartialRotaryPositionalEmbedding(nn.Module):
+class PartialRotaryPositionalEmbedding(PositionalEmbeddingBase):
     """
     Partial Rotary Positional Embedding (LLaMA-style RoPE).
 
