@@ -1,11 +1,9 @@
+from .block import Block
+import torch.nn as nn
+import torch
+from typing import List, Union
 
-from block import Block
-from combinators.parallel import Parallel
-from combinators.repeat import Repeat
-from src.nn import Encoder, Embedding, LayerNorm, LinearProjection,RoPe,MHA,Residual,SwiGLU,MLP,Dropout,SigmoidLinear,Dropout, Decoder
-
-
-class Pipeline:
+class Pipeline(nn.Module):
     """
     A sequential container for model blocks, similar to torch.nn.Sequential.
 
@@ -14,18 +12,19 @@ class Pipeline:
     to keep the architecture flat and manageable.
 
     Attributes:
-        blocks (list): A list of layers or blocks to execute sequentially.
+        blocks (nn.ModuleList): A list of layers or blocks to execute sequentially.
     """
-    def __init__(self, blocks):
+    def __init__(self, blocks: List[nn.Module]):
         """
         Initializes the Pipeline with a sequence of blocks.
 
         Args:
             blocks (list): List of callable blocks (e.g., TransformerBlock, Linear).
         """
-        self.blocks = blocks
+        super().__init__()
+        self.blocks = nn.ModuleList(blocks)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Passes the input through each block in sequence.
 
@@ -40,8 +39,7 @@ class Pipeline:
         """
         for block in self.blocks:
             #pipeline is global only
-
-            assert type(block) != Pipeline
-            x = block.forward(x)
+            assert not isinstance(block, Pipeline), "Nested Pipelines are not allowed"
+            x = block(x)
 
         return x
