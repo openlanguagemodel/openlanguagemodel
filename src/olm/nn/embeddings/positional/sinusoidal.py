@@ -3,9 +3,10 @@ import math
 import torch
 import torch.nn as nn
 from typing import Optional
+from olm.nn.embeddings.positional.base import PositionalEmbeddingBase
 
 
-class SinusoidalPositionalEmbedding(nn.Module):
+class SinusoidalPositionalEmbedding(PositionalEmbeddingBase):
     """
     Sinusoidal Positional Embedding as described in
     "Attention Is All You Need" (Vaswani et al., 2017).

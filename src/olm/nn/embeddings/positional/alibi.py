@@ -3,9 +3,10 @@ import math
 import torch
 import torch.nn as nn
 from typing import Optional
+from olm.nn.embeddings.positional.base import PositionalEmbeddingBase
 
 
-class ALiBiPositionalBias(nn.Module):
+class ALiBiPositionalBias(PositionalEmbeddingBase):
     """
     Attention with Linear Biases (ALiBi) as described in
     "Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation"

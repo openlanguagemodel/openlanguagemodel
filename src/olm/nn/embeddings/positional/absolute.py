@@ -2,9 +2,10 @@
 import torch
 import torch.nn as nn
 from typing import Optional
+from olm.nn.embeddings.positional.base import PositionalEmbeddingBase
 
 
-class AbsolutePositionalEmbedding(nn.Module):
+class AbsolutePositionalEmbedding(PositionalEmbeddingBase):
     """
     Absolute (Learned) Positional Embedding.
 
