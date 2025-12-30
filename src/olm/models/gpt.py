@@ -6,7 +6,7 @@ This module will contain the implementation of the GPT (Generative Pre-trained T
 
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
-from olm.nn.attention import MultiHeadAttention
+from olm.nn.attention import FlashAttention
 from olm.nn.feedforward import ClassicFFN
 from olm.nn.norms import LayerNorm
 from olm.nn.embeddings import Embedding
@@ -25,7 +25,7 @@ class GPT2Block(Block):
             Residual(
                 Block([
                     LayerNorm(embed_dim),
-                    MultiHeadAttention(embed_dim, num_heads, dropout=dropout, causal=True),
+                    FlashAttention(embed_dim, num_heads, dropout=dropout, causal=True),
                 ])
             ),
             Residual(
@@ -70,14 +70,4 @@ class GPT2(Block):
         ])
         
         # Tie weights: OutputHead Linear weight = Embedding weight
-        # GPT2.blocks structure:
-        # [0]: Embedding
-        # [1]: AbsolutePositionalEmbedding
-        # [2]: Repeat(GPT2Block)
-        # [3]: OutputHead
-        
-        # OutputHead.blocks structure:
-        # [0]: LayerNorm
-        # [1]: Linear
-        
         self.blocks[3].blocks[1].weight = self.blocks[0].embedding.weight
