@@ -13,7 +13,7 @@ class RotaryPositionalEmbedding(nn.Module):
     query/key representations via interleaving real/imag parts (or equivalently pairs of dims).
     """
 
-    def __init__(self, head_dim: int, base: int = 10000, max_seq_len: int = 2048):
+    def __init__(self, head_dim: int, max_seq_len: int, base: int = 10000):
         """
         Args:
             head_dim: the dimension per attention head (must be even)

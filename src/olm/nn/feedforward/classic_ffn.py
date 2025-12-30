@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from .base import FeedForwardBase
+from olm.nn.feedforward.base import FeedForwardBase
 
-class MLP(FeedForwardBase):
+class ClassicFFN(FeedForwardBase):
     """
     Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
 

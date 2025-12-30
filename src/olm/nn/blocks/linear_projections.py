@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from typing import Tuple, Optional
 
 class QKVProjection(nn.Module):
     """
@@ -15,7 +15,7 @@ class QKVProjection(nn.Module):
         W_v (nn.Linear): Linear layer for Value projection.
     """
 
-    def __init__(self, dim_in, dim_q, dim_k, dim_v, bias=True, init="xavier"):
+    def __init__(self, dim_in: int, dim_q: int, dim_k: int, dim_v: int, bias: bool = True, init: str = "xavier"):
         """
         Initializes the QKVProjection.
 
@@ -52,7 +52,7 @@ class QKVProjection(nn.Module):
             if bias:
                 nn.init.zeros_(layer.bias)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs the Q, K, V projections.
 
