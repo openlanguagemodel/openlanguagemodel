@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from abc import ABC, abstractmethod
+from typing import Optional
 from olm.nn.embeddings.positional import RotaryPositionalEmbedding
 
 class AttentionBase(nn.Module, ABC):
@@ -22,7 +23,7 @@ class AttentionBase(nn.Module, ABC):
         v_proj (nn.Linear): Linear projection for Value.
         out_proj (nn.Linear): Linear projection for Output.
     """
-    def __init__(self, embed_dim, num_heads, dropout=0.0):
+    def __init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0):
         """
         Initializes the AttentionBase.
 
@@ -52,7 +53,7 @@ class AttentionBase(nn.Module, ABC):
         self.out_proj = nn.Linear(embed_dim, embed_dim)
 
     @abstractmethod
-    def compute_attention(self, q, k, v, mask=None):
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Computes the attention scores and output.
 
@@ -67,7 +68,7 @@ class AttentionBase(nn.Module, ABC):
         """
         pass
 
-    def forward(self, x, mask=None):
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Standard forward pass for attention layers.
 
@@ -108,7 +109,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         v_proj (nn.Linear): Linear projection for Value.
         out_proj (nn.Linear): Linear projection for Output.
     """
-    def __init__(self, embed_dim, num_heads, max_seq_len, dropout=0.0):
+    def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0):
         """
         Initializes the AttentionwithRoPEBase.
 
@@ -129,7 +130,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         self.head_dim = embed_dim // num_heads
         self.scale = self.head_dim ** -0.5
         self.dropout = nn.Dropout(dropout)
-        self.rope = RotaryPositionalEmbedding(head_dim, max_seq_len)
+        self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len)
         self.max_seq_len = max_seq_len
 
         # Shared QKV projections
@@ -141,7 +142,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         self.out_proj = nn.Linear(embed_dim, embed_dim)
 
     @abstractmethod
-    def compute_attention(self, q, k, v, mask=None):
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Computes the attention scores and output.
 
@@ -156,7 +157,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         """
         pass
 
-    def forward(self, x, mask=None):
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Standard forward pass for attention layers.
 

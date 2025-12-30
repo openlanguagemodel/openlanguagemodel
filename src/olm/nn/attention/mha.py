@@ -1,6 +1,7 @@
-import torch, torch.nn as nn
-import torch.nn.functional as F
-from base import AttentionBase, AttentionwithRoPEBase
+import torch
+import torch.nn as nn
+from typing import Optional
+from olm.nn.attention.base import AttentionBase, AttentionwithRoPEBase
 
 
 class MultiHeadAttention(AttentionBase):
@@ -10,30 +11,28 @@ class MultiHeadAttention(AttentionBase):
     Splits the input into multiple heads, computes scaled dot-product attention for each,
     and concatenates the results. Supports causal masking for autoregressive models.
 
-    Attributes:
-        causal (bool): Whether to apply a causal mask (prevent attending to future tokens).
-    """
-    def __init__(self, embed_dims, num_heads, dropout=0.0, causal=False):
-        """
-        Initializes MultiHeadAttention.
+    Args:
+        embed_dims (int): Total dimension of the model.
+        num_heads (int): Number of parallel attention heads.
+        dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
+        causal (bool, optional): If True, applies a causal mask. Defaults to False.
 
-        Args:
-            embed_dims (int): Total dimension of the model.
-            num_heads (int): Number of parallel attention heads.
-            dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
-            causal (bool, optional): If True, applies a causal mask. Defaults to False.
-        """
+    Attributes:
+        scale (float): Scaling factor (1 / sqrt(head_dim)).
+        causal (bool): Whether to apply a causal mask.
+    """
+    def __init__(self, embed_dims: int, num_heads: int, dropout: float = 0.0, causal: bool = False):
         super().__init__(embed_dims, num_heads, dropout)
         self.causal = causal
 
-    def compute_attention(self, q, k, v, mask=None):
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Computes the scaled dot-product attention.
 
         Args:
-            q (torch.Tensor): Query tensor of shape [batch, heads, seq, dim].
-            k (torch.Tensor): Key tensor of shape [batch, heads, seq, dim].
-            v (torch.Tensor): Value tensor of shape [batch, heads, seq, dim].
+            q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
+            k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
+            v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
             mask (torch.Tensor, optional): Attention mask. Defaults to None.
 
         Returns:
@@ -56,33 +55,31 @@ class MultiHeadAttentionwithRoPE(AttentionwithRoPEBase):
     Implements Multi-Head Attention (MHA) with Rotary Positional Embedding (RoPE).
 
     Splits the input into multiple heads, computes scaled dot-product attention for each,
-    and concatenates the results.
+    and concatenates the results. Uses RoPE for positional information.
+
+    Args:
+        embed_dims (int): Total dimension of the model.
+        num_heads (int): Number of parallel attention heads.
+        max_seq_len (int): Maximum sequence length.
+        dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
+        causal (bool, optional): If True, applies a causal mask. Defaults to False.
 
     Attributes:
-        causal (bool): Whether to apply a causal mask (prevent attending to future tokens).
+        scale (float): Scaling factor (1 / sqrt(head_dim)).
+        causal (bool): Whether to apply a causal mask.
     """
-    def __init__(self, embed_dims, num_heads, max_seq_len, dropout=0.0, causal=False):
-        """
-        Initializes MultiHeadAttention.
-
-        Args:
-            embed_dims (int): Total dimension of the model.
-            num_heads (int): Number of parallel attention heads.
-            max_seq_len (int): Maximum sequence length.
-            dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
-            causal (bool, optional): If True, applies a causal mask. Defaults to False.
-        """
+    def __init__(self, embed_dims: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False):
         super().__init__(embed_dims, num_heads, max_seq_len, dropout)
         self.causal = causal
 
-    def compute_attention(self, q, k, v, mask=None):
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
-        Computes the scaled dot-product attention.
+        Computes the scaled dot-product attention suited for RoPE.
 
         Args:
-            q (torch.Tensor): Query tensor of shape [batch, heads, seq, dim].
-            k (torch.Tensor): Key tensor of shape [batch, heads, seq, dim].
-            v (torch.Tensor): Value tensor of shape [batch, heads, seq, dim].
+            q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
+            k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
+            v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
             mask (torch.Tensor, optional): Attention mask. Defaults to None.
 
         Returns:

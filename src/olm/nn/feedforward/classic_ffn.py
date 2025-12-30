@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .base import FeedForwardBase
+from olm.nn.feedforward.base import FeedForwardBase
 
 class ClassicFFN(FeedForwardBase):
     """

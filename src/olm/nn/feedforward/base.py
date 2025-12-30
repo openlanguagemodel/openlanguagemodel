@@ -11,7 +11,7 @@ class FeedForwardBase(nn.Module, ABC):
     Attributes:
         embed_dim (int): The input and output dimension.
     """
-    def __init__(self, embed_dim, **kwargs):
+    def __init__(self, embed_dim: int, **kwargs):
         """
         Initializes the FeedForwardBase.
 
@@ -23,7 +23,7 @@ class FeedForwardBase(nn.Module, ABC):
         self.embed_dim = embed_dim
 
     @abstractmethod
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the feedforward network.
 
