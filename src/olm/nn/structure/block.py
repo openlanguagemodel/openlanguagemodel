@@ -1,11 +1,18 @@
-class Block:
-    def __init__(self, blocks):
-        self.blocks = blocks
+import torch.nn as nn
+import torch
+from typing import List, Union
 
-    def forward(self, x):
+class Block(nn.Module):
+    """
+    A sequential block similar to nn.Sequential but flexible.
+    """
+    def __init__(self, blocks: List[nn.Module]):
+        super().__init__()
+        self.blocks = nn.ModuleList(blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         for block in self.blocks:
-            x = block.forward(x)
-        
+            x = block(x)
         return x
     
 

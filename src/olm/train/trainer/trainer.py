@@ -4,7 +4,7 @@ from olm.nn.structure.pipeline import Pipeline
 from olm.data.datasets import Dataset
 import torch.optim
 import torch
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
 
@@ -60,35 +60,44 @@ class Trainer:
         self.context_length = context_length
         self.grad_accum_steps = grad_accum_steps
         self.use_amp = use_amp
-        self.scaler = GradScaler(enabled=use_amp)
+        self.scaler = GradScaler("cuda", enabled=use_amp)
         self.loss = loss()
+        self.losses = []
 
-    def train(self, epochs: int):
+    def train(self, epochs: int, log_interval: int = 10, max_steps: int = None) -> list[float]:
         """
         Executes the training loop for a specified number of epochs.
 
-        Iterates through the dataloader, computes loss, scales gradients (if AMP is enabled),
-        and updates model parameters. Handles gradient accumulation.
-
         Args:
             epochs (int): The number of complete passes through the dataset.
+            log_interval (int): How often to print the loss. Defaults to 10.
+            max_steps (int, optional): Maximum number of steps to train for.
 
-        Side Effects:
-            - Updates `self.model` parameters.
-            - Prints training progress (implicit in loop, though not currently implemented).
-            - Modifies optimizer state.
+        Returns:
+            list[float]: A list of recorded loss values.
         """
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
+        
+        losses = []
+        global_step = 0
+
+        print(f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10}")
+        print("-" * 30)
 
         for epoch in range(epochs):
             for step, (x, y) in enumerate(self.dataloader):
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
 
-                with autocast(enabled=self.use_amp):
+                with autocast("cuda", enabled=self.use_amp):
                     logits = self.model(x)  # (B, T, V)
                     loss = self.loss(logits, y)
+                    loss_val = loss.item() # Capture before sealing/accumulation adjustment for logging? 
+                                            # Usually you want the actual loss, but `loss` here is scaled? 
+                                            # No, loss is just the tensor.
+                                            # We divide by grad_accum_steps for backward, but for logging we usually want the "real" average loss.
+                                            # So `loss.item()` is valid for the batch.
                     loss = loss / self.grad_accum_steps
 
                 self.scaler.scale(loss).backward()
@@ -97,3 +106,17 @@ class Trainer:
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                     self.optimizer.zero_grad(set_to_none=True)
+                    
+                    global_step += 1
+
+                    if global_step % log_interval == 0:
+                        losses.append(loss_val)
+                        print(f"{epoch+1:^6} | {global_step:^8} | {loss_val:^10.4f}")
+
+                    if max_steps and global_step >= max_steps:
+                        print("-" * 30)
+                        return losses
+        
+        print("-" * 30)
+        self.losses = losses
+        return losses

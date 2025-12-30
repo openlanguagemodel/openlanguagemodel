@@ -6,6 +6,7 @@ import torch
 class HFTokenizer(TokenizerBase):
     def __init__(self, model_path: str):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+        self.vocab_size = self.tokenizer.vocab_size
 
     def encode(self, text: str) -> torch.Tensor:
         """
