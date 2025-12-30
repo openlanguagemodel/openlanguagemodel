@@ -207,12 +207,3 @@ class FlashAttention(AttentionBase):
         )
 
 
-class FlashMultiHeadAttention(FlashAttention):
-    """
-    Alias for FlashAttention for consistency with naming conventions.
-
-    This is functionally identical to FlashAttention but provides a name
-    that matches the MultiHeadAttention class naming pattern.
-    """
-
-    pass
