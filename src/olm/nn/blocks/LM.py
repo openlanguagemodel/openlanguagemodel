@@ -1,10 +1,11 @@
+import torch
 from olm.nn.structure import Block
 from olm.nn.embeddings import Embedding
 from .transformer_block import TransformerBlock
 from .output_head import OutputHead
 from olm.nn.structure.combinators import Repeat
 
-class LM(Block):
+class LM():
     """
     A simple Language Model (LM) architecture.
 
@@ -39,7 +40,7 @@ class LM(Block):
         causal: bool = True,
         ff_multiplier: float = 2.5,
     ):
-        super().__init__([
+        self.stack = Block([
             # Embedding
             Embedding(vocab_size, embed_dim),
 
@@ -59,3 +60,15 @@ class LM(Block):
             # Final projection to logits
             OutputHead(embed_dim, vocab_size),
         ])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the Language Model.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, seq_len) containing token IDs.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, seq_len, vocab_size) containing logits.
+        """
+        return self.stack.forward(x)

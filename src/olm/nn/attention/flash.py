@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
-from olm.nn.attention.base import AttentionBase
+from olm.nn.attention.base import AttentionBase, AttentionwithRoPEBase
+from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
 import warnings
 
 
@@ -207,7 +208,6 @@ class FlashAttention(AttentionBase):
         )
 
 
-
 class FlashAttentionwithRoPE(AttentionwithRoPEBase):
     """
     Flash Attention implementation for efficient attention computation.
@@ -244,7 +244,7 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         self,
         embed_dim: int,
         num_heads: int,
-        max_seq_len: int, 
+        max_seq_len: int,
         dropout: float = 0.0,
         causal: bool = False,
         use_flash_attn: Optional[bool] = None,
@@ -269,8 +269,6 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
 
         # Store dropout probability for SDPA
         self.dropout_p = dropout
-        self.head_dim = embed_dim // num_heads
-        self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len)
 
     def compute_attention(
         self,
@@ -379,7 +377,7 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
-        Forward pass with Flash Attention.
+        Forward pass with Flash Attention and RoPE.
 
         Args:
             x: Input tensor [batch, seq_len, embed_dim]
@@ -390,13 +388,19 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         """
         B, N, D = x.shape
 
-        # Project to Q, K, V and reshape to [batch, heads, seq, head_dim]
-        q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
-        
-        k = self.rope(k)
+        # Project to Q, K, V and reshape to [batch, seq, heads, head_dim]
+        q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim)
+        k = self.k_proj(x).view(B, N, self.num_heads, self.head_dim)
+        v = self.v_proj(x).view(B, N, self.num_heads, self.head_dim)
+
+        # Apply RoPE to Q and K (RoPE expects [batch, seq, heads, head_dim])
         q = self.rope(q)
+        k = self.rope(k)
+
+        # Transpose to [batch, heads, seq, head_dim] for attention
+        q = q.transpose(1, 2)
+        k = k.transpose(1, 2)
+        v = v.transpose(1, 2)
 
         # Compute attention
         out = self.compute_attention(q, k, v, mask)
@@ -412,5 +416,3 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
             f"head_dim={self.head_dim}, causal={self.causal}, "
             f"flash_attn={self.use_flash_attn}"
         )
-
-
