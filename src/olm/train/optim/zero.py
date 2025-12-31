@@ -3,9 +3,10 @@ import torch
 from torch.optim.optimizer import Optimizer
 from typing import Optional, Callable, Dict, Any, List, Iterable
 import warnings
+from .base import OptimizerBase
 
 
-class ZeROOptimizer:
+class ZeROOptimizer(OptimizerBase):
     """
     ZeRO (Zero Redundancy Optimizer) wrapper for distributed training.
 
@@ -35,6 +36,14 @@ class ZeROOptimizer:
         world_size: Optional[int] = None,
         rank: Optional[int] = None,
     ):
+        # Initialize base class with the wrapped optimizer's params and defaults
+        params = []
+        for group in optimizer.param_groups:
+            params.extend(group["params"])
+
+        # Initialize OptimizerBase with the parameters
+        super().__init__(params, optimizer.defaults)
+
         self.optimizer = optimizer
         self.partition_optimizer_states = partition_optimizer_states
         self.overlap_communication = overlap_communication
@@ -182,12 +191,13 @@ class ZeROOptimizer:
             # No partitioning: standard optimizer step
             return self.optimizer.step(closure)
 
-    def zero_grad(self, set_to_none: bool = False):
+    def zero_grad(self, set_to_none: bool = True):
         """
         Sets gradients of all optimized parameters to zero.
 
         Args:
             set_to_none: instead of setting to zero, set the grads to None.
+                Default: True (overriding base class to match modern PyTorch conventions)
         """
         self.optimizer.zero_grad(set_to_none=set_to_none)
 
@@ -212,4 +222,13 @@ class ZeROOptimizer:
             f"rank={self.rank}, "
             f"partition_states={self.partition_optimizer_states}"
             f")"
+        )
+
+    def extra_repr(self) -> str:
+        """String representation for debugging."""
+        return (
+            f"optimizer={self.optimizer.__class__.__name__}, "
+            f"world_size={self.world_size}, "
+            f"rank={self.rank}, "
+            f"partition_states={self.partition_optimizer_states}"
         )

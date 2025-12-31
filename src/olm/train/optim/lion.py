@@ -1,10 +1,10 @@
 # src/olm/train/optim/lion.py
 import torch
-from torch.optim.optimizer import Optimizer
 from typing import List, Optional, Callable, Tuple, Iterable, Dict, Any
+from .base import OptimizerBase
 
 
-class Lion(Optimizer):
+class Lion(OptimizerBase):
     """
     Lion optimizer (EvoLved Sign Momentum).
 
