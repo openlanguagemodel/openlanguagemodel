@@ -1,3 +1,11 @@
-from .gpt import GPT2
+"""Pre-built model architectures."""
 
-__all__ = ['GPT2']
+from olm.models.gpt import GPT2
+
+# Aliases for convenience
+GPT = GPT2
+
+__all__ = [
+    "GPT2",
+    "GPT"
+]
