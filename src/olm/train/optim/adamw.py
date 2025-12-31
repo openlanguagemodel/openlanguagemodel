@@ -16,6 +16,9 @@ class AdamW(TorchAdamW):
     This implementation is commonly used for training large language models and
     transformers, offering better generalization than standard Adam.
 
+    Note: This class inherits from PyTorch's AdamW which ultimately inherits from
+    torch.optim.Optimizer, maintaining compatibility with our OptimizerBase interface.
+
     Args:
         params: iterable of parameters to optimize or dicts defining parameter groups
         lr: learning rate (default: 1e-3)
