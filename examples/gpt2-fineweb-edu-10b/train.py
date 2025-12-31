@@ -23,13 +23,13 @@ import torch
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from src.olm.models.gpt import GPT2
-from src.olm.data.datasets.fineweb_edu import FineWebEduDataset
-from src.olm.train.optim import AdamW
-from src.olm.data.datasets import DataLoader
-from src.olm.train.schedulers.cosine import CosineAnnealingLR
-from src.olm.train.schedulers.warmup import WarmupLR
-from src.olm.train.trainer import (
+from olm.models.gpt import GPT2
+from olm.data.datasets.fineweb_edu import FineWebEduDataset
+from olm.train.optim import AdamW
+from olm.data.datasets import DataLoader
+from olm.train.schedulers.cosine import CosineAnnealingLR
+from olm.train.schedulers.warmup import WarmupLR
+from olm.train.trainer import (
     Trainer,
     ValidationCallback,
     CheckpointCallback,
@@ -71,23 +71,10 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         cache_dir=data_config.get("cache_dir"),
     )
 
-    val_dataset = FineWebEduDataset(
-        split="validation",
-        context_length=data_config["context_length"],
-        subset=data_config["subset"],
-        streaming=True,
-        cache_dir=data_config.get("cache_dir"),
-    )
+    # Note: FineWeb Edu sample-10BT only has 'train' split (no validation split)
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=train_config["batch_size"],
-        num_workers=data_config.get("num_workers", 0),
-        pin_memory=config.get("pin_memory", True),
-    )
-
-    val_loader = DataLoader(
-        val_dataset,
         batch_size=train_config["batch_size"],
         num_workers=data_config.get("num_workers", 0),
         pin_memory=config.get("pin_memory", True),
@@ -156,13 +143,8 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
     print(f"Scheduler: Cosine with {sched_config['warmup_steps']} warmup steps")
 
     # Callbacks
+    # Note: No validation callback since dataset only has train split
     callbacks = [
-        ValidationCallback(
-            val_dataloader=val_loader,
-            eval_every=config["eval"]["eval_every"],
-            device=str(device),
-            use_amp=train_config.get("use_amp", True),
-        ),
         CheckpointCallback(
             checkpoint_dir="checkpoints",
             save_every=config["checkpoint"]["save_every"],

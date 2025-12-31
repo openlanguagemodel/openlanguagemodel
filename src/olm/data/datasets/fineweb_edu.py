@@ -5,7 +5,7 @@ from datasets import load_dataset
 from typing import Optional, Iterator, Tuple
 import numpy as np
 from transformers import GPT2TokenizerFast
-from olm.data.datasets import DataLoader
+from olm.data.datasets.data_loader import DataLoader
 
 
 class FineWebEduDataset(IterableDataset):
@@ -46,8 +46,9 @@ class FineWebEduDataset(IterableDataset):
         self.streaming = streaming
         self.cache_dir = cache_dir
 
-        # Initialize tokenizer
+        # Initialize tokenizer - suppress length warnings since we handle truncation
         self.tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_name)
+        self.tokenizer.model_max_length = 1e30  # Disable length warnings
 
         # Load dataset
         self.dataset = load_dataset(
