@@ -5,7 +5,7 @@ from datasets import load_dataset
 from typing import Optional, Iterator, Tuple
 import numpy as np
 from transformers import GPT2TokenizerFast
-from src.olm.data.datasets import DataLoader
+from olm.data.datasets import DataLoader
 
 
 class FineWebEduDataset(IterableDataset):
