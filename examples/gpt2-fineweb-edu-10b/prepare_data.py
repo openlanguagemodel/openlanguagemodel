@@ -14,12 +14,13 @@ Usage:
 
 import argparse
 import sys
+import os
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from src.olm.data.datasets.fineweb_edu import FineWebEduDataset
+from olm.data.datasets.fineweb_edu import FineWebEduDataset
 from transformers import GPT2TokenizerFast
 
 
@@ -78,13 +79,15 @@ def main():
             decoded = tokenizer.decode(input_ids[:50])
             print(f"   {decoded[:200]}...")
 
-            # Verify shift
+            # Verify shift (labels are input shifted by 1)
+            # In a sequence [a, b, c, d, e], if input_ids = [a, b, c, d], labels = [b, c, d, e]
+            # So input_ids[i+1] == labels[i] for all valid i
             print(f"\n   Verifying label shift:")
             print(
-                f"   - Input[0] == Label[0]-1: {input_ids[0].item() == labels[0].item() - 1}"
+                f"   - input_ids[1] == labels[0]: {input_ids[1].item() == labels[0].item()}"
             )
             print(
-                f"   - Input[-1] == Label[-2]: {input_ids[-1].item() == labels[-2].item()}"
+                f"   - input_ids[-1] == labels[-2]: {input_ids[-1].item() == labels[-2].item()}"
             )
 
         # Check for valid token IDs
@@ -96,20 +99,8 @@ def main():
 
     print(f"\n✓ Successfully loaded {args.num_samples} samples")
 
-    # Create validation dataset
-    print("\n4. Testing validation dataset...")
-    val_dataset = FineWebEduDataset(
-        split="validation",
-        context_length=args.context_length,
-        subset="sample-10BT",
-        streaming=True,
-        cache_dir=args.cache_dir,
-    )
-
-    val_iter = iter(val_dataset)
-    input_ids, labels = next(val_iter)
-    print(f"   Validation sample shape: {input_ids.shape}")
-    print(f"✓ Validation dataset working")
+    # Note: FineWeb Edu sample-10BT only has 'train' split
+    print("\n4. Note: This dataset only has a 'train' split (no validation split)")
 
     # Estimate dataset size
     print("\n5. Dataset statistics:")
@@ -124,6 +115,13 @@ def main():
     print("=" * 80)
     print(f"\nCache directory: {args.cache_dir}")
     print("Ready to start training with train.py")
+
+    # Clean up dataset iterators to prevent cleanup errors
+    del train_iter
+    del train_dataset
+
+    # Force clean exit to avoid threading cleanup issues with HuggingFace datasets
+    os._exit(0)
 
 
 if __name__ == "__main__":

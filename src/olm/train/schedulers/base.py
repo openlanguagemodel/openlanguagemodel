@@ -34,7 +34,7 @@ class SchedulerBase(_LRScheduler, ABC):
     """
 
     def __init__(self, optimizer, last_epoch: int = -1, verbose: bool = False):
-        super().__init__(optimizer, last_epoch, verbose)
+        super().__init__(optimizer, last_epoch)
 
     @abstractmethod
     def get_lr(self) -> List[float]:
