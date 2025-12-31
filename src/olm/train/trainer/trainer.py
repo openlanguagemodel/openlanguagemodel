@@ -1,12 +1,51 @@
-from typing import Type
-from olm.data.tokenization import TokenizerBase
-from olm.nn.structure.pipeline import Pipeline
-from olm.data.datasets import Dataset
+from typing import Type, Optional, Callable, Dict, Any, List
+
 import torch.optim
 import torch
 from torch.amp import autocast, GradScaler
+
+from olm.data.tokenization import TokenizerBase
+from olm.nn.structure.pipeline import Pipeline
+from olm.data.datasets import Dataset
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
+
+
+class TrainerCallback:
+    """Base class for trainer callbacks."""
+
+    def on_train_begin(self, trainer: "Trainer") -> None:
+        """Called at the beginning of training."""
+        pass
+
+    def on_train_end(self, trainer: "Trainer") -> None:
+        """Called at the end of training."""
+        pass
+
+    def on_epoch_begin(self, trainer: "Trainer", epoch: int) -> None:
+        """Called at the beginning of each epoch."""
+        pass
+
+    def on_epoch_end(self, trainer: "Trainer", epoch: int) -> None:
+        """Called at the end of each epoch."""
+        pass
+
+    def on_batch_begin(self, trainer: "Trainer", batch_idx: int) -> None:
+        """Called at the beginning of each batch."""
+        pass
+
+    def on_batch_end(self, trainer: "Trainer", batch_idx: int, loss: float) -> None:
+        """Called at the end of each batch."""
+        pass
+
+    def on_step_begin(self, trainer: "Trainer", step: int) -> None:
+        """Called at the beginning of each optimization step (after gradient accumulation)."""
+        pass
+
+    def on_step_end(self, trainer: "Trainer", step: int, loss: float) -> None:
+        """Called at the end of each optimization step."""
+        pass
+
 
 class Trainer:
     """
@@ -17,6 +56,9 @@ class Trainer:
     - Gradient accumulation
     - Device management (moving data/models to GPU)
     - Optimization steps
+    - Callbacks for validation, checkpointing, and custom logic
+    - Learning rate scheduling support
+    - Gradient clipping
 
     Attributes:
         model (Pipeline): The model to train.
@@ -28,7 +70,12 @@ class Trainer:
         use_amp (bool): Whether to use Automatic Mixed Precision.
         scaler (GradScaler): Gradient scaler for AMP.
         loss (LossBase): The loss function instance.
+        callbacks (List[TrainerCallback]): List of callbacks to execute during training.
+        scheduler (Optional): Learning rate scheduler to step after each optimization step.
+        global_step (int): Current global step count.
+        current_epoch (int): Current epoch number.
     """
+
     def __init__(
         self,
         model: Type[Pipeline],
@@ -39,6 +86,9 @@ class Trainer:
         grad_accum_steps: int = 1,
         use_amp: bool = True,
         loss: Type[LossBase] = CrossEntropyLoss,
+        callbacks: Optional[List[TrainerCallback]] = None,
+        scheduler: Optional[Any] = None,
+        grad_clip_norm: Optional[float] = None,
     ):
         """
         Initializes the Trainer.
@@ -52,6 +102,9 @@ class Trainer:
             grad_accum_steps (int, optional): Steps for gradient accumulation. Defaults to 1.
             use_amp (bool, optional): Enable Automatic Mixed Precision. Defaults to True.
             loss (Type[LossBase], optional): Loss function class. Defaults to CrossEntropyLoss.
+            callbacks (Optional[List[TrainerCallback]], optional): List of callbacks. Defaults to None.
+            scheduler (Optional[Any], optional): Learning rate scheduler. Defaults to None.
+            grad_clip_norm (Optional[float], optional): Max norm for gradient clipping. Defaults to None.
         """
         self.model = model.to(device)
         self.optimizer = optimizer
@@ -63,8 +116,32 @@ class Trainer:
         self.scaler = GradScaler("cuda", enabled=use_amp)
         self.loss = loss()
         self.losses = []
+        self.callbacks = callbacks or []
+        self.scheduler = scheduler
+        self.grad_clip_norm = grad_clip_norm
+        self.global_step = 0
+        self.current_epoch = 0
+        self.training_state = {
+            "current_loss": 0.0,
+            "accumulated_loss": 0.0,
+        }
 
-    def train(self, epochs: int, log_interval: int = 10, max_steps: int = None) -> list[float]:
+    def add_callback(self, callback: TrainerCallback) -> None:
+        """Add a callback to the trainer."""
+        self.callbacks.append(callback)
+
+    def remove_callback(self, callback: TrainerCallback) -> None:
+        """Remove a callback from the trainer."""
+        self.callbacks.remove(callback)
+
+    def _call_callbacks(self, method_name: str, *args, **kwargs) -> None:
+        """Call a specific method on all callbacks."""
+        for callback in self.callbacks:
+            getattr(callback, method_name)(*args, **kwargs)
+
+    def train(
+        self, epochs: int, log_interval: int = 10, max_steps: int = None
+    ) -> list[float]:
         """
         Executes the training loop for a specified number of epochs.
 
@@ -78,45 +155,86 @@ class Trainer:
         """
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
-        
+
         losses = []
-        global_step = 0
+
+        # Call on_train_begin callbacks
+        self._call_callbacks("on_train_begin", self)
 
         print(f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10}")
         print("-" * 30)
 
         for epoch in range(epochs):
+            self.current_epoch = epoch
+            self._call_callbacks("on_epoch_begin", self, epoch)
+
+            accumulated_loss = 0.0
+
             for step, (x, y) in enumerate(self.dataloader):
+                self._call_callbacks("on_batch_begin", self, step)
+
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
 
                 with autocast("cuda", enabled=self.use_amp):
                     logits = self.model(x)  # (B, T, V)
                     loss = self.loss(logits, y)
-                    loss_val = loss.item() # Capture before sealing/accumulation adjustment for logging? 
-                                            # Usually you want the actual loss, but `loss` here is scaled? 
-                                            # No, loss is just the tensor.
-                                            # We divide by grad_accum_steps for backward, but for logging we usually want the "real" average loss.
-                                            # So `loss.item()` is valid for the batch.
+                    loss_val = loss.item()
                     loss = loss / self.grad_accum_steps
 
                 self.scaler.scale(loss).backward()
+                accumulated_loss += loss_val
+
+                self.training_state["current_loss"] = loss_val
+                self.training_state["accumulated_loss"] = accumulated_loss
+
+                self._call_callbacks("on_batch_end", self, step, loss_val)
 
                 if (step + 1) % self.grad_accum_steps == 0:
+                    self._call_callbacks("on_step_begin", self, self.global_step)
+
+                    # Gradient clipping
+                    if self.grad_clip_norm is not None:
+                        self.scaler.unscale_(self.optimizer)
+                        torch.nn.utils.clip_grad_norm_(
+                            self.model.parameters(), self.grad_clip_norm
+                        )
+
+                    # Optimizer step
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                     self.optimizer.zero_grad(set_to_none=True)
-                    
-                    global_step += 1
 
-                    if global_step % log_interval == 0:
-                        losses.append(loss_val)
-                        print(f"{epoch+1:^6} | {global_step:^8} | {loss_val:^10.4f}")
+                    # Learning rate scheduling
+                    if self.scheduler is not None:
+                        self.scheduler.step()
 
-                    if max_steps and global_step >= max_steps:
+                    avg_loss = accumulated_loss / self.grad_accum_steps
+                    self.global_step += 1
+
+                    if self.global_step % log_interval == 0:
+                        losses.append(avg_loss)
+                        current_lr = self.optimizer.param_groups[0]["lr"]
+                        print(
+                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | LR: {current_lr:.2e}"
+                        )
+
+                    self._call_callbacks(
+                        "on_step_end", self, self.global_step, avg_loss
+                    )
+
+                    # Reset accumulated loss
+                    accumulated_loss = 0.0
+
+                    if max_steps and self.global_step >= max_steps:
+                        self._call_callbacks("on_epoch_end", self, epoch)
+                        self._call_callbacks("on_train_end", self)
                         print("-" * 30)
                         return losses
-        
+
+            self._call_callbacks("on_epoch_end", self, epoch)
+
+        self._call_callbacks("on_train_end", self)
         print("-" * 30)
         self.losses = losses
         return losses
