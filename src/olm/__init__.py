@@ -12,7 +12,7 @@ from olm import logging
 from olm import export
 
 # Common imports for convenience
-from olm.models import GPT, LLaMA
+from olm.models import GPT
 from olm.train.trainer import Trainer
 from olm.train.callbacks import (
     CheckpointCallback,
