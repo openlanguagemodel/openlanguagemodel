@@ -1,3 +1,4 @@
+import torch
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Parallel, Residual
 from olm.nn.attention import MultiHeadAttentionwithRoPE
@@ -5,7 +6,7 @@ from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import LayerNorm
 
 
-class TransformerBlock(Block):
+class TransformerBlock():
     """
     A single Transformer block containing Multi-Head Attention and a FeedForward Network.
 
@@ -36,7 +37,7 @@ class TransformerBlock(Block):
                  causal: bool = False,
                  ff_multiplier: float = 2.5,  # or 2.66
     ):
-        super().__init__([
+        self.layers = Block([
             Block([
                 ## MHA with RoPE
                 Residual(
@@ -55,3 +56,6 @@ class TransformerBlock(Block):
                 ),
             ]),
         ])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.layers.forward(x)
