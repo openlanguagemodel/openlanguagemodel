@@ -23,7 +23,7 @@ class AttentionBase(nn.Module, ABC):
         v_proj (nn.Linear): Linear projection for Value.
         out_proj (nn.Linear): Linear projection for Output.
     """
-    def __init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0):
+    def __init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = True):
         """
         Initializes the AttentionBase.
 
@@ -31,6 +31,7 @@ class AttentionBase(nn.Module, ABC):
             embed_dim (int): Total dimension of the model.
             num_heads (int): Number of parallel attention heads.
             dropout (float, optional): Dropout probability. Defaults to 0.0.
+            bias (bool, optional): Whether to use bias in linear projections. Defaults to True.
 
         Raises:
             AssertionError: If embed_dim is not divisible by num_heads.
@@ -45,12 +46,12 @@ class AttentionBase(nn.Module, ABC):
         self.dropout = nn.Dropout(dropout)
 
         # Shared QKV projections
-        self.q_proj = nn.Linear(embed_dim, embed_dim)
-        self.k_proj = nn.Linear(embed_dim, embed_dim)
-        self.v_proj = nn.Linear(embed_dim, embed_dim)
+        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
         # Shared output projection
-        self.out_proj = nn.Linear(embed_dim, embed_dim)
+        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
     @abstractmethod
     def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -109,7 +110,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         v_proj (nn.Linear): Linear projection for Value.
         out_proj (nn.Linear): Linear projection for Output.
     """
-    def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0):
+    def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True):
         """
         Initializes the AttentionwithRoPEBase.
 
@@ -118,6 +119,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
             num_heads (int): Number of parallel attention heads.
             max_seq_len (int): Maximum sequence length.
             dropout (float, optional): Dropout probability. Defaults to 0.0.
+            bias (bool, optional): Whether to use bias in linear projections. Defaults to True.
 
         Raises:
             AssertionError: If embed_dim is not divisible by num_heads.
@@ -134,12 +136,12 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         self.max_seq_len = max_seq_len
 
         # Shared QKV projections
-        self.q_proj = nn.Linear(embed_dim, embed_dim)
-        self.k_proj = nn.Linear(embed_dim, embed_dim)
-        self.v_proj = nn.Linear(embed_dim, embed_dim)
+        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
         # Shared output projection
-        self.out_proj = nn.Linear(embed_dim, embed_dim)
+        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
 
     @abstractmethod
     def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:

@@ -7,9 +7,10 @@ from tokenizers.pre_tokenizers import Whitespace
 from olm.data.tokenization.base import TokenizerBase
 
 class HFTokenizerTrainCustom(TokenizerBase):
-    def __init__(self, files: List[str], special_tokens: List[str], save_location: str, unk_token: str = "[UNK]"):
+    def __init__(self, files: List[str], vocab_size: int, special_tokens: List[str], save_location: str, unk_token: str = "[UNK]"):
+        self.vocab_size = vocab_size
         self.tokenizer = Tokenizer(BPE(unk_token=unk_token))
-        trainer = BpeTrainer(special_tokens=special_tokens)
+        trainer = BpeTrainer(vocab_size=self.vocab_size, special_tokens=special_tokens)
         self.tokenizer.pre_tokenizer = Whitespace()
         self.tokenizer.train(files, trainer)
         self.tokenizer.save(save_location)
