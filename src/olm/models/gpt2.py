@@ -14,7 +14,6 @@ from olm.nn.norms import LayerNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.embeddings.positional.absolute import AbsolutePositionalEmbedding
 from olm.nn.blocks.output_head import OutputHead
-from olm.core.registry import MODELS
 
 
 class GPT2Block(nn.Module):
@@ -54,7 +53,6 @@ class GPT2Block(nn.Module):
         return self.block(x)
 
 
-@MODELS.register("gpt2")
 class GPT2(nn.Module):
     """
     GPT-2 124M Model Definition.

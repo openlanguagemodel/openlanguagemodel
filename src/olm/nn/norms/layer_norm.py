@@ -22,11 +22,16 @@ class LayerNorm(NormBase):
         gamma (nn.Parameter): Learnable scale parameter.
         beta (nn.Parameter): Learnable shift parameter.
     """
-    def __init__(self, d_model: int, eps: float=1e-5, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
+    def __init__(self, d_model: int, eps: float=1e-5, elementwise_affine: bool = True, device: Optional[torch.device] = None, dtype: Optional[torch.dtype] = None):
         super().__init__(d_model, device=device, dtype=dtype)
         self.eps = eps
-        self.gamma = nn.Parameter(torch.full((d_model,), 1., device=device, dtype=dtype))
-        self.beta = nn.Parameter(torch.full((d_model,), 0., device=device, dtype=dtype))
+        self.elementwise_affine = elementwise_affine
+        if self.elementwise_affine:
+            self.gamma = nn.Parameter(torch.full((d_model,), 1., device=device, dtype=dtype))
+            self.beta = nn.Parameter(torch.full((d_model,), 0., device=device, dtype=dtype))
+        else:
+            self.register_parameter('gamma', None)
+            self.register_parameter('beta', None)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -44,5 +49,10 @@ class LayerNorm(NormBase):
         mean = x.mean(dim=2, keepdim=True)  # (batch_size, sequence_length, 1)
         variance = x.var(dim=2, keepdim=True, unbiased=False)  # (batch_size, sequence_length, 1)
         x_normalized = (x - mean) / torch.sqrt(variance + self.eps)  # (batch_size, sequence_length, d_model)
-        result = x_normalized * self.gamma + self.beta  # (batch_size, sequence_length, d_model)
+        
+        if self.elementwise_affine:
+            result = x_normalized * self.gamma + self.beta
+        else:
+            result = x_normalized
+            
         return result.to(in_dtype)
