@@ -32,7 +32,7 @@ training:
     gradient_accumulation_steps: 8 # Effective batch = 128 sequences = 131072 tokens per GPU
 
     # Multi-GPU (if available)
-    num_gpus: 4 # Adjust based on hardware
+    num_gpus: 1 # Adjust based on hardware
     # Effective global batch = 16 * 8 * 4 = 512 sequences = 524288 tokens
 
     # Mixed precision
