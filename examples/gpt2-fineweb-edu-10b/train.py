@@ -5,8 +5,12 @@ GPT-2 124M Training on FineWeb Edu 10B Tokens
 Target: Achieve 3.28 validation loss
 
 Usage:
-    python train.py --config config.yaml
-    python train.py --config config.yaml --resume checkpoints/step_5000.pt
+    python -u train.py --config config.yaml
+    python -u train.py --config config.yaml --resume checkpoints/step_5000.pt
+
+    Note: Use -u flag for unbuffered output when redirecting to log files:
+    nohup python -u train.py --config config.yaml > logs/train.log 2>&1 &
+    nohup python -u train.py --config config.yaml  --resume checkpoints/step_9000.pt > logs/train.log 2>&1 &
 """
 
 import os
@@ -52,6 +56,21 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
     Path("checkpoints").mkdir(exist_ok=True)
     Path("results").mkdir(exist_ok=True)
 
+    # Calculate skip_batches if resuming
+    skip_batches = 0
+    resume_step = 0
+    if resume_path:
+        # Load checkpoint to get the step number
+        checkpoint = torch.load(resume_path, map_location="cpu")
+        resume_step = checkpoint.get("step", 0)
+        # Each step processes batch_size samples (gradient accumulation is internal to training loop)
+        train_config = config["training"]
+        skip_batches = resume_step * train_config["batch_size"]
+        del checkpoint  # Free memory
+        print(
+            f"Will skip {skip_batches} batches (dataset samples) to resume from step {resume_step}"
+        )
+
     # Model
     print("Initializing GPT-2 model...")
     model = GPT2().to(device)
@@ -69,6 +88,7 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         subset=data_config["subset"],
         streaming=True,
         cache_dir=data_config.get("cache_dir"),
+        skip_batches=skip_batches,
     )
 
     # Note: FineWeb Edu sample-10BT only has 'train' split (no validation split)
@@ -119,11 +139,13 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
             self.current_step = 0
 
         def step(self):
-            self.current_step += 1
-            if self.current_step <= self.warmup_steps:
+            # Step the appropriate scheduler based on current position
+            if self.current_step < self.warmup_steps:
                 self.warmup_sched.step()
             else:
                 self.cosine_sched.step()
+            # Increment AFTER stepping to maintain correct state
+            self.current_step += 1
 
         def state_dict(self):
             return {
@@ -187,10 +209,37 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         checkpoint = torch.load(resume_path, map_location=device)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+        # Load scheduler state and sync to resumed step
         if "scheduler_state_dict" in checkpoint:
             scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            print(f"Loaded scheduler state from checkpoint")
+        else:
+            # If no scheduler state saved, manually sync schedulers
+            print(f"No scheduler state in checkpoint, syncing manually...")
+            resumed_step = checkpoint.get("step", 0)
+            scheduler.current_step = resumed_step
+            # Fast-forward individual schedulers to correct position
+            for _ in range(resumed_step):
+                if _ < sched_config["warmup_steps"]:
+                    warmup_scheduler.step()
+                else:
+                    cosine_scheduler.step()
+            print(f"Synced schedulers to step {resumed_step}")
+
         trainer.global_step = checkpoint.get("step", 0)
+
+        # Restore losses if available
+        if "losses" in checkpoint:
+            trainer.losses = checkpoint["losses"]
+            print(f"Restored {len(trainer.losses)} loss values from checkpoint")
+
         print(f"Resumed from step {trainer.global_step}")
+
+        # Clear checkpoint from memory and free GPU memory
+        del checkpoint
+        torch.cuda.empty_cache()
+        print("Cleared CUDA cache after loading checkpoint")
 
     return trainer, config
 
@@ -213,15 +262,15 @@ def main():
     torch.manual_seed(config.get("seed", 42))
 
     # Setup training
-    print("=" * 80)
-    print("GPT-2 124M Training on FineWeb Edu 10B Tokens")
-    print("=" * 80)
+    print("=" * 80, flush=True)
+    print("GPT-2 124M Training on FineWeb Edu 10B Tokens", flush=True)
+    print("=" * 80, flush=True)
 
     trainer, config = setup_training(config, resume_path=args.resume)
 
     # Train
-    print("\nStarting training...")
-    print("=" * 80)
+    print("\nStarting training...", flush=True)
+    print("=" * 80, flush=True)
 
     start_time = time.time()
     trainer.train(
@@ -233,17 +282,21 @@ def main():
     # Save final results
     training_time = time.time() - start_time
 
-    # Get final validation loss from the last validation callback run
-    val_callback = next(
-        cb for cb in trainer.callbacks if isinstance(cb, ValidationCallback)
-    )
-    final_val_loss = val_callback.best_val_loss
+    # Note: No validation loss tracked since dataset only has train split
+    try:
+        final_train_loss = trainer.losses[-1] if trainer.losses else None
+    except (StopIteration, IndexError):
+        final_train_loss = None
 
     results = {
         "model": "gpt2-124m",
         "dataset": "fineweb-edu-10b",
-        "final_val_loss": final_val_loss,
-        "final_perplexity": torch.exp(torch.tensor(final_val_loss)).item(),
+        "final_train_loss": final_train_loss,
+        "final_perplexity": (
+            torch.exp(torch.tensor(final_train_loss)).item()
+            if final_train_loss
+            else None
+        ),
         "total_steps": trainer.global_step,
         "total_tokens": trainer.global_step
         * config["training"]["batch_size"]
@@ -258,7 +311,11 @@ def main():
         json.dump(results, f, indent=2)
 
     print(f"\nTraining complete!")
-    print(f"Best validation loss: {final_val_loss:.4f}")
+    print(
+        f"Final training loss: {final_train_loss:.4f}"
+        if final_train_loss
+        else "Training complete!"
+    )
     print(f"Results saved to {results_path}")
 
 

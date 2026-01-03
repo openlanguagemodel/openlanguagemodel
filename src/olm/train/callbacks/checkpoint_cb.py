@@ -66,11 +66,15 @@ class CheckpointCallback(TrainerCallback):
             torch.save(checkpoint, checkpoint_path)
             print(f"[Checkpoint] Saved checkpoint: {checkpoint_path}")
 
-            # Keep only last N checkpoints
-            checkpoints = sorted(self.checkpoint_dir.glob("step_*.pt"))
+            # Keep only last N checkpoints (sort numerically, not alphabetically)
+            checkpoints = sorted(
+                self.checkpoint_dir.glob("step_*.pt"),
+                key=lambda p: int(p.stem.split("_")[1]),
+            )
             if len(checkpoints) > self.keep_last_n:
                 for old_ckpt in checkpoints[: -self.keep_last_n]:
                     old_ckpt.unlink()
+                    print(f"[Checkpoint] Removed old checkpoint: {old_ckpt}")
 
         # Save best checkpoint
         if is_best:

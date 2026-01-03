@@ -38,6 +38,7 @@ class FineWebEduDataset(IterableDataset):
         streaming: bool = True,
         cache_dir: Optional[str] = None,
         tokenizer_name: str = "gpt2",
+        skip_batches: int = 0,
     ):
         super().__init__()
         self.split = split
@@ -45,6 +46,7 @@ class FineWebEduDataset(IterableDataset):
         self.subset = subset
         self.streaming = streaming
         self.cache_dir = cache_dir
+        self.skip_batches = skip_batches
 
         # Initialize tokenizer - suppress length warnings since we handle truncation
         self.tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_name)
@@ -70,6 +72,8 @@ class FineWebEduDataset(IterableDataset):
             Tuple of (input_ids, labels) where both are [context_length] tensors.
             Labels are shifted by 1 position (next token prediction).
         """
+        batches_yielded = 0
+
         for example in self.dataset:
             # Tokenize the text
             text = example["text"]
@@ -82,12 +86,19 @@ class FineWebEduDataset(IterableDataset):
             while len(self.token_buffer) >= self.context_length + 1:
                 # Extract sequence of length context_length + 1
                 sequence = self.token_buffer[: self.context_length + 1]
-                self.token_buffer = self.token_buffer[self.context_length :]
+                # Fix: slide by context_length + 1 to avoid overlap
+                self.token_buffer = self.token_buffer[self.context_length + 1 :]
+
+                # Skip batches if resuming from checkpoint
+                if batches_yielded < self.skip_batches:
+                    batches_yielded += 1
+                    continue
 
                 # Create input and target
                 input_ids = torch.tensor(sequence[:-1], dtype=torch.long)
                 labels = torch.tensor(sequence[1:], dtype=torch.long)
 
+                batches_yielded += 1
                 yield input_ids, labels
 
     def __len__(self):
