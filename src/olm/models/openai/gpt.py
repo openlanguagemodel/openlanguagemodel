@@ -55,22 +55,22 @@ class GPT2Block(nn.Module):
 
 class GPT2(nn.Module):
     """
-    GPT-2 124M Model Definition.
+    Base GPT-2 Model Architecture.
 
     Structure:
-        Input IDs -> Embedding + PositionalEmbedding -> [GPT2Block] x 12 -> LayerNorm -> OutputHead -> Logits
+        Input IDs -> Embedding + PositionalEmbedding -> [GPT2Block] x L -> LayerNorm -> OutputHead -> Logits
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        vocab_size: int = 50257,
+        embed_dim: int = 768,
+        num_layers: int = 12,
+        num_heads: int = 12,
+        max_seq_len: int = 1024,
+        dropout: float = 0.1,
+    ):
         super().__init__()
-        # GPT-2 124M Hyperparameters
-        vocab_size = 50257
-        embed_dim = 768
-        num_layers = 12
-        num_heads = 12
-        max_seq_len = 1024
-        dropout = 0.1
-
         self.model = Block(
             [
                 # 1. Token Embeddings + Positional Embeddings
@@ -89,3 +89,39 @@ class GPT2(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
+
+
+class GPT2Small(GPT2):
+    """
+    GPT-2 Small (124M) version.
+    """
+
+    def __init__(self):
+        super().__init__(embed_dim=768, num_layers=12, num_heads=12)
+
+
+class GPT2Medium(GPT2):
+    """
+    GPT-2 Medium (355M) version.
+    """
+
+    def __init__(self):
+        super().__init__(embed_dim=1024, num_layers=24, num_heads=16)
+
+
+class GPT2Large(GPT2):
+    """
+    GPT-2 Large (774M) version.
+    """
+
+    def __init__(self):
+        super().__init__(embed_dim=1280, num_layers=36, num_heads=20)
+
+
+class GPT2XL(GPT2):
+    """
+    GPT-2 XL (1.5B) version.
+    """
+
+    def __init__(self):
+        super().__init__(embed_dim=1600, num_layers=48, num_heads=25)
