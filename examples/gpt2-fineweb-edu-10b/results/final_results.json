@@ -1,0 +1,76 @@
+{
+  "model": "gpt2-124m",
+  "dataset": "fineweb-edu-10b",
+  "final_train_loss": 4.237169325351715,
+  "final_perplexity": 69.21165466308594,
+  "total_steps": 19073,
+  "total_tokens": 2499936256,
+  "training_time_hours": 20.48154513630602,
+  "config": {
+    "model": {
+      "name": "gpt2",
+      "vocab_size": 50257,
+      "embed_dim": 768,
+      "num_layers": 12,
+      "num_heads": 12,
+      "max_seq_len": 1024,
+      "dropout": 0.1
+    },
+    "data": {
+      "dataset": "HuggingFaceFW/fineweb-edu",
+      "subset": "sample-10BT",
+      "split_train": 0.99,
+      "split_val": 0.01,
+      "context_length": 1024,
+      "num_workers": 4,
+      "cache_dir": "./data_cache"
+    },
+    "training": {
+      "max_steps": 19073,
+      "batch_size": 16,
+      "gradient_accumulation_steps": 8,
+      "num_gpus": 1,
+      "use_amp": true,
+      "dtype": "bfloat16",
+      "compile": false,
+      "device": "cuda"
+    },
+    "optimizer": {
+      "type": "adamw",
+      "lr": 0.0006,
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "weight_decay": 0.1,
+      "eps": 1e-08,
+      "fused": false
+    },
+    "scheduler": {
+      "type": "cosine",
+      "warmup_steps": 1000,
+      "min_lr": 6e-05
+    },
+    "grad_clip": {
+      "enabled": true,
+      "max_norm": 1.0
+    },
+    "checkpoint": {
+      "save_every": 1000,
+      "keep_last_n": 5,
+      "save_optimizer": true
+    },
+    "eval": {
+      "eval_every": 500,
+      "eval_steps": 100
+    },
+    "logging": {
+      "log_every": 10,
+      "log_file": "logs/training.log",
+      "save_metrics": true
+    },
+    "seed": 42,
+    "num_workers": 4,
+    "pin_memory": true
+  }
+}
