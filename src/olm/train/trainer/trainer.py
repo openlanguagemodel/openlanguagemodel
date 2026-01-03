@@ -161,8 +161,8 @@ class Trainer:
         # Call on_train_begin callbacks
         self._call_callbacks("on_train_begin", self)
 
-        print(f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10}")
-        print("-" * 30)
+        print(f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10}", flush=True)
+        print("-" * 30, flush=True)
 
         for epoch in range(epochs):
             self.current_epoch = epoch
@@ -214,9 +214,11 @@ class Trainer:
 
                     if self.global_step % log_interval == 0:
                         losses.append(avg_loss)
+                        self.losses.append(avg_loss)
                         current_lr = self.optimizer.param_groups[0]["lr"]
                         print(
-                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | LR: {current_lr:.2e}"
+                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | LR: {current_lr:.2e}",
+                            flush=True,
                         )
 
                     self._call_callbacks(
@@ -229,12 +231,12 @@ class Trainer:
                     if max_steps and self.global_step >= max_steps:
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
-                        print("-" * 30)
+                        print("-" * 30, flush=True)
                         return losses
 
             self._call_callbacks("on_epoch_end", self, epoch)
 
         self._call_callbacks("on_train_end", self)
-        print("-" * 30)
+        print("-" * 30, flush=True)
         self.losses = losses
         return losses

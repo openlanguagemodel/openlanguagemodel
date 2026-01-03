@@ -72,3 +72,4 @@ class LM():
             torch.Tensor: Output tensor of shape (batch_size, seq_len, vocab_size) containing logits.
         """
         return self.stack.forward(x)
+
