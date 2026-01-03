@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from olm.nn.feedforward.base import FeedForwardBase
+from olm.nn.activations import GELU
 
 class ClassicFFN(FeedForwardBase):
     """
@@ -19,14 +20,14 @@ class ClassicFFN(FeedForwardBase):
         down_proj (nn.Linear): Projection from hidden dim to embedding dim.
         dropout (nn.Dropout): Dropout layer.
     """
-    def __init__(self, embed_dim, hidden_dim=None, activation_fn=nn.GELU(), dropout=0.0, bias=True):
+    def __init__(self, embed_dim, hidden_dim=None, activation_fn=GELU(), dropout=0.0, bias=True):
         """
         Initializes the MLP.
 
         Args:
             embed_dim (int): The input and output dimension.
             hidden_dim (int, optional): The inner dimension. Defaults to 4 * embed_dim.
-            activation_fn (nn.Module, optional): Activation function. Defaults to nn.GELU().
+            activation_fn (nn.Module, optional): Activation function. Defaults to GELU().
             dropout (float, optional): Dropout probability. Defaults to 0.0.
             bias (bool, optional): Whether to use bias in linear layers. Defaults to True.
         """
