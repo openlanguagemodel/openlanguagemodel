@@ -1,5 +1,6 @@
 from olm.nn.feedforward.base import FeedForwardBase
 from olm.nn.activations import SwiGLU
+from olm.nn.torch_nn_wrappers import Linear
 import torch.nn as nn
 
 
@@ -26,9 +27,9 @@ class SwiGLUFFN(FeedForwardBase):
         ff_multiplier (float, optional): Multiplier for default hidden dimension. Defaults to 2.5 (commonly 8/3 for SwiGLU).
 
     Attributes:
-        up_proj (nn.Linear): Projects and splits input into gate and value parts.
+        up_proj (Linear): Projects and splits input into gate and value parts.
         act (SwiGLU): The activation function.
-        down_proj (nn.Linear): Projects back to embedding dimension.
+        down_proj (Linear): Projects back to embedding dimension.
         dropout (nn.Dropout): Dropout layer.
     """
 
@@ -47,19 +48,19 @@ class SwiGLUFFN(FeedForwardBase):
 
         self.hidden_dim = hidden_dim
 
-        self.up_proj = nn.Linear(
+        self.up_proj = Linear(
             embed_dim,
             2 * hidden_dim,   # REQUIRED for SwiGLU
             bias=bias
-        )
+        ) # torch.nn.Linear can also be used
 
         self.act = SwiGLU()
 
-        self.down_proj = nn.Linear(
+        self.down_proj = Linear(
             hidden_dim,
             embed_dim,
             bias=bias
-        )
+        ) # torch.nn.Linear can also be used
 
         self.dropout = nn.Dropout(dropout)
 
