@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from olm.nn.torch_nn_wrappers import Linear
 from abc import ABC, abstractmethod
 from typing import Optional
 from olm.nn.embeddings.positional import RotaryPositionalEmbedding
@@ -18,10 +19,10 @@ class AttentionBase(nn.Module, ABC):
         head_dim (int): Dimension of each attention head.
         scale (float): Scaling factor for dot products (1 / sqrt(head_dim)).
         dropout (nn.Dropout): Dropout layer applied to attention weights.
-        q_proj (nn.Linear): Linear projection for Query.
-        k_proj (nn.Linear): Linear projection for Key.
-        v_proj (nn.Linear): Linear projection for Value.
-        out_proj (nn.Linear): Linear projection for Output.
+        q_proj (Linear): Linear projection for Query.
+        k_proj (Linear): Linear projection for Key.
+        v_proj (Linear): Linear projection for Value.
+        out_proj (Linear): Linear projection for Output.
     """
     def __init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = True):
         """
@@ -46,12 +47,12 @@ class AttentionBase(nn.Module, ABC):
         self.dropout = nn.Dropout(dropout)
 
         # Shared QKV projections
-        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.q_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
+        self.k_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
+        self.v_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
 
         # Shared output projection
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.out_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
 
     @abstractmethod
     def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -105,10 +106,10 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         head_dim (int): Dimension of each attention head.
         scale (float): Scaling factor for dot products (1 / sqrt(head_dim)).
         dropout (nn.Dropout): Dropout layer applied to attention weights.
-        q_proj (nn.Linear): Linear projection for Query.
-        k_proj (nn.Linear): Linear projection for Key.
-        v_proj (nn.Linear): Linear projection for Value.
-        out_proj (nn.Linear): Linear projection for Output.
+        q_proj (Linear): Linear projection for Query.
+        k_proj (Linear): Linear projection for Key.
+        v_proj (Linear): Linear projection for Value.
+        out_proj (Linear): Linear projection for Output.
     """
     def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True):
         """
@@ -136,12 +137,12 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         self.max_seq_len = max_seq_len
 
         # Shared QKV projections
-        self.q_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.k_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
-        self.v_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.q_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
+        self.k_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
+        self.v_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
 
         # Shared output projection
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
+        self.out_proj = Linear(embed_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
 
     @abstractmethod
     def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:

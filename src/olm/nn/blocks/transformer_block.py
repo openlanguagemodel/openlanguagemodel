@@ -6,7 +6,7 @@ from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import LayerNorm
 
 
-class TransformerBlock():
+class TransformerBlock(Block):
     """
     A single Transformer block containing Multi-Head Attention and a FeedForward Network.
 
@@ -37,7 +37,7 @@ class TransformerBlock():
                  causal: bool = False,
                  ff_multiplier: float = 2.5,  # or 2.66
     ):
-        self.layers = Block([
+        super().__init__([
             Block([
                 ## MHA with RoPE
                 Residual(
@@ -56,6 +56,3 @@ class TransformerBlock():
                 ),
             ]),
         ])
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.layers.forward(x)
