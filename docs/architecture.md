@@ -69,7 +69,7 @@ The olm.nn.structure module provides multiple components which serve as containe
 
 
 	Let us take a full example to understand each of the combinators. 
-    ~~~
+    ~~~python
 	from olm.nn.structure.combinators import Residual, Parallel, Repeat
 
 	attention_block = Block([
