@@ -9,6 +9,7 @@ from olm.nn.structure.pipeline import Pipeline
 from olm.data.datasets import Dataset
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
+from olm.train.schedulers.warmup import WarmupCosineScheduler
 
 
 class TrainerCallback:
@@ -89,6 +90,10 @@ class Trainer:
         callbacks: Optional[List[TrainerCallback]] = None,
         scheduler: Optional[Any] = None,
         grad_clip_norm: Optional[float] = None,
+        warmup_steps: Optional[int] = None,
+        total_steps: Optional[int] = None,
+        min_lr: float = 0.0,
+        use_warmup_cosine: bool = True,
     ):
         """
         Initializes the Trainer.
@@ -103,8 +108,16 @@ class Trainer:
             use_amp (bool, optional): Enable Automatic Mixed Precision. Defaults to True.
             loss (Type[LossBase], optional): Loss function class. Defaults to CrossEntropyLoss.
             callbacks (Optional[List[TrainerCallback]], optional): List of callbacks. Defaults to None.
-            scheduler (Optional[Any], optional): Learning rate scheduler. Defaults to None.
+            scheduler (Optional[Any], optional): Learning rate scheduler. If None and use_warmup_cosine=True,
+                a WarmupCosineScheduler will be created. Defaults to None.
             grad_clip_norm (Optional[float], optional): Max norm for gradient clipping. Defaults to None.
+            warmup_steps (Optional[int], optional): Number of warmup steps. If None and use_warmup_cosine=True,
+                defaults to 10% of total_steps or 1000 if total_steps is also None. Defaults to None.
+            total_steps (Optional[int], optional): Total training steps for cosine scheduling.
+                If None, will be calculated from epochs * steps_per_epoch during training. Defaults to None.
+            min_lr (float, optional): Minimum learning rate for cosine annealing. Defaults to 0.0.
+            use_warmup_cosine (bool, optional): Whether to use warmup + cosine scheduling by default
+                when no scheduler is provided. Defaults to True.
         """
         self.model = model.to(device)
         self.optimizer = optimizer
@@ -117,7 +130,6 @@ class Trainer:
         self.loss = loss()
         self.losses = []
         self.callbacks = callbacks or []
-        self.scheduler = scheduler
         self.grad_clip_norm = grad_clip_norm
         self.global_step = 0
         self.current_epoch = 0
@@ -125,6 +137,15 @@ class Trainer:
             "current_loss": 0.0,
             "accumulated_loss": 0.0,
         }
+
+        # Learning rate scheduling configuration
+        self.warmup_steps = warmup_steps
+        self.total_steps = total_steps
+        self.min_lr = min_lr
+        self.use_warmup_cosine = use_warmup_cosine
+
+        # Set up scheduler (will be finalized in train() if needed)
+        self.scheduler = scheduler
 
     def add_callback(self, callback: TrainerCallback) -> None:
         """Add a callback to the trainer."""
@@ -140,7 +161,11 @@ class Trainer:
             getattr(callback, method_name)(*args, **kwargs)
 
     def train(
-        self, epochs: int, log_interval: int = 10, max_steps: int = None
+        self,
+        epochs: int,
+        log_interval: int = 10,
+        max_steps: int = None,
+        steps_per_epoch: int = None,
     ) -> list[float]:
         """
         Executes the training loop for a specified number of epochs.
@@ -149,12 +174,46 @@ class Trainer:
             epochs (int): The number of complete passes through the dataset.
             log_interval (int): How often to print the loss. Defaults to 10.
             max_steps (int, optional): Maximum number of steps to train for.
+            steps_per_epoch (int, optional): Maximum number of steps per epoch. Defaults to None (unlimited).
 
         Returns:
             list[float]: A list of recorded loss values.
         """
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
+
+        # Initialize default warmup + cosine scheduler if not provided
+        if self.scheduler is None and self.use_warmup_cosine:
+            # Calculate total steps if not provided
+            if self.total_steps is None:
+                if max_steps is not None:
+                    self.total_steps = max_steps
+                elif steps_per_epoch is not None:
+                    self.total_steps = epochs * steps_per_epoch
+                else:
+                    # Estimate based on dataloader size (if available)
+                    try:
+                        dataset_size = len(self.dataloader)
+                        self.total_steps = epochs * dataset_size
+                    except:
+                        # Default to a reasonable number for streaming datasets
+                        self.total_steps = epochs * 10000
+
+            # Calculate warmup steps if not provided (10% of total steps, min 100, max 5000)
+            if self.warmup_steps is None:
+                self.warmup_steps = min(max(int(0.1 * self.total_steps), 100), 5000)
+
+            # Create warmup + cosine scheduler
+            self.scheduler = WarmupCosineScheduler(
+                self.optimizer,
+                warmup_steps=self.warmup_steps,
+                total_steps=self.total_steps,
+                min_lr=self.min_lr,
+            )
+            print(
+                f"Initialized WarmupCosineScheduler: warmup_steps={self.warmup_steps}, total_steps={self.total_steps}, min_lr={self.min_lr}",
+                flush=True,
+            )
 
         losses = []
 
@@ -169,6 +228,7 @@ class Trainer:
             self._call_callbacks("on_epoch_begin", self, epoch)
 
             accumulated_loss = 0.0
+            epoch_step = 0  # Track steps within this epoch
 
             for step, (x, y) in enumerate(self.dataloader):
                 self._call_callbacks("on_batch_begin", self, step)
@@ -227,12 +287,18 @@ class Trainer:
 
                     # Reset accumulated loss
                     accumulated_loss = 0.0
+                    epoch_step += 1
 
+                    # Check if we've reached max_steps
                     if max_steps and self.global_step >= max_steps:
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
                         print("-" * 30, flush=True)
                         return losses
+
+                    # Check if we've reached steps_per_epoch
+                    if steps_per_epoch and epoch_step >= steps_per_epoch:
+                        break
 
             self._call_callbacks("on_epoch_end", self, epoch)
 
