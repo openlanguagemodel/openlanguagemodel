@@ -1,6 +1,7 @@
 from olm.nn.structure.block import Block
 from olm.nn.norms import LayerNorm
 from torch import nn
+from olm.nn.torch_nn_wrappers import Linear
 import torch
 
 
@@ -22,5 +23,5 @@ class OutputHead(Block):
     def __init__(self, embed_dim: int, vocab_size: int, bias: bool = False):
         super().__init__([
             LayerNorm(embed_dim),
-            nn.Linear(embed_dim, vocab_size, bias=bias),
+            Linear(embed_dim, vocab_size, bias=bias), # torch.nn.Linear can also be used
         ])

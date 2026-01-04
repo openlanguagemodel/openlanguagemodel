@@ -1,9 +1,11 @@
 
 import torch
 import torch.nn as nn
+from olm.nn.torch_nn_wrappers import Linear
 import torch.nn.functional as F
 from typing import Optional
 from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
+from olm.nn.norms import RMSNorm
 
 class GroupedQueryAttention(nn.Module):
     """
@@ -34,7 +36,9 @@ class GroupedQueryAttention(nn.Module):
         head_dim: Optional[int] = None,
         dropout: float = 0.0, 
         rope_theta: float = 10000.0,
-        use_bias: bool = False
+        use_bias: bool = False,
+        use_qk_norm: bool = False,
+        rms_norm_eps: float = 1e-6
     ):
         super().__init__()
         
@@ -57,14 +61,20 @@ class GroupedQueryAttention(nn.Module):
         self.dropout_p = dropout
         self.scale = self.head_dim ** -0.5
         
+        # QK Norm (Qwen 2/2.5 feature)
+        self.use_qk_norm = use_qk_norm
+        if use_qk_norm:
+            self.q_norm = RMSNorm(self.head_dim * self.num_heads, eps=rms_norm_eps)
+            self.k_norm = RMSNorm(self.head_dim * self.num_kv_heads, eps=rms_norm_eps)
+
         # Rotary Embeddings
         self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len, base=rope_theta)
         
         # Projections
-        self.q_proj = nn.Linear(embed_dim, num_heads * self.head_dim, bias=use_bias)
-        self.k_proj = nn.Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias)
-        self.v_proj = nn.Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias)
-        self.out_proj = nn.Linear(embed_dim, embed_dim, bias=use_bias)
+        self.q_proj = Linear(embed_dim, num_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
+        self.k_proj = Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
+        self.v_proj = Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
+        self.out_proj = Linear(embed_dim, embed_dim, bias=use_bias) # torch.nn.Linear can also be used
         
         self.dropout = nn.Dropout(dropout)
 
@@ -93,6 +103,11 @@ class GroupedQueryAttention(nn.Module):
         k = self.k_proj(x)
         v = self.v_proj(x)
         
+        # Apply QK Norm if enabled (before RoPE)
+        if self.use_qk_norm:
+            q = self.q_norm(q)
+            k = self.k_norm(k)
+
         # Reshape to [B, N, Heads, D]
         q = q.view(B, N, self.num_heads, self.head_dim)
         k = k.view(B, N, self.num_kv_heads, self.head_dim)
