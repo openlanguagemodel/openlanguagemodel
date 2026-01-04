@@ -44,7 +44,7 @@ The olm.nn.structure module provides multiple components which serve as containe
 2. **Combinators**
 	Combinators are the keys to defining non-linear, and repeating structures. The olm library provides three basic combinators which cover the most commonly used structures, however it is trivial to implement new combinators by inheriting from the `BaseCombinator` class in `olm.nn.structure.combinators.base.py`. Let us cover the three combinators, and take an example to fully understand each.
 
-	**1. Parallel** 
+	1. **Parallel** 
 		The parallel combinator is used when an input is meant to be distributed individually across two (or more) channels. The computations are carried across each channel separately and sequentially, and then the outputs are put together with a specific function referred as merge. This function is an input to the Parallel object and must specify how the the outputs are put together, usually adding or concatenating. 
 
 		Args: 
@@ -53,7 +53,7 @@ The olm.nn.structure module provides multiple components which serve as containe
 			dim: dimension across which the combination should happen
 
 
-	2.**Repeat**
+	2. **Repeat**
 		The repeat combinator allows you to chain any number of blocks together in a row. This is the most used combinator as large language models often use many repeating blocks in a row together. module_func is an input which must be a function(usually a lambda function) which returns the block to be repeated. It is defined this way to make sure that different weights are generated each time.
 	
 		Args:
