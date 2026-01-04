@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from olm.nn.torch_nn_wrappers import Linear
 from typing import Tuple, Optional
 
 class QKVProjection(nn.Module):
@@ -10,9 +11,9 @@ class QKVProjection(nn.Module):
     Supports various weight initialization schemes.
 
     Attributes:
-        W_q (nn.Linear): Linear layer for Query projection.
-        W_k (nn.Linear): Linear layer for Key projection.
-        W_v (nn.Linear): Linear layer for Value projection.
+        W_q (Linear): Linear layer for Query projection.
+        W_k (Linear): Linear layer for Key projection.
+        W_v (Linear): Linear layer for Value projection.
     """
 
     def __init__(self, dim_in: int, dim_q: int, dim_k: int, dim_v: int, bias: bool = True, init: str = "xavier"):
@@ -32,9 +33,9 @@ class QKVProjection(nn.Module):
         """
         super().__init__()
 
-        self.W_q = nn.Linear(dim_in, dim_q, bias=bias)
-        self.W_k = nn.Linear(dim_in, dim_k, bias=bias)
-        self.W_v = nn.Linear(dim_in, dim_v, bias=bias)
+        self.W_q = Linear(dim_in, dim_q, bias=bias) # torch.nn.Linear can also be used
+        self.W_k = Linear(dim_in, dim_k, bias=bias) # torch.nn.Linear can also be used
+        self.W_v = Linear(dim_in, dim_v, bias=bias) # torch.nn.Linear can also be used
 
         layers = [self.W_q, self.W_k, self.W_v]
 

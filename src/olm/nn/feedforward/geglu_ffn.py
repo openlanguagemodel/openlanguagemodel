@@ -1,5 +1,6 @@
 from olm.nn.feedforward.base import FeedForwardBase
 from olm.nn.activations.geglu import GeGLU
+from olm.nn.torch_nn_wrappers import Linear
 import torch.nn as nn
 
 
@@ -33,19 +34,19 @@ class GeGLUFFN(FeedForwardBase):
 
         self.hidden_dim = hidden_dim
 
-        self.up_proj = nn.Linear(
+        self.up_proj = Linear(
             embed_dim,
             2 * hidden_dim,
             bias=bias
-        )
+        ) # torch.nn.Linear can also be used
 
         self.act = GeGLU()
 
-        self.down_proj = nn.Linear(
+        self.down_proj = Linear(
             hidden_dim,
             embed_dim,
             bias=bias
-        )
+        ) # torch.nn.Linear can also be used
 
         self.dropout = nn.Dropout(dropout)
 

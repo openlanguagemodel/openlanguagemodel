@@ -1,22 +1,19 @@
-
-import torch
-import torch.nn as nn
+from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
-from olm.nn.attention import MultiHeadAttentionwithRoPE
+from olm.nn.attention import MultiHeadAttentionwithALiBi
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms.layer_norm import LayerNorm
 from olm.nn.embeddings import Embedding
 
-class OLMoBlock(nn.Module):
+class OLMoBlock(Block):
     """
     A single Transformer block for the OLMo architecture.
-
-    Designed for scientific analysis with minimal 'tricks':
-    - Non-Affine LayerNorm (no learnable gamma/beta).
-    - No Bias terms in any dense projection (Attention or MLP).
-    - SwiGLU activation.
-
+    
+    Structure:
+        x = x + Attn(LN(x))
+        x = x + SwiGLU(LN(x))
+        
     Args:
         embed_dim (int): Model dimension.
         intermediate_size (int): FFN hidden dimension.
@@ -24,17 +21,16 @@ class OLMoBlock(nn.Module):
         max_seq_len (int): Max context.
         dropout (float): Dropout probability.
     """
-    def __init__(self, embed_dim, intermediate_size, num_heads, max_seq_len, dropout):
-        super().__init__()
-        self.block = Block([
+    def __init__(self, embed_dim: int, intermediate_size: int, num_heads: int, max_seq_len: int, dropout: float):
+        super().__init__([
             Residual(Block([
                 LayerNorm(embed_dim, elementwise_affine=False),
-                MultiHeadAttentionwithRoPE(
+                MultiHeadAttentionwithALiBi(
                     embed_dim, 
                     num_heads, 
-                    max_seq_len, 
                     dropout=dropout,
-                    bias=False # No bias for OLMo
+                    bias=False, # No bias for OLMo
+                    causal=True
                 )
             ])),
             Residual(Block([
@@ -42,45 +38,35 @@ class OLMoBlock(nn.Module):
                 SwiGLUFFN(embed_dim, hidden_dim=intermediate_size, dropout=dropout, bias=False)
             ]))
         ])
-        
-    def forward(self, x):
-        return self.block(x)
 
-class OLMoModel(nn.Module):
+class OLMoModel(Block):
     """
     Base class for the OLMo (Open Language Model) architecture.
-
-    Args:
-        vocab_size (int): Vocabulary size.
-        embed_dim (int): Embedding dimension.
-        intermediate_size (int): FFN dimension.
-        num_layers (int): Number of layers.
-        num_heads (int): Number of heads.
-        max_seq_len (int, optional): Context length. Defaults to 4096.
-        dropout (float, optional): Dropout probability. Defaults to 0.0.
     """
-    def __init__(self, vocab_size, embed_dim, intermediate_size, num_layers, num_heads, max_seq_len=4096, dropout=0.0):
-        super().__init__()
-        self.model = Block([
+    def __init__(self, vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, max_seq_len: int = 2048, dropout: float = 0.0):
+        super().__init__([
             Embedding(vocab_size, embed_dim),
             Repeat(lambda: OLMoBlock(
                 embed_dim, intermediate_size, num_heads, max_seq_len, dropout
             ), num_layers),
             LayerNorm(embed_dim, elementwise_affine=False),
-            nn.Linear(embed_dim, vocab_size, bias=False)
+            Linear(embed_dim, vocab_size, bias=False) # torch.nn.Linear can also be used
         ])
         
-    def forward(self, x):
-        return self.model(x)
+        # Tie weights: Output head linear = Embedding
+        # OLMo ties weights.
+        # self.blocks[0] is Embedding wrapper
+        # self.blocks[3] is Linear head
+        self.blocks[3].weight = self.blocks[0].embedding.weight
 
 class OLMo_7B(OLMoModel):
     """OLMo 7B Model."""
     def __init__(self):
         super().__init__(
-            vocab_size=50280,
+            vocab_size=50257, # Official OLMo vocab size (GPT-2 BPE)
             embed_dim=4096,
-            intermediate_size=11008,
+            intermediate_size=22016,
             num_layers=32,
             num_heads=32,
-            max_seq_len=4096
+            max_seq_len=2048
         )

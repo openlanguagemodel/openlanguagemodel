@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from olm.nn.torch_nn_wrappers import Linear
 from olm.nn.feedforward.base import FeedForwardBase
 
 class ClassicFFN(FeedForwardBase):
@@ -14,9 +15,9 @@ class ClassicFFN(FeedForwardBase):
 
     Attributes:
         hidden_dim (int): Dimension of the inner hidden layer.
-        up_proj (nn.Linear): Projection from embedding dim to hidden dim.
+        up_proj (Linear): Projection from embedding dim to hidden dim.
         act (nn.Module): Activation function.
-        down_proj (nn.Linear): Projection from hidden dim to embedding dim.
+        down_proj (Linear): Projection from hidden dim to embedding dim.
         dropout (nn.Dropout): Dropout layer.
     """
     def __init__(self, embed_dim, hidden_dim=None, activation_fn=nn.GELU(), dropout=0.0, bias=True):
@@ -38,9 +39,9 @@ class ClassicFFN(FeedForwardBase):
             
         self.hidden_dim = hidden_dim
         
-        self.up_proj = nn.Linear(embed_dim, hidden_dim, bias=bias)
+        self.up_proj = Linear(embed_dim, hidden_dim, bias=bias) # torch.nn.Linear can also be used
         self.act = activation_fn
-        self.down_proj = nn.Linear(hidden_dim, embed_dim, bias=bias)
+        self.down_proj = Linear(hidden_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
