@@ -291,7 +291,7 @@ def main():
 
     # Initialize model
     logger.log("\nInitializing model...")
-    model = LM(
+    model_builder = LM(
         vocab_size=args.vocab_size,
         embed_dim=args.embed_dim,
         num_heads=args.num_heads,
@@ -300,6 +300,8 @@ def main():
         dropout=args.dropout,
         ff_multiplier=args.ff_multiplier,
     )
+    # LM is a factory class, extract the actual nn.Module
+    model = model_builder.stack
 
     # Count parameters
     total_params = sum(p.numel() for p in model.parameters())
