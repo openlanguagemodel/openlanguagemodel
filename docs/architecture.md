@@ -47,25 +47,25 @@ The olm.nn.structure module provides multiple components which serve as containe
 	1. **Parallel** 
 		The parallel combinator is used when an input is meant to be distributed individually across two (or more) channels. The computations are carried across each channel separately and sequentially, and then the outputs are put together with a specific function referred as merge. This function is an input to the Parallel object and must specify how the the outputs are put together, usually adding or concatenating. 
 
-		Args: 
+		`Args: 
 			blocks: list containing blocks describing operations on each channel
 			merge: function describing how outputs are put together 
-			dim: dimension across which the combination should happen
+			dim: dimension across which the combination should happen`
 
 
 	2. **Repeat**
 		The repeat combinator allows you to chain any number of blocks together in a row. This is the most used combinator as large language models often use many repeating blocks in a row together. module_func is an input which must be a function(usually a lambda function) which returns the block to be repeated. It is defined this way to make sure that different weights are generated each time.
 	
-		Args:
+		`Args:
 			module_func: function which returns the block to be repeated 
-			num_repeat: number of times the block must be repeated
+			num_repeat: number of times the block must be repeated`
 
 
 	3. **Residual**
 		This combinator implements the commonly used method of residual connections used in computer vision. It takes a very simple input of the block for a residual connection to be put around. 
 	
-		Args:
-			block: block around which a residual connection to be put around
+		`Args:
+			block: block around which a residual connection to be put around`
 
 
 Let us take a full example to understand each of the combinators, and blocks together.
