@@ -32,7 +32,7 @@ help with those workflows. Check out the [docs](/docs/) for understanding specif
 
 ## Minimal Training Example
 
-A simple example of training gpt-2 on the [TinyShakespeare](https://huggingface.co/datasets/karpathy/tiny_shakespeare) dataset locally.
+A simple example of training a simple language model on the [TinyShakespeare](https://huggingface.co/datasets/karpathy/tiny_shakespeare) dataset locally.
 
 ```python
 import sys, os, torch, urllib.request; from torch.utils.data import DataLoader; from tempfile import TemporaryDirectory
