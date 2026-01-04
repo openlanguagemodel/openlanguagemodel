@@ -68,37 +68,47 @@ The olm.nn.structure module provides multiple components which serve as containe
 			block: block around which a residual connection to be put around
 
 
-	Let us take a full example to understand each of the combinators. 
-    ~~~python
-	from olm.nn.structure.combinators import Residual, Parallel, Repeat
+Let us take a full example to understand each of the combinators, and blocks together.
 
-	attention_block = Block([
-		LayerNorm(...),
-		MultiHeadAttentionwithRoPE(...)
-	])
+~~~python
 
-	feedforward = Block([
-		LayerNorm(...),
-		SwiGLUFFN(...)
-	])
+from olm.nn.structure.combinators import Residual, Parallel, Repeat
 
-	transformer_block = Block([
-		Residual(attention_block),
-		Residual(feedforward)
-	])
+attention_block = Block([
+	LayerNorm(...),
+	MultiHeadAttentionwithRoPE(...)
+])
 
-	large_mlp = Block([
-		LayerNorm(...),
-		SwiGLUFFN(...)
-	])
+feedforward = Block([
+	LayerNorm(...),
+	SwiGLUFFN(...)
+])
 
-	language_model = Block([
-		Parallel([
-			large_mlp(),
-			Repeat(lambda: transformer_block(...), 32)
-		], merge: torch.sum)
-	])
-	
-	language_model.forward(input)
-	~~~
+  
+transformer_block = Block([
+	Residual(attention_block),
+	Residual(feedforward)
+])
+
+
+large_mlp = Block([
+	LayerNorm(...),
+	SwiGLUFFN(...)
+])
+
+
+language_model = Block([
+	Parallel([
+		large_mlp(),
+		Repeat(lambda: transformer_block(...), 32)
+	], merge: torch.sum)
+
+])
+
+language_model.forward(input)
+
+~~~
+
+This example demonstrates the usage of all three combinators together. The transformer_block uses the Residual combinator, and applies a residual connection around attention_block and then sequentially feedforward. A language_model is then defined with two channels; one being the large_mlp, the other being 32 repeated transformer_blocks. After both channels are computed, they are merged together by adding both channels together. This shows how easy it can be to implement non-linear and repeating structures in the olm library. Check out the architectures implemented using the olm structure in the olm.nn.models submodule. 
+    
 
