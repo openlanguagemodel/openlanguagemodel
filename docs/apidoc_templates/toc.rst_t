@@ -1,0 +1,8 @@
+# {{ header | default("Modules") }}
+
+```{toctree}
+:maxdepth: {{ maxdepth }}
+{% for doc in docs %}
+{{ doc }}
+{% endfor %}
+```

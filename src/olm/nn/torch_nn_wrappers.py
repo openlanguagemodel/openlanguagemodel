@@ -12,6 +12,17 @@ Block([
         Embedding(vocab_size, embed_dim),
         AbsolutePositionalEmbedding(max_seq_len, embed_dim, dropout)
     ]),
-    Repeat(lambda: GPT2Block(embed_dim, num_heads, dropout), num_layers),
+    Repeat(lambda: 
+            Residual(
+                Block([
+                    LayerNorm(embed_dim),
+                    FlashAttention(embed_dim, num_heads, dropout=dropout, causal=True)
+            ])),
+            Residual(
+                Block([
+                    LayerNorm(embed_dim),
+                    ClassicFFN(embed_dim, dropout=dropout)
+            ])),
+    num_layers),
     OutputHead(embed_dim, vocab_size)
 ])
