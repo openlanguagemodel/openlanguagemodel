@@ -1,13 +1,13 @@
 # src/olm/data/datasets/__init__.py
-from olm.data.datasets.dataset import Dataset
-from olm.data.datasets.fineweb_edu import FineWebEduDataset, FineWebEduDataLoader
-from olm.data.datasets.data_loader import DataLoader, create_dataloader
-
+from olm.data.datasets.base_dataset import BaseTextDataset
+from olm.data.datasets.local_dataset import LocalTextDataset
+from olm.data.datasets.hf_dataset import HuggingFaceTextDataset, FineWebEduDataset
+from olm.data.datasets.data_loader import DataLoader
 
 __all__ = [
-    "Dataset",
-    "DataLoader",
-    "create_dataloader",
+    "BaseTextDataset",
+    "LocalTextDataset",
+    "HuggingFaceTextDataset",
     "FineWebEduDataset",
-    "FineWebEduDataLoader",
+    "DataLoader",
 ]

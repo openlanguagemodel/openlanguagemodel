@@ -4,12 +4,12 @@ from olm.core.registry import ACTIVATIONS
 from olm.nn.activations.base import ActivationBase
 
 
-@ACTIVATIONS.register("gelu")
-class GELU(ActivationBase):
-    """GELU activation wrapper."""
-    def __init__(self, approximate: str = "none", *, device=None, dtype=None) -> None:
+@ACTIVATIONS.register("glu")
+class GLU(ActivationBase):
+    """GLU activation wrapper."""
+    def __init__(self, dim: int = -1, *, device=None, dtype=None) -> None:
         super().__init__(device=device, dtype=dtype)
-        self.act = nn.GELU(approximate=approximate)
+        self.act = nn.GLU(dim=dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.act(x)
