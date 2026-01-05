@@ -87,3 +87,13 @@ v3.1 aims to make OLM capable of reproducing widely used open-source models from
 - [ ] **Ecosystem**:
     - [ ] Evaluation harness integration (HellaSwag, MMLU)
     - [ ] Quantization-aware training
+    
+## v4.0: Further Training
+
+- [ ] Implement SFT
+- [ ] Implement LoRA
+- [ ] Implement RLHF, DDP & RLVR methods
+- [ ] Implement model fine-tuning
+
+## Other Ideas
+- [ ] Visual model builder: Drag and drop components to build models
