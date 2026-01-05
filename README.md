@@ -46,8 +46,6 @@ This setup is intentionally straightforward:
 
 You can start with this structure and gradually customize any part of it.
 
-
-
 ---
 
 ## Installation
