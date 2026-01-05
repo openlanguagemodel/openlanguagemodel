@@ -1,0 +1,14 @@
+site_name: OpenLanguageModel (OLM)
+site_url: https://openlanguagemodel.github.io/openlanguagemodel/
+
+repo_url: https://github.com/openlanguagemodel/openlanguagemodel
+repo_name: openlanguagemodel/openlanguagemodel
+
+theme:
+    name: material
+
+extra_css:
+    - stylesheets/extra.css
+
+nav:
+    - Home: index.md
