@@ -50,10 +50,11 @@ class OptimizerBase(Optimizer, ABC):
         Returns the state of the optimizer as a dict.
 
         It contains two entries:
-        * state - a dict holding current optimization state. Its content
-            differs between optimizer classes.
-        * param_groups - a list containing all parameter groups where each
-            parameter group is a dict
+
+        - ``state``: dict holding current optimization state. Its content
+          differs between optimizer classes.
+        - ``param_groups``: list containing all parameter groups where each
+          parameter group is a dict.
 
         Returns:
             Dictionary containing optimizer state

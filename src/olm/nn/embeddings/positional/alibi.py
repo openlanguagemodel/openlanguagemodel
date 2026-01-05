@@ -16,7 +16,7 @@ class ALiBiPositionalBias(PositionalEmbeddingBase):
     that is proportional to the distance between query and key positions. This allows the model
     to extrapolate to longer sequences than seen during training.
 
-    The bias is computed as: bias[i,j] = -m * |i - j|
+    The bias is computed as: ``bias[i,j] = -m * |i - j|``
     where m is a head-specific slope.
     """
 
