@@ -1,12 +1,12 @@
-from typing import Type, Optional, Callable, Dict, Any, List
+from typing import Type, Optional, Callable, Dict, Any, List, Union
 
 import torch.optim
 import torch
 from torch.amp import autocast, GradScaler
 
 from olm.data.tokenization import TokenizerBase
-from olm.nn.structure.pipeline import Pipeline
-from olm.data.datasets import Dataset
+from torch.nn import Module
+from olm.data.datasets import DataLoader
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
 from olm.train.schedulers.warmup import WarmupCosineScheduler
@@ -64,7 +64,7 @@ class Trainer:
     Attributes:
         model (Pipeline): The model to train.
         optimizer (torch.optim.Optimizer): The optimizer to use.
-        dataloader (Dataset): The data provider.
+        dataloader (DataLoader): The data provider.
         device (str): The device to train on (e.g., 'cuda', 'cpu').
         context_length (int): The maximum sequence length for training.
         grad_accum_steps (int): Number of steps to accumulate gradients before updating.
@@ -79,9 +79,9 @@ class Trainer:
 
     def __init__(
         self,
-        model: Type[Pipeline],
-        optimizer: Type[torch.optim.Optimizer],
-        dataloader: Type[Dataset],
+        model: Module,
+        optimizer: Union[torch.optim.Optimizer, Type[torch.optim.Optimizer]],
+        dataloader: DataLoader,
         device: str,
         context_length: int,
         grad_accum_steps: int = 1,
@@ -93,14 +93,17 @@ class Trainer:
         warmup_steps: Optional[int] = None,
         total_steps: Optional[int] = None,
         min_lr: float = 0.0,
+        learning_rate: float = 3e-4,
+        weight_decay: float = 0.0,
         use_warmup_cosine: bool = True,
     ):
         """
         Initializes the Trainer.
 
         Args:
-            model (Type[Pipeline]): The model architecture to train.
-            optimizer (Type[torch.optim.Optimizer]): The optimizer class or instance.
+            model (Module): The model architecture to train.
+            optimizer (Union[torch.optim.Optimizer, Type[torch.optim.Optimizer]]): The optimizer instance or class.
+                If a class is provided, it will be instantiated with `learning_rate` and `weight_decay`.
             dataloader (Type[Dataset]): The dataset iterator.
             device (str): Target device ('cuda' or 'cpu').
             context_length (int): Maximum sequence length.
@@ -111,16 +114,14 @@ class Trainer:
             scheduler (Optional[Any], optional): Learning rate scheduler. If None and use_warmup_cosine=True,
                 a WarmupCosineScheduler will be created. Defaults to None.
             grad_clip_norm (Optional[float], optional): Max norm for gradient clipping. Defaults to None.
-            warmup_steps (Optional[int], optional): Number of warmup steps. If None and use_warmup_cosine=True,
-                defaults to 10% of total_steps or 1000 if total_steps is also None. Defaults to None.
-            total_steps (Optional[int], optional): Total training steps for cosine scheduling.
-                If None, will be calculated from epochs * steps_per_epoch during training. Defaults to None.
-            min_lr (float, optional): Minimum learning rate for cosine annealing. Defaults to 0.0.
-            use_warmup_cosine (bool, optional): Whether to use warmup + cosine scheduling by default
-                when no scheduler is provided. Defaults to True.
+            warmup_steps (Optional[int], optional): Number of warmup steps. Defaults to None.
+            total_steps (Optional[int], optional): Total training steps. Defaults to None.
+            min_lr (float, optional): Minimum learning rate. Defaults to 0.0.
+            learning_rate (float, optional): Learning rate for the optimizer (if passing a class). Defaults to 3e-4.
+            weight_decay (float, optional): Weight decay coefficient (if passing a class). Defaults to 0.0.
+            use_warmup_cosine (bool, optional): Whether to use warmup + cosine scheduling by default. Defaults to True.
         """
         self.model = model.to(device)
-        self.optimizer = optimizer
         self.dataloader = dataloader
         self.device = device
         self.context_length = context_length
@@ -138,6 +139,14 @@ class Trainer:
             "accumulated_loss": 0.0,
         }
 
+        # Initialize Optimizer
+        if isinstance(optimizer, type):
+            self.optimizer = self._configure_optimizer(
+                optimizer, learning_rate, weight_decay
+            )
+        else:
+            self.optimizer = optimizer
+
         # Learning rate scheduling configuration
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
@@ -146,6 +155,39 @@ class Trainer:
 
         # Set up scheduler (will be finalized in train() if needed)
         self.scheduler = scheduler
+
+    def _configure_optimizer(
+        self,
+        optimizer_cls: Type[torch.optim.Optimizer],
+        learning_rate: float,
+        weight_decay: float,
+    ) -> torch.optim.Optimizer:
+        """
+        Configures the optimizer, applying weight decay only to appropriate parameters
+        (typically weights of appropriate dimensionality), and excluding biases/LayerNorms.
+        """
+        # Separate parameters into those that decay and those that don't
+        decay_params = []
+        nodecay_params = []
+
+        for name, param in self.model.named_parameters():
+            if not param.requires_grad:
+                continue
+
+            # Heuristic: Parameters with 2 or more dimensions (weights) get decay.
+            # Parameters with < 2 dimensions (biases, layernorm params) don't.
+            if param.dim() >= 2:
+                decay_params.append(param)
+            else:
+                nodecay_params.append(param)
+
+        optim_groups = [
+            {"params": decay_params, "weight_decay": weight_decay},
+            {"params": nodecay_params, "weight_decay": 0.0},
+        ]
+
+        optimizer = optimizer_cls(optim_groups, lr=learning_rate)
+        return optimizer
 
     def add_callback(self, callback: TrainerCallback) -> None:
         """Add a callback to the trainer."""
