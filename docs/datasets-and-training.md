@@ -132,6 +132,38 @@ trainer = Trainer(..., callbacks=[MyLogger()])
 
 > [!IMPORTANT]
 > **Advanced: Callback Hooks**
-> You can override any of these methods: `on_train_begin/end`, `on_epoch_begin/end`, `on_batch_begin/end`, and `on_step_begin/end`. The entire `trainer` object is passed into these, giving you access to the model, the optimizer, and the current state (like `trainer.global_step`).
+
+---
+
+<h3>5. Saving and Loading</h3>
+
+Once you've trained your model, you'll want to save it to disk for later use. The `olm` library simplifies this by allowing you to save the model and its associated tokenizer together in one directory.
+
+**Saving Your Model**
+
+All models built using the `Block` system (including the `LM` class) have a built-in `.save()` method. You can optionally pass a tokenizer to save it alongside the model.
+
+```python
+# Save the model and the tokenizer to a folder
+model.save("./checkpoints/final_model", tokenizer=tk)
+```
+
+**Loading Your Model**
+
+To load a saved model, use the `load_model` function. It automatically detects if a tokenizer was saved in the same folder and will return both objects if found.
+
+```python
+from olm.nn.structure import load_model
+
+# If a tokenizer was saved with the model:
+model, tokenizer = load_model("./checkpoints/final_model")
+
+# If only the model was saved:
+model = load_model("./checkpoints/no_tokenizer_model")
+```
+
+> [!NOTE]
+> **Architecture Preservation**
+> The `.save()` method preserves the entire model object. This means you don't need to manually define the model's configuration (like `vocab_size` or `num_layers`) when loading; the library reconstructs the exact architecture for you.
 
 
