@@ -2,6 +2,8 @@ from typing import List
 from olm.data.tokenization.base import TokenizerBase
 from transformers import AutoTokenizer
 import torch
+import os
+
 
 class HFTokenizer(TokenizerBase):
     def __init__(self, model_path: str):
@@ -33,3 +35,19 @@ class HFTokenizer(TokenizerBase):
             token_list, 
             skip_special_tokens=True
         )
+
+    def save(self, path: str) -> None:
+        """
+        Saves tokenizer in HuggingFace format.
+        `path` must be a directory.
+        """
+        self.tokenizer.save_pretrained(path)
+        open(os.path.join(path, "type"), "w").write("HFTokenizer")
+        
+
+    @classmethod
+    def load(cls, path: str) -> "HFTokenizer":
+        obj = cls.__new__(cls)
+        obj.tokenizer = AutoTokenizer.from_pretrained(path, use_fast=True)
+        obj.vocab_size = obj.tokenizer.vocab_size
+        return obj
