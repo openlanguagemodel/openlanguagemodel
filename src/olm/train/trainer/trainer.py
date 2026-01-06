@@ -64,7 +64,7 @@ class Trainer:
     Attributes:
         model (Pipeline): The model to train.
         optimizer (torch.optim.Optimizer): The optimizer to use.
-        dataloader (DataLoader): The data provider.
+        dataloader (olm.data.datasets.data_loader.DataLoader): The data provider.
         device (str): The device to train on (e.g., 'cuda', 'cpu').
         context_length (int): The maximum sequence length for training.
         grad_accum_steps (int): Number of steps to accumulate gradients before updating.
@@ -104,7 +104,7 @@ class Trainer:
             model (Module): The model architecture to train.
             optimizer (Union[torch.optim.Optimizer, Type[torch.optim.Optimizer]]): The optimizer instance or class.
                 If a class is provided, it will be instantiated with `learning_rate` and `weight_decay`.
-            dataloader (Type[Dataset]): The dataset iterator.
+            dataloader (olm.data.datasets.data_loader.DataLoader): The dataset iterator.
             device (str): Target device ('cuda' or 'cpu').
             context_length (int): Maximum sequence length.
             grad_accum_steps (int, optional): Steps for gradient accumulation. Defaults to 1.

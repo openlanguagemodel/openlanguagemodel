@@ -7,26 +7,12 @@ OLM is designed to make **sandboxing ideas and prototyping new architectures eas
 At the same time, OLM does not force you to work at the lowest level. You can start training quickly, then progressively peel back layers as you explore, modify, or reimplement parts of the system. In other words, OLM allows you to have a **customisable level of customisability**.
 
 ---
-## Why OLM?
 
-OLM exists to answer a common tension in ML systems:
+## Example: Defining GPT2 using OLM
 
-* High‑level frameworks are easy to use but hard to extend
-* Low‑level code is flexible but slow to iterate
+A simple example of defining the [GPT2]() structure using the olm library. 
 
-OLM sits in the middle.
-
-You can:
-
-* Get a model training with minimal setup
-* Swap architectural components without rewriting everything
-* Introduce entirely new structures and wiring patterns
-* Drop down to raw PyTorch whenever needed
-  
-If you are a beginner, looking to get their feet wet and quickly get started with language models, OLM makes it simple and easy
-to setup and work with many popular language models and datasets. If you are a more intermediate user looking to dive deep into
-architeectures or an advanced user looking to conduct research into novel structures then OLM also offers an easy environment to
-help with those workflows. Check out the [docs](/docs/) for understanding specific portions of the library and how it can be leveraged to its maximum capability
+![Image showing comparison between GPT2 architecture and GPT2 code using olm](image.png)
 
 ---
 
@@ -61,6 +47,73 @@ This setup is intentionally straightforward:
 You can start with this structure and gradually customize any part of it.
 
 ---
+
+## Installation
+
+OLM is designed to be used as a regular Python library, with full access to the source.
+
+### Requirements
+
+* Python ≥ 3.10
+* PyTorch (CPU or CUDA, depending on your setup)
+
+OLM intentionally keeps its dependency surface small and relies heavily on PyTorch under the hood.
+
+### Install (Editable, Recommended)
+
+```bash
+git clone <repo-url>
+cd openlanguagemodel
+pip install -e .
+```
+An editable install is recommended so you can inspect, modify, and extend components easily.
+
+---
+## Configuration & Experiment Setup
+
+Models in OLM can be described using simple YAML configuration files.
+
+```yaml
+model:
+name: gpt
+vocab_size: 50257
+n_layers: 12
+n_heads: 12
+d_model: 768
+  
+training:
+batch_size: 64
+max_steps: 100000
+```
+  
+Configurations describe **what** to run, not **how** it runs. All execution logic lives in Python and is fully editable.
+This separation keeps experiments reproducible without turning configuration files into code.
+
+---
+
+## Why OLM?
+
+OLM exists to answer a common tension in ML systems:
+
+* High‑level frameworks are easy to use but hard to extend
+* Low‑level code is flexible but slow to iterate
+
+OLM sits in the middle.
+
+You can:
+
+* Get a model training with minimal setup
+* Swap architectural components without rewriting everything
+* Introduce entirely new structures and wiring patterns
+* Drop down to raw PyTorch whenever needed
+  
+If you are a beginner, looking to get their feet wet and quickly get started with language models, OLM makes it simple and easy
+to setup and work with many popular language models and datasets. If you are a more intermediate user looking to dive deep into
+architeectures or an advanced user looking to conduct research into novel structures then OLM also offers an easy environment to
+help with those workflows. Check out the [docs](/docs/) for understanding specific portions of the library and how it can be leveraged to its maximum capability
+
+---
+
 ## Design Philosophy
 
 OLM is built around three core ideas:
@@ -113,48 +166,7 @@ not completely necessary. This structure also allows you to have a varying amoun
 "OLM extends PyTorch — it does not replace it."
 
 ---
-## Installation
 
-OLM is designed to be used as a regular Python library, with full access to the source.
-
-### Requirements
-
-* Python ≥ 3.10
-* PyTorch (CPU or CUDA, depending on your setup)
-
-OLM intentionally keeps its dependency surface small and relies heavily on PyTorch under the hood.
-
-### Install (Editable, Recommended)
-
-```bash
-git clone <repo-url>
-cd openlanguagemodel
-pip install -e .
-```
-An editable install is recommended so you can inspect, modify, and extend components easily.
-
----
-## Configuration & Experiment Setup
-
-Models in OLM can be described using simple YAML configuration files.
-
-```yaml
-model:
-name: gpt
-vocab_size: 50257
-n_layers: 12
-n_heads: 12
-d_model: 768
-  
-training:
-batch_size: 64
-max_steps: 100000
-```
-  
-Configurations describe **what** to run, not **how** it runs. All execution logic lives in Python and is fully editable.
-This separation keeps experiments reproducible without turning configuration files into code.
-
----
 ## Core Architecture: `olm.nn`
 
 At the heart of OLM is the `olm.nn` package. This is where *all neural logic lives*.
@@ -257,5 +269,3 @@ OLM works well for:
 * Students learning how transformers are built
 * Researchers prototyping new architectures
 * Engineers who want control without unnecessary boilerplate
----
-## TODO
