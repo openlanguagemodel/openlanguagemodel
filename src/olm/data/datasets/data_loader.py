@@ -5,7 +5,7 @@ This module provides a clean wrapper around PyTorch's DataLoader with
 sensible defaults for language model training and convenient helpers.
 """
 
-from typing import Optional, Callable, Iterator
+from typing import Optional, Callable, Iterator, Union
 from torch.utils.data import DataLoader as TorchDataLoader
 from torch.utils.data import Dataset, IterableDataset
 
@@ -47,7 +47,7 @@ class DataLoader(TorchDataLoader):
 
     def __init__(
         self,
-        dataset: Dataset | IterableDataset,
+        dataset: Union[Dataset, IterableDataset],
         batch_size: int = 8,
         shuffle: Optional[bool] = None,
         num_workers: int = 0,
