@@ -36,3 +36,15 @@ class TokenizerBase(ABC):
             str: The decoded text string.
         """
         pass
+
+    def save(self, path: str) -> None:
+        """
+        Saves the tokenizer to a file.
+
+        Args:
+            path (str): Path to save the tokenizer to.
+
+        Returns:
+            None
+        """
+        pass
