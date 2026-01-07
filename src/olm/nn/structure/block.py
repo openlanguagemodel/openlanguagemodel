@@ -11,6 +11,7 @@ class Block(nn.Module):
     Similar to ``nn.Sequential``, but exposes the underlying list for
     inspection or dynamic manipulation by higher-level builders.
 
+    
     Args:
         blocks: Ordered list of modules applied to the input in sequence.
 
