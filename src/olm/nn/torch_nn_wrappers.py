@@ -1,3 +1,12 @@
+"""Thin wrappers around torch.nn modules.
+
+Example::
+    Block([
+        Embedding(vocab_size, embed_dim),
+        AbsolutePositionalEmbedding(max_seq_len, embed_dim, dropout),
+    ])
+"""
+
 import torch.nn as nn
 
 class Linear(nn.Linear):
