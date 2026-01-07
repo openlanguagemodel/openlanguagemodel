@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from olm.core.registry import ACTIVATIONS
 from olm.nn.activations.base import ActivationBase
 
+
 @ACTIVATIONS.register("swiglu")
 class SwiGLU(ActivationBase):
     """
@@ -21,7 +22,7 @@ class SwiGLU(ActivationBase):
         device (torch.device, optional): Target device.
         dtype (torch.dtype, optional): Target data type.
     """
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of SwiGLU.
