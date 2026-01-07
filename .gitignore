@@ -12,6 +12,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+*.pt
 build/
 develop-eggs/
 dist/
@@ -71,9 +72,6 @@ instance/
 
 # Scrapy stuff:
 .scrapy
-
-# Sphinx documentation
-docs/_build/
 
 # PyBuilder
 .pybuilder/
@@ -174,3 +172,6 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+# ignore checkpoint dir from any level
+**/checkpoints
