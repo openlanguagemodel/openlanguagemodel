@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openlanguagemodel"
-version = "0.1.1"
+version = "1.0"
 description = "OpenLanguageModel (OLM): A clean library based off pytorch to quickly implement LLMs with custom architectures."
 readme = "README.md"
 requires-python = ">=3.8"
