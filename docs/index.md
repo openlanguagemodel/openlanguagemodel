@@ -67,6 +67,10 @@ Most ML systems force a trade-off:
 
 ## Minimal Training Example
 
+A simple example of training a simple language model on the [TinyShakespeare](https://huggingface.co/datasets/karpathy/tiny_shakespeare) dataset locally.
+
+![Minimal training example visualization](https://raw.githubusercontent.com/openlanguagemodel/openlanguagemodel/dev/image.png)
+
 ```python
 import sys, os, torch, urllib.request
 from torch.utils.data import DataLoader
