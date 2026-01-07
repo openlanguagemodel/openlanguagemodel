@@ -12,7 +12,7 @@ At the same time, OLM does not force you to work at the lowest level. You can st
 
 A simple example of defining the [GPT2]() structure using the olm library. 
 
-![Image showing comparison between GPT2 architecture and GPT2 code using olm](image.png)
+![Image showing comparison between GPT2 architecture and GPT2 code using olm](https://raw.githubusercontent.com/openlanguagemodel/openlanguagemodel/dev/image.png)
 
 ---
 
