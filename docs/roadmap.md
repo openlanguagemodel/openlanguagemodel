@@ -42,6 +42,11 @@ v1.1 targets extracting maximum performance from a single GPU and enhancing the 
 - [ ] **Documentation**:
     - [ ] Full API reference
     - [ ] End-to-end tutorials and notebooks
+- [ ] **General**:
+    - [ ] Better error handling
+    - [ ] Model summary 
+    - [ ] General model inference out of the box
+    - [ ] Improvements to model saving
 
 ## v2.0: Scaling Up (Multi-GPU)
 

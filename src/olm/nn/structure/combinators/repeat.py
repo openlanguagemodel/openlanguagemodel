@@ -1,6 +1,6 @@
 from olm.nn.structure.combinators.base import BaseCombinator
 import torch.nn as nn
-import torch
+import torch.utils.checkpoint
 from typing import Callable
 
 # note that module_func has to be a lambda function
@@ -33,6 +33,10 @@ class Repeat(BaseCombinator):
         self.num_repeat = num_repeat
 
         self.stack = nn.ModuleList([module_func() for _ in range(num_repeat)])
+        self.gradient_checkpointing = False
+
+    def enable_gradient_checkpointing(self):
+        self.gradient_checkpointing = True
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -45,5 +49,8 @@ class Repeat(BaseCombinator):
             Output tensor after all repeats.
         """
         for block in self.stack:
-            x = block(x)
+            if self.gradient_checkpointing and self.training:
+                x = torch.utils.checkpoint.checkpoint(block, x, use_reentrant=False)
+            else:
+                x = block(x)
         return x

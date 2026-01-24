@@ -60,6 +60,7 @@ class Trainer:
     - Callbacks for validation, checkpointing, and custom logic
     - Learning rate scheduling support
     - Gradient clipping
+    - Activation checkpointing support
 
     Attributes:
         model (Pipeline): The model to train.
@@ -96,6 +97,8 @@ class Trainer:
         learning_rate: float = 3e-4,
         weight_decay: float = 0.0,
         use_warmup_cosine: bool = True,
+        torch_compile: bool = True,
+        activation_checkpointing: bool = False,
     ):
         """
         Initializes the Trainer.
@@ -120,10 +123,27 @@ class Trainer:
             learning_rate (float, optional): Learning rate for the optimizer (if passing a class). Defaults to 3e-4.
             weight_decay (float, optional): Weight decay coefficient (if passing a class). Defaults to 0.0.
             use_warmup_cosine (bool, optional): Whether to use warmup + cosine scheduling by default. Defaults to True.
+            torch_compile (bool, optional): Whether to use torch.compile. Defaults to True.
+            activation_checkpointing (bool, optional): Whether to enable activation checkpointing. Defaults to False.
         """
         self.model = model.to(device)
+        if torch_compile:
+            self.model = torch.compile(self.model)
         self.dataloader = dataloader
         self.device = device
+        
+        # Activation Checkpointing
+        if activation_checkpointing:
+            count = 0
+            for m in self.model.modules():
+                if hasattr(m, "enable_gradient_checkpointing"):
+                    m.enable_gradient_checkpointing()
+                    count += 1
+            if count > 0:
+                print(f"Enabled activation checkpointing for {count} modules.", flush=True)
+            else:
+                print("Warning: activation_checkpointing=True but no modules supported it.", flush=True)
+
         self.context_length = context_length
         self.grad_accum_steps = grad_accum_steps
         self.use_amp = use_amp
