@@ -428,3 +428,4 @@ class Trainer:
             print(f"  Final Perplexity: {final_perplexity:.2f}", flush=True)
 
         print("-" * 80, flush=True)
+
