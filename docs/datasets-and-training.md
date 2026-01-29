@@ -8,9 +8,9 @@ The `olm` library is designed to handle massive amounts of text data without usi
 
 To start training, you first need to tell the library where your text is. We have three main ways to do this:
 
-*   **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
-*   **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
-*   **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
+- **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
+- **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
+- **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
 
 **Example Usage:**
 
@@ -19,16 +19,16 @@ from olm.data.datasets import LocalTextDataset, FineWebEduDataset
 
 # 1. Loading from your own folder
 dataset = LocalTextDataset(
-    location="./my_text_folder", 
-    tokenizer=tk, 
-    context_length=1024, 
+    location="./my_text_folder",
+    tokenizer=tk,
+    context_length=1024,
     shuffle=True
 )
 
 # 2. Or use the built-in FineWeb shortcut
 dataset = FineWebEduDataset(
-    tokenizer=tk, 
-    subset="sample-10BT", 
+    tokenizer=tk,
+    subset="sample-10BT",
     context_length=2048
 )
 ```
@@ -38,8 +38,8 @@ Shuffling mixes up your data so the model doesn't see the same examples in the s
 
 > [!TIP]
 > **Advanced: Shuffling & Sharding**
-> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000). 
-> 
+> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000).
+>
 > If you use multiple GPUs or workers, the library automatically handles **sharding**: it assigns specific pieces of the dataset to each worker so they never process the same data at the same time.
 
 ---
@@ -90,6 +90,7 @@ Models are like athletes—they need to warm up. The Trainer automatically start
 
 **Step 3: Pro Training Features**
 The Trainer comes with several "pro" features enabled by default:
+
 - **Mixed Precision (AMP)**: Uses specialized hardware on your GPU to make training 2-3x faster.
 - **Gradient Accumulation**: If your GPU is too small for a big batch, this trick lets you simulate a big batch by doing several small steps and only updating the model once at the end.
 - **Gradient Clipping**: Prevents the model's math from "exploding" if it sees a very strange piece of data.
@@ -117,6 +118,7 @@ trainer.train(epochs=1, log_interval=10)
 Callbacks are like "plugins" for your training. They let you inject your own code at specific moments—like saving the model every hour, or printing a custom message.
 
 **Example: A Simple Progress Printer**
+
 ```python
 from olm.train.trainer import TrainerCallback
 
@@ -135,7 +137,146 @@ trainer = Trainer(..., callbacks=[MyLogger()])
 
 ---
 
-<h3>5. Saving and Loading</h3>
+<h3>5. Distributed Training (Multi-GPU)</h3>
+
+For large models or faster training, you can use multiple GPUs across one or more machines. OLM provides two approaches using PyTorch's native distributed backends:
+
+**DDP (Distributed Data Parallel)** - Best for models that fit on a single GPU
+
+- Replicates the full model on each GPU
+- Synchronizes gradients across GPUs after each backward pass
+- Simple and reliable for most use cases
+
+**FSDP (Fully Sharded Data Parallel)** - Best for very large models
+
+- Shards (splits) model parameters across GPUs
+- Enables training models larger than single GPU memory
+- More memory efficient but slightly more complex
+
+**Launch Command**
+Both approaches use `torchrun` to launch multiple processes:
+
+```bash
+# Single machine, 4 GPUs
+torchrun --nproc_per_node=4 train.py
+
+# Multi-node: 2 machines, 4 GPUs each (run on both machines)
+torchrun --nproc_per_node=4 --nnodes=2 --node_rank=0 --master_addr=192.168.1.1 train.py
+```
+
+**DDP Training Example**
+
+```python
+from olm.core.dist import setup_distributed, get_local_rank
+from olm.train.trainer import DDPTrainer
+from olm.data.datasets import DataLoader
+
+# Initialize distributed environment (auto-detects NCCL for GPU, Gloo for CPU)
+setup_distributed()
+
+# Create DataLoader with distributed sampling
+loader = DataLoader(
+    dataset=dataset,
+    batch_size=16,
+    num_workers=4,
+    distributed=True,  # Automatically creates DistributedSampler
+)
+
+# Create DDP trainer
+trainer = DDPTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=loader,
+    device=f"cuda:{get_local_rank()}",  # Each process uses different GPU
+    context_length=1024,
+    learning_rate=3e-4,
+    grad_accum_steps=4,  # Gradient accumulation works with DDP
+)
+
+# Train (metrics are automatically aggregated across GPUs)
+trainer.train(epochs=10, log_interval=100)
+```
+
+> [!TIP]
+> **DDP Best Practices**
+>
+> - Use `distributed=True` in DataLoader to ensure each GPU sees different data
+> - Call `loader.sampler.set_epoch(epoch)` at the start of each epoch for proper shuffling
+> - Only rank 0 prints logs and saves checkpoints (automatic in DDPTrainer)
+> - Effective batch size = `batch_size × num_gpus × grad_accum_steps`
+
+**FSDP Training Example**
+
+```python
+from olm.train.trainer import FSDPTrainer
+from olm.core.dist import setup_distributed, get_local_rank
+
+setup_distributed()
+
+trainer = FSDPTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=DataLoader(dataset, batch_size=8, distributed=True),
+    device=f"cuda:{get_local_rank()}",
+    context_length=2048,
+    learning_rate=3e-4,
+
+    # FSDP-specific configuration
+    sharding_strategy="FULL_SHARD",  # Full sharding (most memory efficient)
+    auto_wrap_policy="size",  # Auto-wrap layers with 100M+ params
+    min_num_params=1e8,  # Wrap threshold (default: 100M parameters)
+    mixed_precision_policy="bf16",  # BF16 training (faster, requires Ampere+ GPUs)
+    cpu_offload=False,  # Set True to offload to CPU (slower but saves memory)
+    backward_prefetch="BACKWARD_PRE",  # Prefetch for better performance
+)
+
+trainer.train(epochs=10)
+```
+
+> [!IMPORTANT]
+> **FSDP Key Options**
+>
+> - **Sharding strategies**:
+>     - `FULL_SHARD`: Shard everything (parameters, gradients, optimizer states) - most memory efficient
+>     - `SHARD_GRAD_OP`: Shard gradients and optimizer only - faster than FULL_SHARD
+>     - `HYBRID_SHARD`: Full shard within node, replicate across nodes - for multi-node
+>     - `NO_SHARD`: No sharding (equivalent to DDP)
+> - **Auto-wrap policies**:
+>     - `"size"`: Wraps layers based on parameter count (use `min_num_params` to control)
+>     - `"transformer"`: Wraps specific transformer layer classes (provide `transformer_layer_cls`)
+>     - `None`: Manual wrapping (you must wrap model yourself before passing to trainer)
+> - **Mixed precision**: Use `"bf16"` for Ampere+ GPUs, `"fp16"` for older GPUs
+> - **CPU offload**: Saves GPU memory but slows training ~2-3x
+
+**Checkpoint Saving with FSDP**
+
+```python
+# Save full model checkpoint (only rank 0 saves)
+trainer.save_checkpoint(
+    path="./checkpoints/model.pt",
+    state_dict_type="FULL_STATE_DICT"  # Gathers full model on rank 0
+)
+
+# Alternative: Save sharded checkpoint (all ranks save their shard)
+trainer.save_checkpoint(
+    path="./checkpoints/model_sharded",
+    state_dict_type="SHARDED_STATE_DICT"
+)
+```
+
+**Choosing Between DDP and FSDP**
+
+| Scenario                        | Recommendation                                      |
+| ------------------------------- | --------------------------------------------------- |
+| Model fits on single GPU        | Use **DDP** (simpler, faster)                       |
+| Model doesn't fit on single GPU | Use **FSDP** with `FULL_SHARD`                      |
+| Multi-node training             | Use **FSDP** with `HYBRID_SHARD`                    |
+| Maximum throughput              | Use **DDP** or **FSDP** with `SHARD_GRAD_OP`        |
+| Maximum model size              | Use **FSDP** with `FULL_SHARD` + `cpu_offload=True` |
+
+---
+
+<h3>6. Saving and Loading</h3>
 
 Once you've trained your model, you'll want to save it to disk for later use. The `olm` library simplifies this by allowing you to save the model and its associated tokenizer together in one directory.
 
@@ -165,5 +306,3 @@ model = load_model("./checkpoints/no_tokenizer_model")
 > [!NOTE]
 > **Architecture Preservation**
 > The `.save()` method preserves the entire model object. This means you don't need to manually define the model's configuration (like `vocab_size` or `num_layers`) when loading; the library reconstructs the exact architecture for you.
-
-
