@@ -50,6 +50,9 @@ dev = [
 flash = [
     "flash-attn>=2.0.0",
 ]
+wandb = [
+    "wandb>=0.16.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/openlanguagemodel/openlanguagemodel"

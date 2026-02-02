@@ -33,9 +33,9 @@ v1.1 targets extracting maximum performance from a single GPU and enhancing the 
     - [ ] `torch.compile` compatibility
     - [ ] Memory optimization (activation checkpointing)
 - [ ] **Advanced Architectures**:
-    - [ ] Support for RoPE scaling variations
-    - [ ] ALiBi positional embeddings
-    - [ ] Custom activation wrappers refinement
+    - [x] Support for RoPE scaling variations
+    - [x] ALiBi positional embeddings
+    - [x] Custom activation wrappers refinement
 - [ ] **Observability**:
     - [ ] Integration with Weights & Biases (WandB)
     - [ ] Detailed training logs and metrics (perplexity, tokens/sec)
