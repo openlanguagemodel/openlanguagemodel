@@ -6,39 +6,39 @@ This document outlines the development trajectory of OpenLanguageModel (OLM). Ou
 
 The focus of v1.0 is to establish a solid, bug-free foundation for single-GPU training and to support a diverse set of standard architecture families.
 
-- [ ] **Core Architecture Support**:
-    - [ ] GPT-2 (Base, Medium, Large, XL)
-    - [ ] OLMo (standard and variant architectures)
-    - [ ] Phi-3 / Phi-4 (including variable grouped-query attention)
-    - [ ] Gemma 2 (incorporating specific normalization and gating nuances)
-- [ ] **Data Pipeline**:
-    - [ ] Unified `LocalTextDataset` and `HuggingFaceTextDataset` interfaces
-    - [ ] Efficient streaming and tokenization
-    - [ ] Robust train/validation splitting
-- [ ] **Training Engine**:
-    - [ ] Mixed Precision Training (AMP) support
-    - [ ] Gradient Clipping and Weight Decay integration
-    - [ ] Basic learning rate scheduling (Cosine, Linear)
-    - [ ] Checkpoint saving and loading
-- [ ] **Infrastructure**:
-    - [ ] Comprehensive Unit Tests for all core modules
-    - [ ] CI/CD pipeline setup
+- [x] **Core Architecture Support**:
+    - [x] GPT-2 (Base, Medium, Large, XL)
+    - [x] OLMo (standard and variant architectures)
+    - [x] Phi-3 / Phi-4 (including variable grouped-query attention)
+    - [x] Gemma 2 (incorporating specific normalization and gating nuances)
+- [x] **Data Pipeline**:
+    - [x] Unified `LocalTextDataset` and `HuggingFaceTextDataset` interfaces
+    - [x] Efficient streaming and tokenization
+    - [x] Robust train/validation splitting
+- [x] **Training Engine**:
+    - [x] Mixed Precision Training (AMP) support
+    - [x] Gradient Clipping and Weight Decay integration
+    - [x] Basic learning rate scheduling (Cosine, Linear)
+    - [x] Checkpoint saving and loading
+- [x] **Infrastructure**:
+    - [x] Comprehensive Unit Tests for all core modules
+    - [x] CI/CD pipeline setup
 
 ## v1.1: Optimization & Refinement
 
 v1.1 targets extracting maximum performance from a single GPU and enhancing the user experience.
 
-- [ ] **Performance Optimization**:
-    - [ ] Flash Attention integration
-    - [ ] `torch.compile` compatibility
-    - [ ] Memory optimization (activation checkpointing)
-- [ ] **Advanced Architectures**:
+- [x] **Performance Optimization**:
+    - [x] Flash Attention integration
+    - [x] `torch.compile` compatibility
+    - [x] Memory optimization (activation checkpointing)
+- [x] **Advanced Architectures**:
     - [x] Support for RoPE scaling variations
     - [x] ALiBi positional embeddings
     - [x] Custom activation wrappers refinement
-- [ ] **Observability**:
-    - [ ] Integration with Weights & Biases (WandB)
-    - [ ] Detailed training logs and metrics (perplexity, tokens/sec)
+- [x] **Observability**:
+    - [x] Integration with Weights & Biases (WandB)
+    - [x] Detailed training logs and metrics (perplexity, tokens/sec)
 - [ ] **Documentation**:
     - [ ] Full API reference
     - [ ] End-to-end tutorials and notebooks
@@ -47,13 +47,13 @@ v1.1 targets extracting maximum performance from a single GPU and enhancing the 
 
 v2.0 introduces distributed training capabilities, allowing OLM to utilize multiple GPUs on a single node.
 
-- [ ] **Distributed Training**:
+- [x] **Distributed Training**:
     - [x] Distributed Data Parallel (DDP) support
     - [x] Fully Sharded Data Parallel (FSDP) integration
-- [ ] **Mixture of Experts (MoE)**:
-    - [ ] Sparse MoE layer implementation
-    - [ ] Top-k gating mechanisms
-    - [ ] Load balancing auxiliary losses
+- [x] **Mixture of Experts (MoE)**:
+    - [x] Sparse MoE layer implementation
+    - [x] Top-k gating mechanisms
+    - [x] Load balancing auxiliary losses
 
 ## v2.1: Distributed Optimization
 
