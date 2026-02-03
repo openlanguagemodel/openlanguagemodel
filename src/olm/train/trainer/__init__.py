@@ -1,4 +1,6 @@
 from olm.train.trainer.trainer import Trainer, TrainerCallback
+from olm.train.trainer.ddp_trainer import DDPTrainer
+from olm.train.trainer.fsdp_trainer import FSDPTrainer
 from olm.train.callbacks import (
     ValidationCallback,
     CheckpointCallback,
@@ -11,6 +13,8 @@ from olm.train.callbacks import (
 __all__ = [
     "Trainer",
     "TrainerCallback",
+    "DDPTrainer",
+    "FSDPTrainer",
     "ValidationCallback",
     "CheckpointCallback",
     "LRMonitorCallback",

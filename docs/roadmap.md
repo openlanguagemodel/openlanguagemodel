@@ -33,9 +33,9 @@ v1.1 targets extracting maximum performance from a single GPU and enhancing the 
     - [ ] `torch.compile` compatibility
     - [ ] Memory optimization (activation checkpointing)
 - [ ] **Advanced Architectures**:
-    - [ ] Support for RoPE scaling variations
-    - [ ] ALiBi positional embeddings
-    - [ ] Custom activation wrappers refinement
+    - [x] Support for RoPE scaling variations
+    - [x] ALiBi positional embeddings
+    - [x] Custom activation wrappers refinement
 - [ ] **Observability**:
     - [ ] Integration with Weights & Biases (WandB)
     - [ ] Detailed training logs and metrics (perplexity, tokens/sec)
@@ -48,8 +48,8 @@ v1.1 targets extracting maximum performance from a single GPU and enhancing the 
 v2.0 introduces distributed training capabilities, allowing OLM to utilize multiple GPUs on a single node.
 
 - [ ] **Distributed Training**:
-    - [ ] Distributed Data Parallel (DDP) support
-    - [ ] Fully Sharded Data Parallel (FSDP) integration
+    - [x] Distributed Data Parallel (DDP) support
+    - [x] Fully Sharded Data Parallel (FSDP) integration
 - [ ] **Mixture of Experts (MoE)**:
     - [ ] Sparse MoE layer implementation
     - [ ] Top-k gating mechanisms

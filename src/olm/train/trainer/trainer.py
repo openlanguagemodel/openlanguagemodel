@@ -2,6 +2,8 @@ from typing import Type, Optional, Callable, Dict, Any, List, Union
 
 import torch.optim
 import torch
+import time
+import math
 from torch.amp import autocast, GradScaler
 
 from olm.data.tokenization import TokenizerBase
@@ -75,6 +77,9 @@ class Trainer:
         scheduler (Optional): Learning rate scheduler to step after each optimization step.
         global_step (int): Current global step count.
         current_epoch (int): Current epoch number.
+        total_tokens_processed (int): Total number of tokens processed during training.
+        step_start_time (float): Timestamp of the current step start.
+        training_start_time (float): Timestamp when training began.
     """
 
     def __init__(
@@ -134,9 +139,16 @@ class Trainer:
         self.grad_clip_norm = grad_clip_norm
         self.global_step = 0
         self.current_epoch = 0
+        self.total_tokens_processed = 0
+        self.step_start_time = None
+        self.training_start_time = None
         self.training_state = {
             "current_loss": 0.0,
             "accumulated_loss": 0.0,
+            "perplexity": 0.0,
+            "tokens_per_sec": 0.0,
+            "learning_rate": 0.0,
+            "total_tokens": 0,
         }
 
         # Initialize Optimizer
@@ -262,8 +274,14 @@ class Trainer:
         # Call on_train_begin callbacks
         self._call_callbacks("on_train_begin", self)
 
-        print(f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10}", flush=True)
-        print("-" * 30, flush=True)
+        # Initialize training start time
+        self.training_start_time = time.time()
+
+        print(
+            f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10} | {'Perplexity':^11} | {'Tokens/s':^10} | {'LR':^10}",
+            flush=True,
+        )
+        print("-" * 80, flush=True)
 
         for epoch in range(epochs):
             self.current_epoch = epoch
@@ -275,8 +293,16 @@ class Trainer:
             for step, (x, y) in enumerate(self.dataloader):
                 self._call_callbacks("on_batch_begin", self, step)
 
+                # Start timing for this step if it's the first batch in accumulation
+                if step % self.grad_accum_steps == 0:
+                    self.step_start_time = time.time()
+
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
+
+                # Track tokens processed
+                batch_tokens = x.numel()
+                self.total_tokens_processed += batch_tokens
 
                 with autocast("cuda", enabled=self.use_amp):
                     logits = self.model(x)  # (B, T, V)
@@ -314,12 +340,39 @@ class Trainer:
                     avg_loss = accumulated_loss / self.grad_accum_steps
                     self.global_step += 1
 
+                    # Calculate metrics
+                    current_lr = self.optimizer.param_groups[0]["lr"]
+                    perplexity = math.exp(
+                        min(avg_loss, 20)
+                    )  # Cap at 20 to prevent overflow
+
+                    # Calculate tokens/sec
+                    step_time = (
+                        time.time() - self.step_start_time
+                        if self.step_start_time
+                        else 0.0
+                    )
+                    tokens_in_step = x.size(0) * x.size(1) * self.grad_accum_steps
+                    tokens_per_sec = (
+                        tokens_in_step / step_time if step_time > 0 else 0.0
+                    )
+
+                    # Update training state
+                    self.training_state.update(
+                        {
+                            "current_loss": avg_loss,
+                            "perplexity": perplexity,
+                            "tokens_per_sec": tokens_per_sec,
+                            "learning_rate": current_lr,
+                            "total_tokens": self.total_tokens_processed,
+                        }
+                    )
+
                     if self.global_step % log_interval == 0:
                         losses.append(avg_loss)
                         self.losses.append(avg_loss)
-                        current_lr = self.optimizer.param_groups[0]["lr"]
                         print(
-                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | LR: {current_lr:.2e}",
+                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | {perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
                             flush=True,
                         )
 
@@ -335,7 +388,7 @@ class Trainer:
                     if max_steps and self.global_step >= max_steps:
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
-                        print("-" * 30, flush=True)
+                        self._print_training_summary()
                         return losses
 
                     # Check if we've reached steps_per_epoch
@@ -345,6 +398,33 @@ class Trainer:
             self._call_callbacks("on_epoch_end", self, epoch)
 
         self._call_callbacks("on_train_end", self)
-        print("-" * 30, flush=True)
+        self._print_training_summary()
         self.losses = losses
         return losses
+
+    def _print_training_summary(self) -> None:
+        """Print a summary of training metrics."""
+        print("-" * 80, flush=True)
+        print("\nTraining Summary:", flush=True)
+        print(f"  Total Steps: {self.global_step}", flush=True)
+        print(f"  Total Tokens Processed: {self.total_tokens_processed:,}", flush=True)
+
+        if self.training_start_time:
+            total_time = time.time() - self.training_start_time
+            hours = int(total_time // 3600)
+            minutes = int((total_time % 3600) // 60)
+            seconds = int(total_time % 60)
+            print(f"  Total Training Time: {hours}h {minutes}m {seconds}s", flush=True)
+
+            avg_tokens_per_sec = self.total_tokens_processed / total_time
+            print(
+                f"  Average Throughput: {avg_tokens_per_sec:.0f} tokens/sec", flush=True
+            )
+
+        if self.losses:
+            final_loss = self.losses[-1]
+            final_perplexity = math.exp(min(final_loss, 20))
+            print(f"  Final Loss: {final_loss:.4f}", flush=True)
+            print(f"  Final Perplexity: {final_perplexity:.2f}", flush=True)
+
+        print("-" * 80, flush=True)

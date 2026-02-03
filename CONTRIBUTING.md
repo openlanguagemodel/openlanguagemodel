@@ -40,21 +40,11 @@ Thank you for your interest in contributing to OLM! We welcome contributions fro
     git checkout -b feature/my-new-feature
     ```
 2.  **Make your changes**.
+    - **Code Style**: We follow standard Python conventions. Please ensure your code is readable and well-documented.
+    - **Docstrings**: All public functions and classes should have Google-style docstrings.
+    - **Type Hints**: Use type hints for function arguments and return values.
 
-    -   **Code Style**: We follow standard Python conventions. Please ensure your code is readable and well-documented.
-    -   **Docstrings**: All public functions and classes should have Google-style docstrings.
-    -   **Type Hints**: Use type hints for function arguments and return values.
-
-3.  **Run Tests**:
-    Ensure that your changes don't break existing functionality.
-
-    ```bash
-    pytest tests/
-    ```
-
-    If you are adding a new feature, please add a corresponding test case in `tests/`.
-
-4.  **Commit your changes**:
+3.  **Commit your changes**:
     ```bash
     git add .
     git commit -m "feat: add support for XYZ architecture"
@@ -63,13 +53,13 @@ Thank you for your interest in contributing to OLM! We welcome contributions fro
 
 ## Project Structure
 
--   `src/olm/`: The core library code.
-    -   `models/`: High-level model definitions (e.g., GPT, OLMo).
-    -   `nn/`: Reusable neural network blocks (attention, feedforward, etc.).
-    -   `data/`: Data loading and processing utilities.
-    -   `train/`: Training loop implementation.
--   `tests/`: Unit and integration tests.
--   `examples/`: Example scripts and usage demos.
+- `src/olm/`: The core library code.
+    - `models/`: High-level model definitions (e.g., GPT, OLMo).
+    - `nn/`: Reusable neural network blocks (attention, feedforward, etc.).
+    - `data/`: Data loading and processing utilities.
+    - `train/`: Training loop implementation.
+- `tests/`: Unit and integration tests.
+- `examples/`: Example scripts and usage demos.
 
 ## Pull Request Process
 
