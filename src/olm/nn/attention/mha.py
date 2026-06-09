@@ -38,17 +38,20 @@ class MultiHeadAttention(AttentionBase):
         Returns:
             torch.Tensor: The result of the attention mechanism applied to v.
         """
-        # q, k, v: [batch, heads, seq, dim]
-        # doing scaled dot product attention here
         attention_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+
+        if self.causal:
+            seq_len = q.size(-2)
+            causal_mask = torch.tril(torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool))
+            attention_scores = attention_scores.masked_fill(~causal_mask, float('-inf'))
+
         if mask is not None:
             attention_scores = attention_scores.masked_fill(mask == 0, float('-inf'))
 
         attention_probs = torch.softmax(attention_scores, dim=-1)
         attention_probs = self.dropout(attention_probs)
 
-        out = torch.matmul(attention_probs, v)
-        return out
+        return torch.matmul(attention_probs, v)
 
 class MultiHeadAttentionwithRoPE(AttentionwithRoPEBase):
     """
@@ -88,11 +91,16 @@ class MultiHeadAttentionwithRoPE(AttentionwithRoPEBase):
         # q, k, v: [batch, heads, seq, dim]
         # doing scaled dot product attention here
         attention_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+
+        if self.causal:
+            seq_len = q.size(-2)
+            causal_mask = torch.tril(torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool))
+            attention_scores = attention_scores.masked_fill(~causal_mask, float('-inf'))
+
         if mask is not None:
             attention_scores = attention_scores.masked_fill(mask == 0, float('-inf'))
 
         attention_probs = torch.softmax(attention_scores, dim=-1)
         attention_probs = self.dropout(attention_probs)
 
-        out = torch.matmul(attention_probs, v)
-        return out
+        return torch.matmul(attention_probs, v)
