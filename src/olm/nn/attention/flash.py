@@ -106,19 +106,21 @@ class FlashAttention(AttentionBase):
         This automatically uses Flash Attention 2 kernels when available and falls back
         to memory-efficient attention or math attention based on hardware and input shapes.
         """
-        # PyTorch's SDPA handles causal masking efficiently
-        is_causal = self.causal and mask is None
-
-        # Convert custom mask if provided
-        # SDPA expects mask with 0 for positions to attend and -inf for masked positions
         attn_mask = None
+        is_causal = self.causal
+
+        # SDPA expects a boolean mask where True marks positions to attend to.
+        # When a padding mask is supplied, fold the causal constraint into it so
+        # causality is not lost.
         if mask is not None:
-            # If mask has 1s for valid positions and 0s for masked, convert it
-            if mask.dtype == torch.bool:
-                attn_mask = mask
-            else:
-                # Assume mask has 1s for valid, 0s for masked
-                attn_mask = mask.bool()
+            attn_mask = mask if mask.dtype == torch.bool else mask.bool()
+            if self.causal:
+                L_q, L_k = q.size(-2), k.size(-2)
+                causal_bool = torch.ones(
+                    L_q, L_k, device=q.device, dtype=torch.bool
+                ).tril()
+                attn_mask = attn_mask & causal_bool
+                is_causal = False
 
         # Use PyTorch's optimized scaled_dot_product_attention
         # This will automatically select the best kernel (Flash Attention 2, memory efficient, or math)
@@ -149,7 +151,7 @@ class FlashAttention(AttentionBase):
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
         # Apply causal mask if needed
-        if self.causal and mask is None:
+        if self.causal:
             seq_len = q.size(-2)
             causal_mask = torch.triu(
                 torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool),
@@ -307,19 +309,21 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         This automatically uses Flash Attention 2 kernels when available and falls back
         to memory-efficient attention or math attention based on hardware and input shapes.
         """
-        # PyTorch's SDPA handles causal masking efficiently
-        is_causal = self.causal and mask is None
-
-        # Convert custom mask if provided
-        # SDPA expects mask with 0 for positions to attend and -inf for masked positions
         attn_mask = None
+        is_causal = self.causal
+
+        # SDPA expects a boolean mask where True marks positions to attend to.
+        # When a padding mask is supplied, fold the causal constraint into it so
+        # causality is not lost.
         if mask is not None:
-            # If mask has 1s for valid positions and 0s for masked, convert it
-            if mask.dtype == torch.bool:
-                attn_mask = mask
-            else:
-                # Assume mask has 1s for valid, 0s for masked
-                attn_mask = mask.bool()
+            attn_mask = mask if mask.dtype == torch.bool else mask.bool()
+            if self.causal:
+                L_q, L_k = q.size(-2), k.size(-2)
+                causal_bool = torch.ones(
+                    L_q, L_k, device=q.device, dtype=torch.bool
+                ).tril()
+                attn_mask = attn_mask & causal_bool
+                is_causal = False
 
         # Use PyTorch's optimized scaled_dot_product_attention
         # This will automatically select the best kernel (Flash Attention 2, memory efficient, or math)
@@ -350,7 +354,7 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
         # Apply causal mask if needed
-        if self.causal and mask is None:
+        if self.causal:
             seq_len = q.size(-2)
             causal_mask = torch.triu(
                 torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool),
