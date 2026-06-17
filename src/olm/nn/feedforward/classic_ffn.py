@@ -21,7 +21,7 @@ class ClassicFFN(FeedForwardBase):
         down_proj (Linear): Projection from hidden dim to embedding dim.
         dropout (nn.Dropout): Dropout layer.
     """
-    def __init__(self, embed_dim, hidden_dim=None, activation_fn=GELU(), dropout=0.0, bias=True):
+    def __init__(self, embed_dim, hidden_dim=None, activation_fn=None, dropout=0.0, bias=True):
         """
         Initializes the MLP.
 
@@ -37,7 +37,10 @@ class ClassicFFN(FeedForwardBase):
         # Default hidden_dim to 4 * embed_dim if not provided
         if hidden_dim is None:
             hidden_dim = 4 * embed_dim
-            
+
+        if activation_fn is None:
+            activation_fn = GELU()
+
         self.hidden_dim = hidden_dim
         
         self.up_proj = Linear(embed_dim, hidden_dim, bias=bias) # torch.nn.Linear can also be used
