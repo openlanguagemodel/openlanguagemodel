@@ -1,7 +1,7 @@
 from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
-from olm.nn.attention import MultiHeadAttentionwithALiBi
+from olm.nn.attention import MultiHeadAttentionwithRoPE
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms.layer_norm import LayerNorm
 from olm.nn.embeddings import Embedding
@@ -25,12 +25,13 @@ class OLMoBlock(Block):
         super().__init__([
             Residual(Block([
                 LayerNorm(embed_dim, elementwise_affine=False),
-                MultiHeadAttentionwithALiBi(
+                MultiHeadAttentionwithRoPE(
                     embed_dim, 
                     num_heads, 
+                    max_seq_len,
                     dropout=dropout,
-                    bias=False, # No bias for OLMo
-                    causal=True
+                    causal=True,
+                    bias=False # No bias for OLMo
                 )
             ])),
             Residual(Block([

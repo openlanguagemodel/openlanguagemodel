@@ -27,7 +27,7 @@ class Llama2Block(Block):
         # Determine attention type
         if num_kv_heads == num_heads:
             attn_layer = MultiHeadAttentionwithRoPE(
-                embed_dim, num_heads, max_seq_len, dropout=dropout, rope_theta=rope_theta, use_bias=False
+                embed_dim, num_heads, max_seq_len, dropout=dropout, causal=True, bias=False, rope_theta=rope_theta
             )
         else:
             attn_layer = GroupedQueryAttention(

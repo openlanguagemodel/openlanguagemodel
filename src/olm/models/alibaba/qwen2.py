@@ -31,9 +31,8 @@ class Qwen2Block(Block):
                     embed_dim, num_heads, num_kv_heads, max_seq_len, 
                     dropout=dropout, 
                     rope_theta=rope_theta, 
-                    use_bias=False,  # Qwen 2/2.5 uses NO bias in attention
-                    use_qk_norm=True, # Qwen 2/2.5 uses QK-Norm
-                    rms_norm_eps=rms_norm_eps
+                    use_bias=False,  # Qwen 2/2.5 uses NO bias on the output projection
+                    qkv_bias=True  # Qwen 2/2.5 uses bias on Q/K/V projections
                 )
             ])),
             Residual(Block([
