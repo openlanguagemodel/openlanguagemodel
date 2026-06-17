@@ -37,6 +37,7 @@ class GroupedQueryAttention(nn.Module):
         dropout: float = 0.0, 
         rope_theta: float = 10000.0,
         use_bias: bool = False,
+        qkv_bias: bool = False,
         use_qk_norm: bool = False,
         rms_norm_eps: float = 1e-6
     ):
@@ -57,24 +58,27 @@ class GroupedQueryAttention(nn.Module):
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
         self.num_groups = num_heads // num_kv_heads
-        
+
+        self.q_dim = num_heads * self.head_dim
+        self.kv_dim = num_kv_heads * self.head_dim
+
         self.dropout_p = dropout
         self.scale = self.head_dim ** -0.5
         
         # QK Norm (Qwen 2/2.5 feature)
         self.use_qk_norm = use_qk_norm
         if use_qk_norm:
-            self.q_norm = RMSNorm(self.head_dim * self.num_heads, eps=rms_norm_eps)
-            self.k_norm = RMSNorm(self.head_dim * self.num_kv_heads, eps=rms_norm_eps)
+            self.q_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
+            self.k_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
 
         # Rotary Embeddings
         self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len, base=rope_theta)
         
         # Projections
-        self.q_proj = Linear(embed_dim, num_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
-        self.k_proj = Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
-        self.v_proj = Linear(embed_dim, num_kv_heads * self.head_dim, bias=use_bias) # torch.nn.Linear can also be used
-        self.out_proj = Linear(embed_dim, embed_dim, bias=use_bias) # torch.nn.Linear can also be used
+        self.q_proj = Linear(embed_dim, self.q_dim, bias=qkv_bias) # torch.nn.Linear can also be used
+        self.k_proj = Linear(embed_dim, self.kv_dim, bias=qkv_bias) # torch.nn.Linear can also be used
+        self.v_proj = Linear(embed_dim, self.kv_dim, bias=qkv_bias) # torch.nn.Linear can also be used
+        self.out_proj = Linear(self.q_dim, embed_dim, bias=use_bias) # torch.nn.Linear can also be used
         
         self.dropout = nn.Dropout(dropout)
 
@@ -102,17 +106,17 @@ class GroupedQueryAttention(nn.Module):
         q = self.q_proj(x)
         k = self.k_proj(x)
         v = self.v_proj(x)
-        
-        # Apply QK Norm if enabled (before RoPE)
-        if self.use_qk_norm:
-            q = self.q_norm(q)
-            k = self.k_norm(k)
 
         # Reshape to [B, N, Heads, D]
         q = q.view(B, N, self.num_heads, self.head_dim)
         k = k.view(B, N, self.num_kv_heads, self.head_dim)
         v = v.view(B, N, self.num_kv_heads, self.head_dim)
-        
+
+        # Apply QK Norm if enabled (per head, before RoPE)
+        if self.use_qk_norm:
+            q = self.q_norm(q)
+            k = self.k_norm(k)
+
         # Apply RoPE to Q and K
         # RoPE expects [batch, seq, heads, dim]
         q = self.rope(q)
@@ -140,7 +144,7 @@ class GroupedQueryAttention(nn.Module):
             is_causal=(mask is None)
         )
         
-        # [B, Heads, N, D] -> [B, N, Heads, D] -> [B, N, Embed]
-        attention_out = attention_out.transpose(1, 2).contiguous().view(B, N, self.embed_dim)
+        # [B, Heads, N, D] -> [B, N, Heads, D] -> [B, N, num_heads * head_dim]
+        attention_out = attention_out.transpose(1, 2).contiguous().view(B, N, self.q_dim)
         
         return self.out_proj(attention_out)
