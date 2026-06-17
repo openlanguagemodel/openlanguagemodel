@@ -315,7 +315,7 @@ class FSDPTrainer(Trainer):
 
                 # FSDP automatically handles gradient synchronization
                 # For gradient accumulation, we still accumulate normally
-                with torch.amp.autocast("cuda", enabled=self.use_amp):
+                with torch.amp.autocast(self.device_type, enabled=self.use_amp):
                     logits = self.model(x)
                     loss = self.loss(logits, y)
                     loss_val = loss.item()
@@ -476,16 +476,18 @@ class FSDPTrainer(Trainer):
                 - "LOCAL_STATE_DICT": Save local shards on each rank
                 - "SHARDED_STATE_DICT": Save sharded checkpoint
         """
-        if not is_main_process() and state_dict_type == "FULL_STATE_DICT":
-            return  # Only rank 0 saves
-
         # Set state dict type
         state_dict_type_enum = getattr(StateDictType, state_dict_type)
 
+        # All ranks must participate in the state dict collective (especially for
+        # FULL_STATE_DICT, which gathers shards across the process group).
         with FSDP.state_dict_type(self.model, state_dict_type_enum):
             state_dict = self.model.state_dict()
 
-            if is_main_process():
+            is_full = state_dict_type == "FULL_STATE_DICT"
+            should_write = is_main_process() if is_full else True
+
+            if should_write:
                 checkpoint = {
                     "model": state_dict,
                     "optimizer": self.optimizer.state_dict(),
@@ -496,4 +498,4 @@ class FSDPTrainer(Trainer):
                     "epoch": self.current_epoch,
                 }
                 torch.save(checkpoint, path)
-                print_rank_0(f"Checkpoint saved to {path}")
+                print(f"Checkpoint saved to {path}")

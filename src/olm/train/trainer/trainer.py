@@ -132,7 +132,8 @@ class Trainer:
         self.context_length = context_length
         self.grad_accum_steps = grad_accum_steps
         self.use_amp = use_amp
-        self.scaler = GradScaler("cuda", enabled=use_amp)
+        self.device_type = "cuda" if "cuda" in str(device) else "cpu"
+        self.scaler = GradScaler(self.device_type, enabled=use_amp and self.device_type == "cuda")
         self.loss = loss()
         self.losses = []
         self.callbacks = callbacks or []
@@ -304,7 +305,7 @@ class Trainer:
                 batch_tokens = x.numel()
                 self.total_tokens_processed += batch_tokens
 
-                with autocast("cuda", enabled=self.use_amp):
+                with autocast(self.device_type, enabled=self.use_amp):
                     logits = self.model(x)  # (B, T, V)
                     loss = self.loss(logits, y)
                     loss_val = loss.item()
