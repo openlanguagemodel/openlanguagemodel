@@ -8,6 +8,7 @@ PyTorch's native distributed backends.
 import os
 import torch
 import torch.distributed as dist
+from datetime import timedelta
 from typing import Optional, Callable, Any
 import functools
 
@@ -75,7 +76,7 @@ def setup_distributed(
     if world_size == 1:
         return  # No need to initialize for single process
 
-    timeout = torch.distributed.timedelta(minutes=timeout_minutes)
+    timeout = timedelta(minutes=timeout_minutes)
 
     dist.init_process_group(
         backend=backend,
