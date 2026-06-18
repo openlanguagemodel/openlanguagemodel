@@ -1,4 +1,4 @@
-from base import LossBase
+from olm.train.losses.base import LossBase
 
 import torch.nn.functional as F
 

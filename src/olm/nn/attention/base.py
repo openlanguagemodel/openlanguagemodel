@@ -111,7 +111,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         v_proj (Linear): Linear projection for Value.
         out_proj (Linear): Linear projection for Output.
     """
-    def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True):
+    def __init__(self, embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True, rope_theta: float = 10000.0):
         """
         Initializes the AttentionwithRoPEBase.
 
@@ -121,6 +121,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
             max_seq_len (int): Maximum sequence length.
             dropout (float, optional): Dropout probability. Defaults to 0.0.
             bias (bool, optional): Whether to use bias in linear projections. Defaults to True.
+            rope_theta (float, optional): Base frequency for RoPE. Defaults to 10000.0.
 
         Raises:
             AssertionError: If embed_dim is not divisible by num_heads.
@@ -133,7 +134,7 @@ class AttentionwithRoPEBase(nn.Module, ABC):
         self.head_dim = embed_dim // num_heads
         self.scale = self.head_dim ** -0.5
         self.dropout = nn.Dropout(dropout)
-        self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len)
+        self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len, base=rope_theta)
         self.max_seq_len = max_seq_len
 
         # Shared QKV projections
@@ -174,12 +175,16 @@ class AttentionwithRoPEBase(nn.Module, ABC):
             torch.Tensor: Output tensor [batch, seq, embed_dim].
         """
         B, N, D = x.shape
-        q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(B, N, self.num_heads, self.head_dim).transpose(1, 2)
+        q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim)
+        k = self.k_proj(x).view(B, N, self.num_heads, self.head_dim)
+        v = self.v_proj(x).view(B, N, self.num_heads, self.head_dim)
 
-        k = self.rope(k)
         q = self.rope(q)
+        k = self.rope(k)
+
+        q = q.transpose(1, 2)
+        k = k.transpose(1, 2)
+        v = v.transpose(1, 2)
 
         out = self.compute_attention(q, k, v, mask)
         out = out.transpose(1, 2).contiguous().view(B, N, D)

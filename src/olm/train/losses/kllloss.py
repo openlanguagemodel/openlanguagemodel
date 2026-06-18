@@ -1,5 +1,5 @@
 import torch
-from base import LossBase
+from olm.train.losses.base import LossBase
 
 import torch.nn.functional as F
 
@@ -53,3 +53,6 @@ class KLLoss(LossBase):
 
         kl = self._apply_reduction(per_token, mask)
         return kl * self.kl_coeff
+
+    def forward(self, logits, ref, mask=None):
+        return self._compute(logits, ref, mask)

@@ -40,6 +40,6 @@ class RMSNorm(NormBase):
         in_dtype = x.dtype
         x = x.to(torch.float32)
         # RMS_a = sqrt( (1/d_model) * sum_{i=1}^{d_model} x_i^2 + eps )
-        RMS_a = torch.sqrt( ( torch.sum(x**2, dim=2) / self.d_model) + self.eps)
+        RMS_a = torch.sqrt( ( torch.sum(x**2, dim=-1) / self.d_model) + self.eps)
         result = ( x  / RMS_a.unsqueeze(-1) ) * self.weight
         return result.to(in_dtype)

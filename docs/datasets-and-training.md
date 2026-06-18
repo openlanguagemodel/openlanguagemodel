@@ -101,7 +101,6 @@ Models are like athletes—they need to warm up. The Trainer automatically start
 **Step 3: Pro Training Features**
 The Trainer comes with several "pro" features enabled by default:
 
-
 - **Mixed Precision (AMP)**: Uses specialized hardware on your GPU to make training 2-3x faster.
 - **Gradient Accumulation**: If your GPU is too small for a big batch, this trick lets you simulate a big batch by doing several small steps and only updating the model once at the end.
 - **Gradient Clipping**: Prevents the model's math from "exploding" if it sees a very strange piece of data.
@@ -129,7 +128,6 @@ trainer.train(epochs=1, log_interval=10)
 Callbacks are like "plugins" for your training. They let you inject your own code at specific moments—like saving the model every hour, or printing a custom message.
 
 **Example: A Simple Progress Printer**
-
 
 ```python
 from olm.train.trainer import TrainerCallback
@@ -288,7 +286,216 @@ trainer.save_checkpoint(
 
 ---
 
-<h3>6. Saving and Loading</h3>
+<h3>6. Automatic Trainer Selection (AutoTrainer)</h3>
+
+The `AutoTrainer` provides intelligent automatic selection between single-GPU training, Distributed Data Parallel (DDP), and Fully Sharded Data Parallel (FSDP) based on your hardware and model characteristics.
+
+**Why Use AutoTrainer?**
+
+Traditional distributed training requires you to:
+
+- Manually detect GPU count
+- Choose between DDP and FSDP
+- Configure distributed backends
+- Set up process groups
+- Handle device placement
+
+AutoTrainer does all of this automatically with a single parameter: `device="auto"`
+
+**Basic Usage**
+
+```python
+from olm.train import AutoTrainer
+from olm.train.optim import AdamW
+
+# That's it! AutoTrainer handles everything
+trainer = AutoTrainer(
+    model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",  # Magic!
+    context_length=2048,
+    learning_rate=3e-4
+)
+
+trainer.train(epochs=10)
+```
+
+**What Happens Automatically:**
+
+1. **Hardware Detection**: Scans for available GPUs and their memory
+2. **Strategy Selection**: Chooses the optimal trainer:
+    - 0-1 GPU → `Trainer` (single device)
+    - 2-4 GPUs, small model → `DDPTrainer`
+    - 2-4 GPUs, large model → `FSDPTrainer` (HYBRID_SHARD)
+    - 5+ GPUs, any model → `FSDPTrainer` (FULL_SHARD)
+3. **Configuration**: Sets up distributed backend, sharding, mixed precision
+4. **Initialization**: Handles `setup_distributed()` and device placement
+
+**Configuration Presets**
+
+Use presets to optimize for different scenarios:
+
+```python
+# Balanced (default): Smart selection based on hardware and model
+trainer = AutoTrainer(
+    model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    preset="balanced",  # Default
+    ...
+)
+
+# Memory Efficient: Prioritize FSDP, enable CPU offload
+trainer = AutoTrainer(
+    model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    preset="memory_efficient",  # For large models
+    ...
+)
+
+# Speed: Prioritize DDP, no offload, larger comm buckets
+trainer = AutoTrainer(
+    model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    preset="speed",  # For maximum throughput
+    ...
+)
+```
+
+**Device Options**
+
+```python
+# Full auto-detection (recommended)
+trainer = AutoTrainer(model=model, device="auto", ...)
+
+# Force CUDA with auto-configuration
+trainer = AutoTrainer(model=model, device="cuda:auto", ...)
+
+# Force CPU with auto-configuration
+trainer = AutoTrainer(model=model, device="cpu:auto", ...)
+
+# Legacy mode (backward compatible)
+trainer = AutoTrainer(model=model, device="cuda", ...)  # Single GPU
+trainer = AutoTrainer(model=model, device="cuda:0", ...)  # Specific GPU
+```
+
+**Manual Device Detection**
+
+For more control, you can inspect hardware before training:
+
+```python
+from olm.train import detect_devices, estimate_model_size
+
+# Detect available hardware
+config = detect_devices(verbose=True)
+print(f"Found {config.num_gpus} GPUs")
+print(f"GPU Memory: {config.gpu_memory_per_device:.2f} GB per device")
+
+# Estimate model memory requirements
+memory_info = estimate_model_size(model, verbose=True)
+print(f"Model requires ~{memory_info['total_gb']:.2f} GB")
+
+# Use detected config
+trainer = AutoTrainer(model=model, device=config, ...)
+```
+
+**Force Specific Strategy**
+
+Override automatic selection when needed:
+
+```python
+from olm.train import TrainerStrategy
+
+# Force DDP even on 8 GPUs
+trainer = AutoTrainer(
+    model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    force_strategy=TrainerStrategy.MULTI_GPU_DDP,
+    ...
+)
+
+# Available strategies:
+# - TrainerStrategy.SINGLE_GPU
+# - TrainerStrategy.SINGLE_CPU
+# - TrainerStrategy.MULTI_GPU_DDP
+# - TrainerStrategy.MULTI_GPU_FSDP_HYBRID  # Within-node sharding
+# - TrainerStrategy.MULTI_GPU_FSDP_FULL    # Full sharding
+```
+
+**Launching Multi-GPU Training**
+
+AutoTrainer works seamlessly with `torchrun`:
+
+```python
+# train_script.py
+from olm.train import AutoTrainer
+
+trainer = AutoTrainer(
+    model=model,
+    device="auto",  # Automatically configures for distributed
+    ...
+)
+trainer.train(epochs=10)
+```
+
+Launch with torchrun:
+
+```bash
+# Single node, 4 GPUs
+torchrun --nproc_per_node=4 train_script.py
+
+# Multi-node, 8 GPUs per node
+torchrun --nproc_per_node=8 \
+         --nnodes=2 \
+         --node_rank=0 \
+         --master_addr="192.168.1.1" \
+         --master_port=29500 \
+         train_script.py
+```
+
+**Advanced Configuration**
+
+Fine-tune DDP or FSDP parameters:
+
+```python
+trainer = AutoTrainer(
+    model=model,
+    device="auto",
+    # DDP parameters (used if DDP is selected)
+    ddp_find_unused_parameters=False,
+    ddp_broadcast_buffers=True,
+    ddp_bucket_cap_mb=25,
+    # FSDP parameters (used if FSDP is selected)
+    fsdp_min_num_params=100_000_000,  # 100M params for auto-wrap
+    fsdp_cpu_offload=True,  # Override preset
+    fsdp_backward_prefetch="BACKWARD_PRE",
+    ...
+)
+```
+
+> [!TIP]
+> **When to Use Each Trainer Directly:**
+>
+> - Use `Trainer` for single GPU or CPU development
+> - Use `DDPTrainer` when you need explicit DDP control
+> - Use `FSDPTrainer` for very large models (>13B parameters)
+> - Use `AutoTrainer` for everything else (recommended)
+
+> [!NOTE]
+> **Backward Compatibility:**
+> AutoTrainer is fully backward compatible. Existing code using `device="cuda"` or `device="cuda:0"` continues to work without changes.
+
+---
+
+<h3>7. Saving and Loading</h3>
 
 Once you've trained your model, you'll want to save it to disk for later use. The `olm` library simplifies this by allowing you to save the model and its associated tokenizer together in one directory.
 
@@ -321,7 +528,7 @@ model = load_model("./checkpoints/no_tokenizer_model")
 
 ---
 
-<h3>6. Experiment Tracking with Weights & Biases</h3>
+<h3>8. Experiment Tracking with Weights & Biases</h3>
 
 Weights & Biases (wandb) provides powerful experiment tracking, visualization, and collaboration features for your training runs. The `olm` library includes comprehensive wandb integration that's completely optional and configurable.
 
