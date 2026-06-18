@@ -46,8 +46,8 @@ class LayerNorm(NormBase):
         # x: (batch_size, sequence_length, d_model)
         in_dtype = x.dtype
         x = x.to(torch.float32)
-        mean = x.mean(dim=2, keepdim=True)  # (batch_size, sequence_length, 1)
-        variance = x.var(dim=2, keepdim=True, unbiased=False)  # (batch_size, sequence_length, 1)
+        mean = x.mean(dim=-1, keepdim=True)  # (batch_size, sequence_length, 1)
+        variance = x.var(dim=-1, keepdim=True, unbiased=False)  # (batch_size, sequence_length, 1)
         x_normalized = (x - mean) / torch.sqrt(variance + self.eps)  # (batch_size, sequence_length, d_model)
         
         if self.elementwise_affine:

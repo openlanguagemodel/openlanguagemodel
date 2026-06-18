@@ -81,17 +81,20 @@ class OPTModel(Block):
     """
 
     def __init__(self, vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1):
-        self.token_embedding = Embedding(vocab_size, embed_dim)
-        self.lm_head = nn.Linear(embed_dim, vocab_size, bias=False)
+        token_embedding = Embedding(vocab_size, embed_dim)
+        lm_head = nn.Linear(embed_dim, vocab_size, bias=False)
 
         super().__init__([
-            self.token_embedding,
+            token_embedding,
             AbsolutePositionalEmbedding(max_seq_len=2048, embed_dim=embed_dim, dropout=0.0),
             nn.Dropout(dropout),
             Repeat(lambda: OPTBlock(embed_dim, intermediate_size, num_heads, dropout), num_layers),
             LayerNorm(embed_dim, eps=1e-5),
-            self.lm_head,
+            lm_head,
         ])
+
+        self.token_embedding = token_embedding
+        self.lm_head = lm_head
 
         # tie weights
         self.lm_head.weight = self.token_embedding.embedding.weight

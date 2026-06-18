@@ -15,6 +15,7 @@ from olm.data.datasets import DataLoader
 from olm.core.dist import (
     is_distributed,
     get_rank,
+    get_local_rank,
     get_world_size,
     is_main_process,
     barrier,
@@ -134,8 +135,8 @@ class DDPTrainer(Trainer):
         if is_distributed():
             self.model = DDP(
                 self.model,
-                device_ids=[get_rank()] if torch.cuda.is_available() else None,
-                output_device=get_rank() if torch.cuda.is_available() else None,
+                device_ids=[get_local_rank()] if torch.cuda.is_available() else None,
+                output_device=get_local_rank() if torch.cuda.is_available() else None,
                 find_unused_parameters=find_unused_parameters,
                 broadcast_buffers=broadcast_buffers,
                 bucket_cap_mb=bucket_cap_mb,
@@ -235,7 +236,7 @@ class DDPTrainer(Trainer):
                 )
 
                 with context:
-                    with torch.amp.autocast("cuda", enabled=self.use_amp):
+                    with torch.amp.autocast(self.device_type, enabled=self.use_amp):
                         logits = self.model(x)
                         loss = self.loss(logits, y)
                         loss_val = loss.item()
