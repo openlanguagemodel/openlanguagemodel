@@ -59,9 +59,9 @@ v2.0 introduces distributed training capabilities, allowing OLM to utilize multi
 
 v2.1 focuses on making multi-GPU training highly efficient and stable.
 
-- [ ] **Efficiency**:
-    - [ ] Zero Redundancy Optimizer (ZeRO) stages
-    - [ ] Efficient communication overlap
+- [x] **Efficiency**:
+    - [x] Zero Redundancy Optimizer (ZeRO) stages
+    - [x] Efficient communication overlap
 - [ ] **MoE Enhancements**:
     - [ ] Expert parallelism
     - [ ] Expert routing optimization
