@@ -7,13 +7,13 @@ OLM gives you:
 - readable transformer components in `olm.nn`
 - implemented model families in `olm.models`
 - local and Hugging Face dataset streams in `olm.data`
-- single-device, DDP, FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
+- single-device, single-node multi-GPU DDP/FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
 
 [Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
 
 ## Why OLM
 
-Most language-model libraries either hide the architecture behind configuration, or make you rebuild the whole training path from scratch. OLM sits in the middle: every block is an ordinary `torch.nn.Module`, but data loading, optimization, mixed precision, distributed training, checkpointing, and logging are already wired into a clean path.
+Most language-model libraries either hide the architecture behind configuration, or make you rebuild the whole training path from scratch. OLM sits in the middle: every block is an ordinary `torch.nn.Module`, but data loading, optimization, mixed precision, single-node multi-GPU training, checkpointing, and logging are already wired into a clean path.
 
 That makes it useful for:
 
@@ -108,7 +108,7 @@ trainer = AutoTrainer(
 trainer.train(epochs=1, max_steps=1000)
 ```
 
-`AutoTrainer` chooses between CPU, single-GPU, DDP, and FSDP paths based on the hardware and model. You can still use `Trainer`, `DDPTrainer`, or `FSDPTrainer` directly when you want explicit control.
+`AutoTrainer` chooses between CPU, single-GPU, and single-node multi-GPU DDP/FSDP paths based on the hardware and model. You can still use `Trainer`, `DDPTrainer`, or `FSDPTrainer` directly when you want explicit control.
 
 ## Implemented Model Families
 
@@ -166,7 +166,7 @@ See [`docs/installation.md`](docs/installation.md) for dependency and release-bu
 
 ## Project Status
 
-OLM v2.2 is the stabilization and release-readiness pass: tied output embeddings by default, model-family smoke coverage, AutoTrainer, streaming datasets, AMP, checkpointing, DDP/FSDP paths, clearer installation docs, and a stronger generated API reference. New research features are intentionally deferred to later roadmap milestones.
+OLM v2.2 is the stabilization and release-readiness pass: tied output embeddings by default, model-family smoke coverage, AutoTrainer, streaming datasets, AMP, checkpointing, single-node DDP/FSDP paths, clearer installation docs, and a stronger generated API reference. Multi-node training remains a v4 roadmap item.
 
 ## Citation
 

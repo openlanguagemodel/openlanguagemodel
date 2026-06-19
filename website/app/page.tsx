@@ -91,11 +91,11 @@ const models = [
 const roadmap = [
   { version: "v1.0", desc: "Foundation & core architectures.", done: true },
   { version: "v1.1", desc: "On-GPU optimization (Flash-Attention, torch.compile), ALiBi & RoPE scaling, W&B.", done: true },
-  { version: "v2.0", desc: "Multi-GPU (DDP, FSDP) and Mixture-of-Experts.", done: true },
+  { version: "v2.0", desc: "Single-node multi-GPU (DDP, FSDP) and Mixture-of-Experts.", done: true },
   { version: "v2.1", desc: "Bug fixes, AutoTrainer, model-family cleanup, and training stability.", done: true },
   { version: "v2.2", desc: "Stability, API reference, docs, website source, SEO foundations, and release readiness.", done: true },
   { version: "v3.0", desc: "Further training: SFT, LoRA, DPO, PPO, GRPO, and evaluation hooks.", done: false },
-  { version: "v4.0", desc: "Multi-node training: cluster launch, fault tolerance, data sharding, pipeline and tensor parallelism.", done: false },
+  { version: "v4.0", desc: "Multi-node training: cluster launch, fault tolerance, multi-node data sharding, pipeline and tensor parallelism.", done: false },
 ];
 
 export default function Home() {

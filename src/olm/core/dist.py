@@ -1,9 +1,9 @@
 """
 Distributed training utilities for PyTorch DDP and FSDP.
 
-Provides wrappers and helpers for single-node multi-GPU training using
+Provides wrappers and helpers for v2 single-node multi-GPU training using
 PyTorch's native distributed backends. Multi-node launch recipes are planned
-for a later roadmap milestone.
+for the v4 roadmap.
 """
 
 import os

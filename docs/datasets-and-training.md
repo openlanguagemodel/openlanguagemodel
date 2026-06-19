@@ -137,9 +137,9 @@ trainer = Trainer(..., callbacks=[MyLogger()])
 
 ---
 
-<h3>5. Distributed Training (Multi-GPU)</h3>
+<h3>5. Single-Node Multi-GPU Training</h3>
 
-For large models or faster training, v2.2 supports multiple GPUs on a single machine. OLM provides two approaches using PyTorch's native distributed backends:
+For large models or faster training, v2 supports multiple GPUs on a single machine. OLM provides two approaches using PyTorch's native distributed backends:
 
 **DDP (Distributed Data Parallel)** - Best for models that fit on a single GPU
 
@@ -277,11 +277,11 @@ trainer.save_checkpoint(
 
 <h3>6. Automatic Trainer Selection (AutoTrainer)</h3>
 
-The `AutoTrainer` provides intelligent automatic selection between single-GPU training, Distributed Data Parallel (DDP), and Fully Sharded Data Parallel (FSDP) based on your hardware and model characteristics.
+The `AutoTrainer` provides intelligent automatic selection between single-GPU training and single-node multi-GPU Distributed Data Parallel (DDP) or Fully Sharded Data Parallel (FSDP) based on your hardware and model characteristics.
 
 **Why Use AutoTrainer?**
 
-Traditional distributed training requires you to:
+Traditional multi-GPU training requires you to:
 
 - Manually detect GPU count
 - Choose between DDP and FSDP
@@ -315,10 +315,9 @@ trainer.train(epochs=10)
 1. **Hardware Detection**: Scans for available GPUs and their memory
 2. **Strategy Selection**: Chooses the optimal trainer:
     - 0-1 GPU → `Trainer` (single device)
-    - 2-4 GPUs, small model → `DDPTrainer`
-    - 2-4 GPUs, large model → `FSDPTrainer` (HYBRID_SHARD)
-    - 5+ GPUs, any model → `FSDPTrainer` (FULL_SHARD)
-3. **Configuration**: Sets up distributed backend, sharding, mixed precision
+    - 2-4 GPUs on one machine → `DDPTrainer` for smaller models, `FSDPTrainer` for larger models
+    - 5+ GPUs on one machine → `FSDPTrainer` (FULL_SHARD)
+3. **Configuration**: Sets up the single-node distributed backend, sharding, mixed precision
 4. **Initialization**: Handles `setup_distributed()` and device placement
 
 **Configuration Presets**
@@ -431,7 +430,7 @@ trainer = AutoTrainer(
     model=model,
     optimizer=AdamW,
     dataloader=dataloader,
-    device="auto",  # Automatically configures for distributed
+    device="auto",  # Automatically configures the single-node multi-GPU path
     context_length=2048,
     ...
 )
@@ -672,10 +671,10 @@ wandb_callback = WandBCallback(
 
 **7. Distributed Training Support**
 
-WandB integration automatically works with distributed training—only rank 0 logs to avoid duplicates:
+WandB integration automatically works with single-node multi-GPU training—only rank 0 logs to avoid duplicates:
 
 ```python
-# In your distributed training script
+# In your multi-GPU training script
 from olm.train.trainer import DDPTrainer
 from olm.logging import WandBCallback
 

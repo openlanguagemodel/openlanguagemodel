@@ -7,6 +7,7 @@ OpenLanguageModel is moving toward a stable, readable, PyTorch-native stack for 
 v2.2 is the stabilization release. The focus is a polished library and documentation set, not new research features.
 
 - [x] Move onto the v2.1 bug-fix and AutoTrainer base
+- [x] Stabilize single-node multi-GPU training with DDP/FSDP paths
 - [x] Make model output heads tied to token embeddings by default
 - [x] Verify model-family smoke tests and one-batch training paths
 - [x] Improve README positioning, citation, model links, and install guidance
@@ -33,7 +34,7 @@ v3 is for post-pretraining workflows. The goal is to let people continue from a 
 
 ## v4.0: Multi-Node Training
 
-v4 moves from single-node training to cluster-scale training. The intent is to keep the user-facing API understandable while exposing the distributed systems pieces needed for serious runs.
+v4 moves beyond v2's single-node multi-GPU support into cluster-scale training. The intent is to keep the user-facing API understandable while exposing the distributed systems pieces needed for serious runs.
 
 - [ ] Multi-node launch and configuration helpers
 - [ ] Slurm and common cluster integration

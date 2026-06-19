@@ -66,8 +66,8 @@ def AutoTrainer(
     Automatically select and configure the optimal trainer based on hardware.
 
     This factory function intelligently chooses between Trainer, DDPTrainer,
-    and FSDPTrainer based on available GPUs and model size. It handles all
-    the complexity of distributed training setup, device selection, and
+    and FSDPTrainer based on available GPUs and model size. It handles the
+    single-node multi-GPU setup, device selection, and
     parameter configuration.
 
     Forward/training contract:

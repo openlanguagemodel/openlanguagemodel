@@ -25,7 +25,7 @@ export const SITE = {
     "train language models",
     "custom transformer architecture",
     "language model course",
-    "distributed LLM training",
+    "single-node multi-GPU LLM training",
     "FineWeb-Edu training",
     "OpenLanguageModel",
     "OLM",
