@@ -9,7 +9,7 @@ OLM gives you:
 - local and Hugging Face dataset streams in `olm.data`
 - single-device, single-node multi-GPU DDP/FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
 
-[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
+[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [Colab Notebooks](docs/colab-notebooks.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
 
 ## Why OLM
 
@@ -160,6 +160,7 @@ See [`docs/installation.md`](docs/installation.md) for dependency and release-bu
 - Install from [`docs/installation.md`](docs/installation.md)
 - Start with [`docs/getting-started.md`](docs/getting-started.md)
 - Review architecture concepts in [`docs/architecture.md`](docs/architecture.md)
+- Run guided Colabs from [`docs/colab-notebooks.md`](docs/colab-notebooks.md)
 - Train from examples in [`examples/`](examples/)
 - Use [`docs/datasets-and-training.md`](docs/datasets-and-training.md) for data, trainer, AutoTrainer, callbacks, and checkpointing
 - Use [`docs/api.md`](docs/api.md) when you need exact signatures and source-defined methods

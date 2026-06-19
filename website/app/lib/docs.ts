@@ -34,6 +34,7 @@ export const NAV: NavTrack[] = [
           { title: "Datasets & Training", path: "datasets-and-training" },
           { title: "Architecture", path: "architecture" },
           { title: "Roadmap", path: "roadmap" },
+          { title: "Colab Notebooks", path: "colab-notebooks" },
         ],
       },
     ],

@@ -8,6 +8,7 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 - [`installation.md`](installation.md): supported Python versions, extras, dependency ranges, and release-build commands.
 - [`datasets-and-training.md`](datasets-and-training.md): use local text, FineWeb-Edu, `Trainer`, `AutoTrainer`, callbacks, checkpointing, and single-node DDP/FSDP.
 - [`architecture.md`](architecture.md): understand `Block`, `Residual`, `Repeat`, `Parallel`, and how OLM assembles custom models.
+- [`colab-notebooks.md`](colab-notebooks.md): runnable Colab notebooks for the main learning path.
 - [`api.md`](api.md): generated API reference with signatures, docstrings, and source-defined methods.
 
 ## Common Tasks
@@ -19,6 +20,7 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 | Stream FineWeb-Edu | [`datasets-and-training.md`](datasets-and-training.md) |
 | Let OLM pick CPU/GPU/single-node DDP/FSDP | [`datasets-and-training.md#6-automatic-trainer-selection-autotrainer`](datasets-and-training.md#6-automatic-trainer-selection-autotrainer) |
 | Build a custom architecture | [`architecture.md`](architecture.md) |
+| Run the guided Colabs | [`colab-notebooks.md`](colab-notebooks.md) |
 | Look up model constructors | [`api.md`](api.md) |
 | Inspect runnable scripts | [`../examples`](../examples) |
 

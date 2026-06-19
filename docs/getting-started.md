@@ -115,5 +115,6 @@ Use `Trainer`, `DDPTrainer`, or `FSDPTrainer` directly when you want explicit co
 - Read [`installation.md`](installation.md) for optional extras, supported Python versions, and release-build commands.
 - Read [`datasets-and-training.md`](datasets-and-training.md) for data streaming, callbacks, checkpointing, single-node DDP/FSDP, and AutoTrainer.
 - Read [`architecture.md`](architecture.md) for blocks, residuals, and custom architectures.
+- Run the guided notebooks in [`colab-notebooks.md`](colab-notebooks.md).
 - Use [`api.md`](api.md) for exact signatures and method docs.
 - Explore runnable scripts in [`../examples`](../examples).
