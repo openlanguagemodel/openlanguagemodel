@@ -2,11 +2,6 @@ olm.nn.activations.sigmoid
 ==========================
 
 .. automodule:: olm.nn.activations.sigmoid
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Sigmoid
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

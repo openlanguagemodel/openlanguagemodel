@@ -1,7 +1,133 @@
-# olm.logging
+# `olm.logging`
 
-### Modules
+Optional experiment logging integrations for OLM.
 
-| [`logger`](olm.logging.logger.md#module-olm.logging.logger)       |    |
-|-------------------------------------------------------------------|----|
-| [`progress`](olm.logging.progress.md#module-olm.logging.progress) |    |
+## Functions
+
+### `create_sweep(sweep_config: Dict[str, Any], project: str, entity: str | None = None) -> str`
+
+Create a wandb sweep for hyperparameter optimization.
+
+Args:
+    sweep_config: Sweep configuration dictionary.
+    project: WandB project name.
+    entity: WandB entity (team/username).
+
+Returns:
+    Sweep ID to use with wandb agent.
+
+Example:
+    >>> sweep_config = {
+    ...     "method": "bayes",
+    ...     "metric": {"name": "train/loss", "goal": "minimize"},
+    ...     "parameters": {
+    ...         "learning_rate": {
+    ...             "distribution": "log_uniform_values",
+    ...             "min": 1e-5,
+    ...             "max": 1e-3,
+    ...         },
+    ...         "batch_size": {"values": [8, 16, 32, 64]},
+    ...         "weight_decay": {
+    ...             "distribution": "uniform",
+    ...             "min": 0.0,
+    ...             "max": 0.3,
+    ...         },
+    ...     },
+    ... }
+    >>>
+    >>> sweep_id = create_sweep(sweep_config, project="my-llm-project")
+    >>> print(f"Run: wandb agent {sweep_id}")
+
+### `get_sweep_config_template(method: str = 'bayes') -> Dict[str, Any]`
+
+Get a template sweep configuration.
+
+Args:
+    method: Sweep method ("grid", "random", "bayes"). Default: "bayes".
+
+Returns:
+    Template sweep configuration dictionary.
+
+Example:
+    >>> config = get_sweep_config_template("bayes")
+    >>> # Customize the config
+    >>> config["parameters"]["learning_rate"]["min"] = 1e-5
+    >>> config["parameters"]["learning_rate"]["max"] = 1e-3
+    >>> # Create sweep
+    >>> sweep_id = create_sweep(config, project="my-project")
+
+## Classes
+
+### `WandBCallback(project: str, entity: str | None = None, name: str | None = None, tags: List[str] | None = None, notes: str | None = None, config: Dict[str, Any] | None = None, log_frequency: int = 1, log_gradients: bool = False, log_model: bool = False, watch_model: bool = False, watch_freq: int = 1000, log_predictions: bool = False, log_system_metrics: bool = True, alert_thresholds: Dict[str, Dict[str, float]] | None = None, offline: bool = False, resume: str | None = None, group: str | None = None, job_type: str | None = 'train', save_code: bool = True, reinit: bool = True)`
+
+Callback for Weights & Biases integration with OLM Trainer.
+
+Provides comprehensive experiment tracking including:
+- Training metrics (loss, perplexity, learning rate, throughput)
+- Hyperparameter logging
+- System metrics (GPU memory, CPU usage)
+- Gradient and weight histograms (optional)
+- Model checkpoint artifacts
+- Prediction tables (optional)
+- Alert monitoring (optional)
+- Sweep support for hyperparameter optimization
+
+Args:
+    project: WandB project name.
+    entity: WandB team/username (defaults to your default entity).
+    name: Run name (auto-generated if None).
+    tags: List of tags for this run.
+    notes: Optional notes/description for this run.
+    config: Hyperparameters and config to log (auto-captured from trainer if None).
+    log_frequency: Log metrics every N steps (default: 1).
+    log_gradients: Enable gradient histogram logging (can slow training).
+    log_model: Save model checkpoints as wandb artifacts.
+    watch_model: Use wandb.watch() for automatic gradient/parameter tracking.
+    watch_freq: Frequency for wandb.watch logging (default: 1000).
+    log_predictions: Enable prediction table logging.
+    log_system_metrics: Log GPU/CPU metrics (default: True).
+    alert_thresholds: Dict of metric thresholds for alerts.
+        Example: {"loss": {"min": 0.1, "max": 10.0}}
+    offline: Run in offline mode (for air-gapped environments).
+    resume: Resume from previous run ("allow", "must", "never", or "auto").
+    group: Group name for grouping runs.
+    job_type: Job type (e.g., "train", "eval", "sweep").
+    save_code: Save training code to wandb (default: True).
+    reinit: Allow multiple wandb.init() calls in same process.
+
+Example:
+    >>> from olm.logging import WandBCallback
+    >>>
+    >>> # Basic usage
+    >>> wandb_callback = WandBCallback(
+    ...     project="my-llm-project",
+    ...     name="llama-7b-baseline",
+    ...     tags=["llama", "baseline"],
+    ... )
+    >>>
+    >>> trainer = Trainer(..., callbacks=[wandb_callback])
+    >>> trainer.train(epochs=10)
+    >>>
+    >>> # Advanced: with alerts and gradient logging
+    >>> wandb_callback = WandBCallback(
+    ...     project="my-llm-project",
+    ...     log_gradients=True,
+    ...     watch_model=True,
+    ...     alert_thresholds={
+    ...         "loss": {"max": 10.0},  # Alert if loss > 10
+    ...         "learning_rate": {"min": 1e-6}  # Alert if LR < 1e-6
+    ...     },
+    ... )
+
+#### Methods
+
+- `log_predictions(self, step: int, inputs: List[str], predictions: List[str], targets: List[str] | None = None)`
+  Log predictions to wandb table.
+- `on_epoch_end(self, trainer, epoch: int) -> None`
+  Called at the end of each epoch.
+- `on_step_end(self, trainer, step: int, loss: float) -> None`
+  Called at the end of each optimization step.
+- `on_train_begin(self, trainer) -> None`
+  Called at the beginning of training.
+- `on_train_end(self, trainer) -> None`
+  Called at the end of training.

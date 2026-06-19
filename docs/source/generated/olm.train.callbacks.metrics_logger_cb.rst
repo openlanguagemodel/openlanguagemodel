@@ -1,12 +1,7 @@
-olm.train.callbacks.metrics\_logger\_cb
-=======================================
+olm.train.callbacks.metrics_logger_cb
+=====================================
 
 .. automodule:: olm.train.callbacks.metrics_logger_cb
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      MetricsLoggerCallback
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -133,7 +133,9 @@ class Trainer:
         self.grad_accum_steps = grad_accum_steps
         self.use_amp = use_amp
         self.device_type = "cuda" if "cuda" in str(device) else "cpu"
-        self.scaler = GradScaler(self.device_type, enabled=use_amp and self.device_type == "cuda")
+        self.scaler = GradScaler(
+            self.device_type, enabled=use_amp and self.device_type == "cuda"
+        )
         self.loss = loss()
         self.losses = []
         self.callbacks = callbacks or []
@@ -215,6 +217,47 @@ class Trainer:
         for callback in self.callbacks:
             getattr(callback, method_name)(*args, **kwargs)
 
+    def _should_stop_training(self) -> bool:
+        """Return True when a callback has requested early termination."""
+        return bool(self.training_state.get("should_stop", False))
+
+    def _initialize_scheduler(
+        self,
+        epochs: int,
+        max_steps: Optional[int] = None,
+        steps_per_epoch: Optional[int] = None,
+    ) -> None:
+        """Initialize the default warmup + cosine scheduler."""
+        if self.total_steps is None:
+            if max_steps is not None:
+                self.total_steps = max_steps
+            elif steps_per_epoch is not None:
+                self.total_steps = epochs * steps_per_epoch
+            else:
+                try:
+                    self.total_steps = epochs * len(self.dataloader)
+                except TypeError:
+                    self.total_steps = epochs * 10000
+
+        if self.warmup_steps is None:
+            self.warmup_steps = min(
+                max(int(0.1 * self.total_steps), 1),
+                5000,
+                self.total_steps,
+            )
+
+        self.scheduler = WarmupCosineScheduler(
+            self.optimizer,
+            warmup_steps=self.warmup_steps,
+            total_steps=self.total_steps,
+            min_lr=self.min_lr,
+        )
+        print(
+            f"Initialized WarmupCosineScheduler: warmup_steps={self.warmup_steps}, "
+            f"total_steps={self.total_steps}, min_lr={self.min_lr}",
+            flush=True,
+        )
+
     def train(
         self,
         epochs: int,
@@ -237,38 +280,8 @@ class Trainer:
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
 
-        # Initialize default warmup + cosine scheduler if not provided
         if self.scheduler is None and self.use_warmup_cosine:
-            # Calculate total steps if not provided
-            if self.total_steps is None:
-                if max_steps is not None:
-                    self.total_steps = max_steps
-                elif steps_per_epoch is not None:
-                    self.total_steps = epochs * steps_per_epoch
-                else:
-                    # Estimate based on dataloader size (if available)
-                    try:
-                        dataset_size = len(self.dataloader)
-                        self.total_steps = epochs * dataset_size
-                    except:
-                        # Default to a reasonable number for streaming datasets
-                        self.total_steps = epochs * 10000
-
-            # Calculate warmup steps if not provided (10% of total steps, min 100, max 5000)
-            if self.warmup_steps is None:
-                self.warmup_steps = min(max(int(0.1 * self.total_steps), 100), 5000)
-
-            # Create warmup + cosine scheduler
-            self.scheduler = WarmupCosineScheduler(
-                self.optimizer,
-                warmup_steps=self.warmup_steps,
-                total_steps=self.total_steps,
-                min_lr=self.min_lr,
-            )
-            print(
-                f"Initialized WarmupCosineScheduler: warmup_steps={self.warmup_steps}, total_steps={self.total_steps}, min_lr={self.min_lr}",
-                flush=True,
-            )
+            self._initialize_scheduler(epochs, max_steps, steps_per_epoch)
 
         losses = []
 
@@ -289,14 +302,27 @@ class Trainer:
             self._call_callbacks("on_epoch_begin", self, epoch)
 
             accumulated_loss = 0.0
+            accumulated_tokens = 0
+            accumulation_count = 0
+            accumulation_target = self.grad_accum_steps
             epoch_step = 0  # Track steps within this epoch
+            try:
+                num_batches = len(self.dataloader)
+            except TypeError:
+                num_batches = None
 
             for step, (x, y) in enumerate(self.dataloader):
                 self._call_callbacks("on_batch_begin", self, step)
 
                 # Start timing for this step if it's the first batch in accumulation
-                if step % self.grad_accum_steps == 0:
+                if accumulation_count == 0:
                     self.step_start_time = time.time()
+                    if num_batches is None:
+                        accumulation_target = self.grad_accum_steps
+                    else:
+                        accumulation_target = min(
+                            self.grad_accum_steps, num_batches - step
+                        )
 
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
@@ -304,22 +330,24 @@ class Trainer:
                 # Track tokens processed
                 batch_tokens = x.numel()
                 self.total_tokens_processed += batch_tokens
+                accumulated_tokens += batch_tokens
 
                 with autocast(self.device_type, enabled=self.use_amp):
                     logits = self.model(x)  # (B, T, V)
                     loss = self.loss(logits, y)
                     loss_val = loss.item()
-                    loss = loss / self.grad_accum_steps
+                    loss = loss / accumulation_target
 
                 self.scaler.scale(loss).backward()
                 accumulated_loss += loss_val
+                accumulation_count += 1
 
                 self.training_state["current_loss"] = loss_val
                 self.training_state["accumulated_loss"] = accumulated_loss
 
                 self._call_callbacks("on_batch_end", self, step, loss_val)
 
-                if (step + 1) % self.grad_accum_steps == 0:
+                if accumulation_count == accumulation_target:
                     self._call_callbacks("on_step_begin", self, self.global_step)
 
                     # Gradient clipping
@@ -338,7 +366,9 @@ class Trainer:
                     if self.scheduler is not None:
                         self.scheduler.step()
 
-                    avg_loss = accumulated_loss / self.grad_accum_steps
+                    avg_loss = accumulated_loss / accumulation_target
+                    losses.append(avg_loss)
+                    self.losses.append(avg_loss)
                     self.global_step += 1
 
                     # Calculate metrics
@@ -353,7 +383,7 @@ class Trainer:
                         if self.step_start_time
                         else 0.0
                     )
-                    tokens_in_step = x.size(0) * x.size(1) * self.grad_accum_steps
+                    tokens_in_step = accumulated_tokens
                     tokens_per_sec = (
                         tokens_in_step / step_time if step_time > 0 else 0.0
                     )
@@ -370,8 +400,6 @@ class Trainer:
                     )
 
                     if self.global_step % log_interval == 0:
-                        losses.append(avg_loss)
-                        self.losses.append(avg_loss)
                         print(
                             f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | {perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
                             flush=True,
@@ -381,14 +409,24 @@ class Trainer:
                         "on_step_end", self, self.global_step, avg_loss
                     )
 
+                    if self._should_stop_training():
+                        self._call_callbacks("on_epoch_end", self, epoch)
+                        self._call_callbacks("on_train_end", self)
+                        self.losses = losses
+                        self._print_training_summary()
+                        return losses
+
                     # Reset accumulated loss
                     accumulated_loss = 0.0
+                    accumulated_tokens = 0
+                    accumulation_count = 0
                     epoch_step += 1
 
                     # Check if we've reached max_steps
                     if max_steps and self.global_step >= max_steps:
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
+                        self.losses = losses
                         self._print_training_summary()
                         return losses
 

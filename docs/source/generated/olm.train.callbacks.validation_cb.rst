@@ -1,12 +1,7 @@
-olm.train.callbacks.validation\_cb
-==================================
+olm.train.callbacks.validation_cb
+=================================
 
 .. automodule:: olm.train.callbacks.validation_cb
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      ValidationCallback
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,12 +1,7 @@
-olm.data.datasets.base\_dataset
-===============================
+olm.data.datasets.base_dataset
+==============================
 
 .. automodule:: olm.data.datasets.base_dataset
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      BaseTextDataset
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

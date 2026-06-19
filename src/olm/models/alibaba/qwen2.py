@@ -9,11 +9,11 @@ from olm.nn.embeddings import Embedding
 class Qwen2Block(Block):
     """
     A single Transformer block for Qwen 2.
-    
+
     Structure:
         x = x + GQA(RMSNorm(x))
         x = x + SwiGLU(RMSNorm(x))
-        
+
     Args:
         embed_dim (int): Model dimension.
         intermediate_size (int): FFN hidden dimension.
@@ -28,9 +28,9 @@ class Qwen2Block(Block):
             Residual(Block([
                 RMSNorm(embed_dim, eps=rms_norm_eps),
                 GroupedQueryAttention(
-                    embed_dim, num_heads, num_kv_heads, max_seq_len, 
-                    dropout=dropout, 
-                    rope_theta=rope_theta, 
+                    embed_dim, num_heads, num_kv_heads, max_seq_len,
+                    dropout=dropout,
+                    rope_theta=rope_theta,
                     use_bias=False,  # Qwen 2/2.5 uses NO bias on the output projection
                     qkv_bias=True  # Qwen 2/2.5 uses bias on Q/K/V projections
                 )
@@ -44,12 +44,12 @@ class Qwen2Block(Block):
 class Qwen2Model(Block):
     """
     Base class for Qwen 2 / 2.5 models.
-    
+
     Structure:
         Embedding -> [Qwen2Block] x N -> RMSNorm -> Linear Head
     """
     def __init__(self, vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = False, dropout: float = 0.0, rms_norm_eps: float = 1e-6):
-        
+
         # Core Structure
         layers = [
             Embedding(vocab_size, embed_dim),
@@ -59,9 +59,9 @@ class Qwen2Model(Block):
             RMSNorm(embed_dim, eps=rms_norm_eps),
             Linear(embed_dim, vocab_size, bias=False) # torch.nn.Linear can also be used
         ]
-        
+
         super().__init__(layers)
-        
+
         # Tie weights logic is post-hoc, but Block init doesn't handle it easily unless we hook it.
         # But we can access the created modules in self.blocks
         if tie_weights:
@@ -100,7 +100,8 @@ class Qwen2_5_32B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False
+            tie_weights=False,
+            rms_norm_eps=1e-5
         )
 
 class Qwen2_5_14B(Qwen2Model):
@@ -115,7 +116,8 @@ class Qwen2_5_14B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False
+            tie_weights=False,
+            rms_norm_eps=1e-5
         )
 
 class Qwen2_5_7B(Qwen2Model):
@@ -132,7 +134,7 @@ class Qwen2_5_7B(Qwen2Model):
             rope_theta=1000000.0,
             tie_weights=False
         )
-        
+
 class Qwen2_5_3B(Qwen2Model):
     """Qwen 2.5 3B Model."""
     def __init__(self):

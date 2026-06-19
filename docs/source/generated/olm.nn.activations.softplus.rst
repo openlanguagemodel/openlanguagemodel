@@ -2,11 +2,6 @@ olm.nn.activations.softplus
 ===========================
 
 .. automodule:: olm.nn.activations.softplus
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Softplus
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

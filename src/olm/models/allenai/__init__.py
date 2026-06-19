@@ -1,1 +1,3 @@
-from .olmo import OLMo_7B
+from .olmo import OLMoModel, OLMo_7B
+
+__all__ = ["OLMoModel", "OLMo_7B"]

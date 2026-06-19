@@ -1,7 +1,4 @@
-"""Logging utilities for OLM."""
-
-from olm.logging.logger import Logger
-from olm.logging.progress import ProgressBar
+"""Optional experiment logging integrations for OLM."""
 
 # WandB integration (optional dependency)
 try:
@@ -12,11 +9,9 @@ try:
     )
 
     __all__ = [
-        "Logger",
-        "ProgressBar",
         "WandBCallback",
         "create_sweep",
         "get_sweep_config_template",
     ]
 except ImportError:
-    __all__ = ["Logger", "ProgressBar"]
+    __all__ = []

@@ -1,53 +1,20 @@
-# olm.nn.blocks.linear_projections
+# `olm.nn.blocks.linear_projections`
 
-### Classes
+## Classes
 
-| [`QKVProjection`](#olm.nn.blocks.linear_projections.QKVProjection)(\*args, \*\*kwargs)   | Computes Query, Key, and Value projections for attention mechanisms.   |
-|------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-
-### *class* olm.nn.blocks.linear_projections.Linear(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Linear`
-
-#### forward(x)
-
-### *class* olm.nn.blocks.linear_projections.QKVProjection(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`
+### `QKVProjection(dim_in: int, dim_q: int, dim_k: int, dim_v: int, bias: bool = True, init: str = 'xavier')`
 
 Computes Query, Key, and Value projections for attention mechanisms.
 
 Applies three separate linear transformations to the input to generate Q, K, and V tensors.
 Supports various weight initialization schemes.
 
-#### W_q
+Attributes:
+    W_q (Linear): Linear layer for Query projection.
+    W_k (Linear): Linear layer for Key projection.
+    W_v (Linear): Linear layer for Value projection.
 
-Linear layer for Query projection.
+#### Methods
 
-* **Type:**
-  [Linear](#olm.nn.blocks.linear_projections.Linear)
-
-#### W_k
-
-Linear layer for Key projection.
-
-* **Type:**
-  [Linear](#olm.nn.blocks.linear_projections.Linear)
-
-#### W_v
-
-Linear layer for Value projection.
-
-* **Type:**
-  [Linear](#olm.nn.blocks.linear_projections.Linear)
-
-#### forward(x: torch.Tensor) → Tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-
-Performs the Q, K, V projections.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, dim_in).
-* **Returns:**
-  A tuple containing (Q, K, V) tensors.
-* **Return type:**
-  tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+- `forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]`
+  Performs the Q, K, V projections.

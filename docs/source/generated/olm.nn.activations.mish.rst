@@ -2,11 +2,6 @@ olm.nn.activations.mish
 =======================
 
 .. automodule:: olm.nn.activations.mish
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Mish
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

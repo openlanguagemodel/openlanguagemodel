@@ -1,65 +1,172 @@
+import math
+
+import torch
+import torch.nn as nn
+
 from olm.nn import Linear
 from olm.nn.structure import Block
-from olm.nn.structure.combinators import Repeat, Residual
+from olm.nn.structure.combinators import Repeat
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import GeGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
 
+
+class Gemma2Embedding(Embedding):
+    """Gemma 2 token embedding with hidden-size scaling."""
+
+    def __init__(self, vocab_size: int, embedding_dim: int):
+        super().__init__(vocab_size, embedding_dim)
+        self.embed_scale = math.sqrt(embedding_dim)
+
+    def forward(self, x):
+        return super().forward(x) * self.embed_scale
+
+
+class Gemma2FinalLogitSoftcap(nn.Module):
+    """Gemma 2 final logit soft-capping."""
+
+    def __init__(self, softcap: float | None = 30.0):
+        super().__init__()
+        self.softcap = softcap
+
+    def forward(self, logits):
+        if self.softcap is None:
+            return logits
+        return torch.tanh(logits / self.softcap) * self.softcap
+
+
 class Gemma2Block(Block):
     """
     A single Transformer block for Gemma 2.
-    
+
     Implements the "Sandwich" Normalization pattern:
     Norm -> Attn -> Norm -> Residual
     Norm -> MLP  -> Norm -> Residual
     """
-    def __init__(self, embed_dim: int, intermediate_size: int, num_heads: int, num_kv_heads: int, max_seq_len: int, dropout: float, rope_theta: float, head_dim: int):
-        attn_sublayer = Block([
-            Residual(Block([
-                RMSNorm(embed_dim, eps=1e-6),
-                GroupedQueryAttention(
-                    embed_dim, num_heads, num_kv_heads, max_seq_len, 
-                    head_dim=head_dim, dropout=dropout, rope_theta=rope_theta, use_bias=False,
-                    use_qk_norm=True, # Gemma 2 uses QK-Norm
-                    rms_norm_eps=1e-6
-                )
-            ])),
-            RMSNorm(embed_dim, eps=1e-6)
-        ])
-        
-        mlp_sublayer = Block([
-            Residual(Block([
-                RMSNorm(embed_dim, eps=1e-6),
-                GeGLUFFN(embed_dim, hidden_dim=intermediate_size, dropout=dropout, bias=False)
-            ])),
-            RMSNorm(embed_dim, eps=1e-6)
-        ])
-        
-        super().__init__([attn_sublayer, mlp_sublayer])
+
+    def __init__(
+        self,
+        embed_dim: int,
+        intermediate_size: int,
+        num_heads: int,
+        num_kv_heads: int,
+        max_seq_len: int,
+        dropout: float,
+        rope_theta: float,
+        head_dim: int,
+        sliding_window: int | None = 4096,
+        attn_logit_softcap: float | None = 50.0,
+        query_pre_attn_scalar: float | None = 256.0,
+    ):
+        super().__init__([])
+        self.sliding_window = sliding_window
+        self.input_layernorm = RMSNorm(embed_dim, eps=1e-6)
+        self.self_attn = GroupedQueryAttention(
+            embed_dim,
+            num_heads,
+            num_kv_heads,
+            max_seq_len,
+            head_dim=head_dim,
+            dropout=dropout,
+            rope_theta=rope_theta,
+            use_bias=False,
+            attention_scale=query_pre_attn_scalar**-0.5
+            if query_pre_attn_scalar is not None
+            else None,
+            attn_logit_softcap=attn_logit_softcap,
+        )
+        self.post_attention_layernorm = RMSNorm(embed_dim, eps=1e-6)
+        self.pre_feedforward_layernorm = RMSNorm(embed_dim, eps=1e-6)
+        self.mlp = GeGLUFFN(
+            embed_dim, hidden_dim=intermediate_size, dropout=dropout, bias=False
+        )
+        self.post_feedforward_layernorm = RMSNorm(embed_dim, eps=1e-6)
+
+    def forward(self, x):
+        residual = x
+        x = self.input_layernorm(x)
+        x = self.self_attn(x, self._sliding_window_mask(x))
+        x = self.post_attention_layernorm(x)
+        x = residual + x
+
+        residual = x
+        x = self.pre_feedforward_layernorm(x)
+        x = self.mlp(x)
+        x = self.post_feedforward_layernorm(x)
+        return residual + x
+
+    def _sliding_window_mask(self, x):
+        if self.sliding_window is None:
+            return None
+
+        seq_len = x.size(1)
+        positions = torch.arange(seq_len, device=x.device)
+        return positions[None, :] > positions[:, None] - self.sliding_window
+
 
 class Gemma2Model(Block):
     """
     Base class for Gemma 2 models.
     """
-    def __init__(self, vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, head_dim: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0):
-        super().__init__([
-            Embedding(vocab_size, embed_dim),
-            Repeat(lambda: Gemma2Block(
-                embed_dim, intermediate_size, num_heads, num_kv_heads, max_seq_len, dropout, rope_theta, head_dim
-            ), num_layers),
-            RMSNorm(embed_dim, eps=1e-6),
-            Linear(embed_dim, vocab_size, bias=False) # torch.nn.Linear can also be used
-        ])
-        
+
+    def __init__(
+        self,
+        vocab_size: int,
+        embed_dim: int,
+        intermediate_size: int,
+        num_layers: int,
+        num_heads: int,
+        num_kv_heads: int,
+        head_dim: int,
+        max_seq_len: int,
+        rope_theta: float = 10000.0,
+        dropout: float = 0.0,
+        sliding_window: int | None = 4096,
+        attn_logit_softcap: float | None = 50.0,
+        final_logit_softcap: float | None = 30.0,
+        query_pre_attn_scalar: float | None = 256.0,
+    ):
+        super().__init__(
+            [
+                Gemma2Embedding(vocab_size, embed_dim),
+                Repeat(
+                    lambda: Gemma2Block(
+                        embed_dim,
+                        intermediate_size,
+                        num_heads,
+                        num_kv_heads,
+                        max_seq_len,
+                        dropout,
+                        rope_theta,
+                        head_dim,
+                        sliding_window=None,
+                        attn_logit_softcap=attn_logit_softcap,
+                        query_pre_attn_scalar=query_pre_attn_scalar,
+                    ),
+                    num_layers,
+                ),
+                RMSNorm(embed_dim, eps=1e-6),
+                Linear(
+                    embed_dim, vocab_size, bias=False
+                ),  # torch.nn.Linear can also be used
+                Gemma2FinalLogitSoftcap(final_logit_softcap),
+            ]
+        )
+
+        for layer_idx, block in enumerate(self.blocks[1].stack):
+            block.sliding_window = sliding_window if layer_idx % 2 == 0 else None
+
         # Tie weights: Output head linear = Embedding
         # Gemma 2 ties weights.
         # self.blocks[0] is Embedding wrapper
         # self.blocks[3] is Linear head
         self.blocks[3].weight = self.blocks[0].embedding.weight
 
+
 class Gemma2_27B(Gemma2Model):
     """Gemma 2 27B Model."""
+
     def __init__(self):
         super().__init__(
             vocab_size=256000,
@@ -68,13 +175,15 @@ class Gemma2_27B(Gemma2Model):
             num_layers=46,
             num_heads=32,
             num_kv_heads=16,
-            head_dim=128, 
+            head_dim=128,
             max_seq_len=8192,
-            rope_theta=10000.0
+            rope_theta=10000.0,
         )
+
 
 class Gemma2_9B(Gemma2Model):
     """Gemma 2 9B Model."""
+
     def __init__(self):
         super().__init__(
             vocab_size=256000,
@@ -85,11 +194,13 @@ class Gemma2_9B(Gemma2Model):
             num_kv_heads=8,
             head_dim=256,
             max_seq_len=8192,
-            rope_theta=10000.0
+            rope_theta=10000.0,
         )
+
 
 class Gemma2_2B(Gemma2Model):
     """Gemma 2 2B Model."""
+
     def __init__(self):
         super().__init__(
             vocab_size=256000,
@@ -100,5 +211,5 @@ class Gemma2_2B(Gemma2Model):
             num_kv_heads=4,
             head_dim=256,
             max_seq_len=8192,
-            rope_theta=10000.0
+            rope_theta=10000.0,
         )

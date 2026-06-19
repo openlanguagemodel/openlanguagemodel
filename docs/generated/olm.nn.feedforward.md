@@ -1,8 +1,8 @@
-# olm.nn.feedforward
+# `olm.nn.feedforward`
 
-### *class* olm.nn.feedforward.ClassicFFN(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+## Classes
 
-Bases: [`FeedForwardBase`](olm.nn.feedforward.base.md#olm.nn.feedforward.base.FeedForwardBase)
+### `ClassicFFN(embed_dim, hidden_dim=None, activation_fn=None, dropout=0.0, bias=True)`
 
 Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
 
@@ -10,110 +10,72 @@ Implements a position-wise feed-forward network consisting of two linear transfo
 with a non-linear activation function in between.
 
 Structure:
-: Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+    Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
 
-#### hidden_dim
+Attributes:
+    hidden_dim (int): Dimension of the inner hidden layer.
+    up_proj (Linear): Projection from embedding dim to hidden dim.
+    act (nn.Module): Activation function.
+    down_proj (Linear): Projection from hidden dim to embedding dim.
+    dropout (nn.Dropout): Dropout layer.
 
-Dimension of the inner hidden layer.
+#### Methods
 
-* **Type:**
-  int
+- `forward(self, x)`
+  Forward pass of the feedforward network.
 
-#### up_proj
+### `ClassicMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, activation_fn=None, dropout: float = 0.0, bias: bool = True, **kwargs)`
 
-Projection from embedding dim to hidden dim.
+Mixture of Experts version of ClassicFFN.
 
-* **Type:**
-  [Linear](olm.nn.md#olm.nn.Linear)
+Args:
+    embed_dim (int): Input and output dimension.
+    num_experts (int): Number of experts.
+    num_shared_experts (int): Number of shared experts.
+    top_k (int): Number of experts to route to.
+    hidden_dim (int, optional): Hidden dimension of each expert.
+    activation_fn (nn.Module, optional): Activation function for experts.
+    dropout (float, optional): Dropout probability.
+    bias (bool, optional): Whether to use bias in linear layers.
 
-#### act
-
-Activation function.
-
-* **Type:**
-  nn.Module
-
-#### down_proj
-
-Projection from hidden dim to embedding dim.
-
-* **Type:**
-  [Linear](olm.nn.md#olm.nn.Linear)
-
-#### dropout
-
-Dropout layer.
-
-* **Type:**
-  nn.Dropout
-
-#### forward(x)
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.FeedForwardBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+### `FeedForwardBase(embed_dim: int, **kwargs)`
 
 Abstract base class for feedforward networks in a transformer block.
 
-Defines the interface for FFNs/MLPs. Subclasses must implement the forward method.
+Defines the interface for FFNs/MLPs. Subclasses must implement the `forward` method.
 
-#### embed_dim
+Attributes:
+    embed_dim (int): The input and output dimension.
 
-The input and output dimension.
+#### Methods
 
-* **Type:**
-  int
+- `forward(self, x: torch.Tensor) -> torch.Tensor`
+  Forward pass of the feedforward network.
 
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.GeGLUFFN(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`FeedForwardBase`](olm.nn.feedforward.base.md#olm.nn.feedforward.base.FeedForwardBase)
+### `GeGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 4.0)`
 
 Feed-Forward Network using GeGLU activation.
 
 Implements: x = DownProj(GeGLU(UpProj(x))).
-UpProj expands to 2 \* hidden_dim to support splitting for the gate.
+UpProj expands to 2 * hidden_dim to support splitting for the gate.
 
-* **Parameters:**
-  * **embed_dim** (*int*) – Input dimension.
-  * **hidden_dim** (*int* *,* *optional*) – Hidden dimension. Defaults to 4 \* embed_dim if None.
-  * **dropout** (*float* *,* *optional*) – Dropout probability. Defaults to 0.0.
-  * **bias** (*bool* *,* *optional*) – Whether to usage bias in linear layers. Defaults to True.
-  * **ff_multiplier** (*float* *,* *optional*) – Expansion factor if hidden_dim is None. Defaults to 4.0.
+Args:
+    embed_dim (int): Input dimension.
+    hidden_dim (int, optional): Hidden dimension. Defaults to 4 * embed_dim if None.
+    dropout (float, optional): Dropout probability. Defaults to 0.0.
+    bias (bool, optional): Whether to usage bias in linear layers. Defaults to True.
+    ff_multiplier (float, optional): Expansion factor if hidden_dim is None. Defaults to 4.0.
 
-#### forward(x)
+#### Methods
 
-Forward pass of the feedforward network.
+- `forward(self, x)`
+  Forward pass of the feedforward network.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
+### `GeGLUMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 4.0, **kwargs)`
 
-### *class* olm.nn.feedforward.SwiGLUFFN(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+Mixture of Experts version of GeGLUFFN.
 
-Bases: [`FeedForwardBase`](olm.nn.feedforward.base.md#olm.nn.feedforward.base.FeedForwardBase)
+### `SwiGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5)`
 
 SwiGLU-based feed-forward network used in modern Transformers (e.g., LLaMA, PaLM).
 
@@ -121,63 +83,31 @@ This layer implements the gated linear unit with Swish (SiLU) activation, which 
 shown to improve performance over standard GELU/ReLU FFNs.
 
 Structure:
-: Input
-  -> Linear(embed_dim -> 2 \* hidden_dim) [Splits into Gate and Value]
-  -> SwiGLU(Gate \* SiLU(Value))
-  -> Linear(hidden_dim -> embed_dim)
-  -> Dropout
+    Input
+    -> Linear(embed_dim -> 2 * hidden_dim) [Splits into Gate and Value]
+    -> SwiGLU(Gate * SiLU(Value))
+    -> Linear(hidden_dim -> embed_dim)
+    -> Dropout
 
-* **Parameters:**
-  * **embed_dim** (*int*) – The dimension of the input and output.
-  * **hidden_dim** (*int* *,* *optional*) – The intermediate inner dimension.
-    If None, defaults to int(ff_multiplier \* embed_dim).
-  * **dropout** (*float* *,* *optional*) – Dropout probability. Defaults to 0.0.
-  * **bias** (*bool* *,* *optional*) – Whether to use bias in linear layers. Defaults to True.
-  * **ff_multiplier** (*float* *,* *optional*) – Multiplier for default hidden dimension. Defaults to 2.5 (commonly 8/3 for SwiGLU).
+Args:
+    embed_dim (int): The dimension of the input and output.
+    hidden_dim (int, optional): The intermediate inner dimension.
+        If None, defaults to `int(ff_multiplier * embed_dim)`.
+    dropout (float, optional): Dropout probability. Defaults to 0.0.
+    bias (bool, optional): Whether to use bias in linear layers. Defaults to True.
+    ff_multiplier (float, optional): Multiplier for default hidden dimension. Defaults to 2.5 (commonly 8/3 for SwiGLU).
 
-#### up_proj
+Attributes:
+    up_proj (Linear): Projects and splits input into gate and value parts.
+    act (SwiGLU): The activation function.
+    down_proj (Linear): Projects back to embedding dimension.
+    dropout (nn.Dropout): Dropout layer.
 
-Projects and splits input into gate and value parts.
+#### Methods
 
-* **Type:**
-  [Linear](olm.nn.md#olm.nn.Linear)
+- `forward(self, x)`
+  Forward pass of the feedforward network.
 
-#### act
+### `SwiGLUMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5, **kwargs)`
 
-The activation function.
-
-* **Type:**
-  [SwiGLU](olm.nn.activations.md#olm.nn.activations.SwiGLU)
-
-#### down_proj
-
-Projects back to embedding dimension.
-
-* **Type:**
-  [Linear](olm.nn.md#olm.nn.Linear)
-
-#### dropout
-
-Dropout layer.
-
-* **Type:**
-  nn.Dropout
-
-#### forward(x)
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### Modules
-
-| [`base`](olm.nn.feedforward.base.md#module-olm.nn.feedforward.base)                      |    |
-|------------------------------------------------------------------------------------------|----|
-| [`classic_ffn`](olm.nn.feedforward.classic_ffn.md#module-olm.nn.feedforward.classic_ffn) |    |
-| [`geglu_ffn`](olm.nn.feedforward.geglu_ffn.md#module-olm.nn.feedforward.geglu_ffn)       |    |
-| [`swiglu_ffn`](olm.nn.feedforward.swiglu_ffn.md#module-olm.nn.feedforward.swiglu_ffn)    |    |
+Mixture of Experts version of SwiGLUFFN.

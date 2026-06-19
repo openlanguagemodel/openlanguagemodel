@@ -1,12 +1,7 @@
-olm.train.callbacks.throughput\_cb
-==================================
+olm.train.callbacks.throughput_cb
+=================================
 
 .. automodule:: olm.train.callbacks.throughput_cb
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      ThroughputCallback
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

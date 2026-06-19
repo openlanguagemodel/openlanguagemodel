@@ -211,14 +211,27 @@ class DDPTrainer(Trainer):
             self._call_callbacks("on_epoch_begin", self, epoch)
 
             accumulated_loss = 0.0
+            accumulated_tokens = 0
+            accumulation_count = 0
+            accumulation_target = self.grad_accum_steps
             epoch_step = 0
+            try:
+                num_batches = len(self.dataloader)
+            except TypeError:
+                num_batches = None
 
             for step, (x, y) in enumerate(self.dataloader):
                 self._call_callbacks("on_batch_begin", self, step)
 
                 # Start timing
-                if step % self.grad_accum_steps == 0:
+                if accumulation_count == 0:
                     self.step_start_time = time.time()
+                    if num_batches is None:
+                        accumulation_target = self.grad_accum_steps
+                    else:
+                        accumulation_target = min(
+                            self.grad_accum_steps, num_batches - step
+                        )
 
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
@@ -226,12 +239,13 @@ class DDPTrainer(Trainer):
                 # Track tokens
                 batch_tokens = x.numel()
                 self.total_tokens_processed += batch_tokens
+                accumulated_tokens += batch_tokens
 
                 # Use no_sync context for gradient accumulation
                 # This prevents DDP from synchronizing gradients until the last micro-batch
                 context = (
                     self.model.no_sync()
-                    if is_distributed() and (step + 1) % self.grad_accum_steps != 0
+                    if is_distributed() and accumulation_count + 1 < accumulation_target
                     else torch.enable_grad()
                 )
 
@@ -240,18 +254,19 @@ class DDPTrainer(Trainer):
                         logits = self.model(x)
                         loss = self.loss(logits, y)
                         loss_val = loss.item()
-                        loss = loss / self.grad_accum_steps
+                        loss = loss / accumulation_target
 
                     self.scaler.scale(loss).backward()
 
                 accumulated_loss += loss_val
+                accumulation_count += 1
                 self.training_state["current_loss"] = loss_val
                 self.training_state["accumulated_loss"] = accumulated_loss
 
                 self._call_callbacks("on_batch_end", self, step, loss_val)
 
                 # Optimizer step after gradient accumulation
-                if (step + 1) % self.grad_accum_steps == 0:
+                if accumulation_count == accumulation_target:
                     self._call_callbacks("on_step_begin", self, self.global_step)
 
                     # Gradient clipping
@@ -270,7 +285,7 @@ class DDPTrainer(Trainer):
                     if self.scheduler is not None:
                         self.scheduler.step()
 
-                    avg_loss = accumulated_loss / self.grad_accum_steps
+                    avg_loss = accumulated_loss / accumulation_target
                     self.global_step += 1
 
                     # Calculate metrics
@@ -283,7 +298,7 @@ class DDPTrainer(Trainer):
                         if self.step_start_time
                         else 0.0
                     )
-                    tokens_in_step = x.size(0) * x.size(1) * self.grad_accum_steps
+                    tokens_in_step = accumulated_tokens
                     tokens_per_sec = (
                         tokens_in_step / step_time if step_time > 0 else 0.0
                     )
@@ -294,6 +309,7 @@ class DDPTrainer(Trainer):
                         loss_tensor = torch.tensor([avg_loss], device=self.device)
                         all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
                         avg_loss = loss_tensor.item()
+                        perplexity = math.exp(min(avg_loss, 20))
 
                         # Sum throughput across all ranks
                         throughput_tensor = torch.tensor(
@@ -313,10 +329,12 @@ class DDPTrainer(Trainer):
                         }
                     )
 
-                    # Log only on rank 0
-                    if self.global_step % log_interval == 0 and is_main_process():
+                    if is_main_process():
                         losses.append(avg_loss)
                         self.losses.append(avg_loss)
+
+                    # Log only on rank 0
+                    if self.global_step % log_interval == 0 and is_main_process():
                         print(
                             f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
                             f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
@@ -327,8 +345,18 @@ class DDPTrainer(Trainer):
                         "on_step_end", self, self.global_step, avg_loss
                     )
 
+                    if self._should_stop_training():
+                        self._call_callbacks("on_epoch_end", self, epoch)
+                        self._call_callbacks("on_train_end", self)
+                        if is_main_process():
+                            self.losses = losses
+                            self._print_training_summary()
+                        return losses
+
                     # Reset accumulated loss
                     accumulated_loss = 0.0
+                    accumulated_tokens = 0
+                    accumulation_count = 0
                     epoch_step += 1
 
                     # Check stopping conditions
@@ -336,6 +364,7 @@ class DDPTrainer(Trainer):
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
                         if is_main_process():
+                            self.losses = losses
                             self._print_training_summary()
                         return losses
 
@@ -365,12 +394,16 @@ class DDPTrainer(Trainer):
                 try:
                     dataset_size = len(self.dataloader)
                     self.total_steps = epochs * dataset_size
-                except:
+                except TypeError:
                     self.total_steps = epochs * 10000
 
         # Calculate warmup steps
         if self.warmup_steps is None:
-            self.warmup_steps = min(max(int(0.1 * self.total_steps), 100), 5000)
+            self.warmup_steps = min(
+                max(int(0.1 * self.total_steps), 1),
+                5000,
+                self.total_steps,
+            )
 
         self.scheduler = WarmupCosineScheduler(
             self.optimizer,

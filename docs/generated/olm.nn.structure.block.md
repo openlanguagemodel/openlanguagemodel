@@ -1,39 +1,30 @@
-# olm.nn.structure.block
+# `olm.nn.structure.block`
 
-### Classes
+## Functions
 
-| [`Block`](#olm.nn.structure.block.Block)(\*args, \*\*kwargs)   | Lightweight sequential container for composable submodules.   |
-|----------------------------------------------------------------|---------------------------------------------------------------|
+### `load(path: str) -> ForwardRef('Block') | tuple`
 
-### *class* olm.nn.structure.block.Block(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `load_block(path: str) -> ForwardRef('Block') | tuple`
 
-Bases: `Module`
+### `load_model(path: str) -> ForwardRef('Block') | tuple`
+
+## Classes
+
+### `Block(blocks: List[torch.nn.modules.module.Module])`
 
 Lightweight sequential container for composable submodules.
 
-Similar to `nn.Sequential`, but exposes the underlying list for
+Similar to ``nn.Sequential``, but exposes the underlying list for
 inspection or dynamic manipulation by higher-level builders.
 
-* **Parameters:**
-  **blocks** – Ordered list of modules applied to the input in sequence.
+Args:
+    blocks: Ordered list of modules applied to the input in sequence.
 
-#### blocks
+Attributes:
+    blocks: ModuleList storing the ordered blocks.
 
-ModuleList storing the ordered blocks.
+#### Methods
 
-#### forward(x: torch.Tensor) → torch.Tensor
-
-Apply each block to the input in sequence.
-
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor after all blocks have been applied.
-
-### *class* olm.nn.structure.block.Union
-
-Bases: `object`
-
-Represent a union type
-
-E.g. for int | str
+- `forward(self, x: torch.Tensor) -> torch.Tensor`
+  Apply each block to the input in sequence.
+- `save(self, path: str, tokenizer: olm.data.tokenization.base.TokenizerBase = None) -> None`

@@ -1,12 +1,7 @@
-olm.nn.feedforward.classic\_ffn
-===============================
+olm.nn.feedforward.classic_ffn
+==============================
 
 .. automodule:: olm.nn.feedforward.classic_ffn
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      ClassicFFN
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

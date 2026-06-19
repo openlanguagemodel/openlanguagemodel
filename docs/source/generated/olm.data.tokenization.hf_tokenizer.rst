@@ -1,12 +1,7 @@
-olm.data.tokenization.hf\_tokenizer
-===================================
+olm.data.tokenization.hf_tokenizer
+==================================
 
 .. automodule:: olm.data.tokenization.hf_tokenizer
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      HFTokenizer
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,12 +1,7 @@
-olm.train.callbacks.checkpoint\_cb
-==================================
+olm.train.callbacks.checkpoint_cb
+=================================
 
 .. automodule:: olm.train.callbacks.checkpoint_cb
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      CheckpointCallback
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,12 +1,7 @@
-olm.nn.feedforward.swiglu\_ffn
-==============================
+olm.nn.feedforward.swiglu_ffn
+=============================
 
 .. automodule:: olm.nn.feedforward.swiglu_ffn
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      SwiGLUFFN
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

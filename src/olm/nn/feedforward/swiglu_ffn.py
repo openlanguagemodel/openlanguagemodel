@@ -20,7 +20,7 @@ class SwiGLUFFN(FeedForwardBase):
 
     Args:
         embed_dim (int): The dimension of the input and output.
-        hidden_dim (int, optional): The intermediate inner dimension. 
+        hidden_dim (int, optional): The intermediate inner dimension.
             If None, defaults to `int(ff_multiplier * embed_dim)`.
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         bias (bool, optional): Whether to use bias in linear layers. Defaults to True.

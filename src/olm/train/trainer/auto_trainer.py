@@ -152,9 +152,10 @@ def AutoTrainer(
         ... )
     """
     # Parse device configuration
+    requested_device = device.lower() if isinstance(device, str) else None
     if isinstance(device, str):
         device_config = parse_device_string(device, model=model)
-        if device == "auto" or device.endswith(":auto"):
+        if requested_device in {"auto", "cuda:auto"}:
             # Auto mode: determine strategy
             device_config = determine_strategy(
                 device_config,
@@ -201,6 +202,12 @@ def AutoTrainer(
     if device_config.device_type == "cuda":
         if is_distributed():
             trainer_device = f"cuda:{get_local_rank()}"
+        elif (
+            requested_device is not None
+            and requested_device.startswith("cuda")
+            and requested_device != "cuda:auto"
+        ):
+            trainer_device = requested_device
         else:
             trainer_device = "cuda"
     else:

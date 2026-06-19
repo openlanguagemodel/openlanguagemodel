@@ -3,6 +3,8 @@ Validation callback for running validation during training.
 """
 
 import torch
+from typing import Optional
+
 from olm.train.trainer import TrainerCallback
 
 
@@ -21,7 +23,7 @@ class ValidationCallback(TrainerCallback):
         self,
         val_dataloader,
         eval_every: int = 500,
-        device: str = "cuda",
+        device: Optional[str] = None,
         use_amp: bool = True,
     ):
         self.val_dataloader = val_dataloader
@@ -56,12 +58,15 @@ class ValidationCallback(TrainerCallback):
         trainer.model.eval()
         total_loss = 0.0
         num_batches = 0
+        device = self.device or trainer.device
+        device_type = "cuda" if "cuda" in str(device) else "cpu"
+        amp_enabled = self.use_amp and device_type == "cuda"
 
         for x, y in self.val_dataloader:
-            x = x.to(self.device, non_blocking=True)
-            y = y.to(self.device, non_blocking=True)
+            x = x.to(device, non_blocking=True)
+            y = y.to(device, non_blocking=True)
 
-            with torch.amp.autocast("cuda", enabled=self.use_amp):
+            with torch.amp.autocast(device_type, enabled=amp_enabled):
                 logits = trainer.model(x)
                 loss = trainer.loss(logits, y)
 

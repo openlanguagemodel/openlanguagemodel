@@ -1,13 +1,7 @@
-olm.data.datasets.hf\_dataset
-=============================
+olm.data.datasets.hf_dataset
+============================
 
 .. automodule:: olm.data.datasets.hf_dataset
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      FineWebEduDataset
-      HuggingFaceTextDataset
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

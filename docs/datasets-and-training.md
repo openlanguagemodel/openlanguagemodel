@@ -6,11 +6,8 @@ The `olm` library is designed to handle massive amounts of text data without usi
 
 <h3>1. Preparing Your Data</h3>
 
-To start training, you first need to tell the library where your text is. We have three main ways to do this:
+To start training, you first need to tell the library where your text is. The common paths are:
 
-- **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
-- **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
-- **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
 - **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
 - **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
 - **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
@@ -25,16 +22,11 @@ dataset = LocalTextDataset(
     location="./my_text_folder",
     tokenizer=tk,
     context_length=1024,
-    location="./my_text_folder",
-    tokenizer=tk,
-    context_length=1024,
     shuffle=True
 )
 
 # 2. Or use the built-in FineWeb shortcut
 dataset = FineWebEduDataset(
-    tokenizer=tk,
-    subset="sample-10BT",
     tokenizer=tk,
     subset="sample-10BT",
     context_length=2048
@@ -46,9 +38,7 @@ Shuffling mixes up your data so the model doesn't see the same examples in the s
 
 > [!TIP]
 > **Advanced: Shuffling & Sharding**
-> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000).
->
-> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000).
+> For **local files**, we mix the order of the file names. For **web datasets**, we keep a buffer of streaming text and shuffle that buffer.
 >
 > If you use multiple GPUs or workers, the library automatically handles **sharding**: it assigns specific pieces of the dataset to each worker so they never process the same data at the same time.
 
@@ -440,7 +430,10 @@ from olm.train import AutoTrainer
 
 trainer = AutoTrainer(
     model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
     device="auto",  # Automatically configures for distributed
+    context_length=2048,
     ...
 )
 trainer.train(epochs=10)
@@ -468,14 +461,17 @@ Fine-tune DDP or FSDP parameters:
 ```python
 trainer = AutoTrainer(
     model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
     device="auto",
+    context_length=2048,
+    preset="memory_efficient",
     # DDP parameters (used if DDP is selected)
     ddp_find_unused_parameters=False,
     ddp_broadcast_buffers=True,
     ddp_bucket_cap_mb=25,
     # FSDP parameters (used if FSDP is selected)
     fsdp_min_num_params=100_000_000,  # 100M params for auto-wrap
-    fsdp_cpu_offload=True,  # Override preset
     fsdp_backward_prefetch="BACKWARD_PRE",
     ...
 )
@@ -588,9 +584,9 @@ Monitor your model's gradients and weights with histograms:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    log_gradients=True,      # Log gradient histograms
-    gradient_log_freq=100,   # Log every 100 steps
-    watch_model=True         # Use wandb.watch() for detailed tracking
+    log_gradients=True,
+    watch_model=True,
+    watch_freq=100,
 )
 ```
 
@@ -601,9 +597,7 @@ Automatically save and version your checkpoints:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    log_checkpoints=True,           # Save checkpoints as artifacts
-    checkpoint_interval=1000,        # Save every 1000 steps
-    checkpoint_dir="./checkpoints"   # Where to save locally
+    log_model=True,
 )
 ```
 
@@ -614,11 +608,10 @@ Get notified when metrics cross thresholds:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    enable_alerts=True,
     alert_thresholds={
-        "loss": 5.0,              # Alert if loss > 5.0
-        "gradient_norm": 10.0,    # Alert if gradients explode
-    }
+        "loss": {"max": 5.0},
+        "learning_rate": {"min": 1e-6},
+    },
 )
 ```
 
@@ -629,10 +622,10 @@ Log model predictions for qualitative analysis:
 ```python
 # During training, log predictions periodically
 wandb_callback.log_predictions(
+    step=trainer.global_step,
     inputs=["The quick brown", "Once upon a time"],
     predictions=["fox jumped over", "there was a"],
     targets=["fox jumped", "there was"],
-    step=trainer.step
 )
 ```
 

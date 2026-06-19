@@ -1,12 +1,7 @@
-olm.nn.torch\_nn\_wrappers
-==========================
+olm.nn.torch_nn_wrappers
+========================
 
 .. automodule:: olm.nn.torch_nn_wrappers
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Linear
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -9,11 +9,11 @@ from olm.nn.blocks import OutputHead
 class GPT2Block(Block):
     """
     A single Transformer block for GPT-2.
-    
+
     Structure:
         x = x + Attn(LN(x))
         x = x + FFN(LN(x))
-        
+
     Args:
         embed_dim (int): Model dimension.
         num_heads (int): Number of attention heads.
@@ -38,7 +38,7 @@ class GPT2Model(Block):
     def __init__(self, vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1):
         # GPT-2 Logic:
         # Embedding, PositionalEmbedding, Stack of Blocks, OutputHead(LN + Linear)
-        
+
         super().__init__([
             Block([
                 Embedding(vocab_size, embed_dim),
@@ -47,14 +47,14 @@ class GPT2Model(Block):
             Repeat(lambda: GPT2Block(embed_dim, num_heads, dropout), num_layers),
             OutputHead(embed_dim, vocab_size)
         ])
-        
+
         # Tie weights: Output head linear = Embedding
         # Structure:
         #   self.blocks[0] -> Block([Embedding, PosEmbedding])
         #     -> blocks[0] is Embedding wrapper
         #   self.blocks[2] -> OutputHead([LayerNorm, Linear])
         #     -> blocks[1] is Linear
-        
+
         # Accessing the Embedding wrapper's internal embedding module weight
         self.blocks[2].blocks[1].weight = self.blocks[0].blocks[0].embedding.weight
 

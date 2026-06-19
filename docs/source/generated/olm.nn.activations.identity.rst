@@ -2,11 +2,6 @@ olm.nn.activations.identity
 ===========================
 
 .. automodule:: olm.nn.activations.identity
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Identity
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:
