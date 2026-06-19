@@ -34,6 +34,14 @@ class GPT2Block(Block):
 class GPT2Model(Block):
     """
     Base class for GPT-2 models.
+
+    Structure:
+        Token embedding + learned positional embedding -> GPT2Block x N ->
+        tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
     def __init__(self, vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True):
         token_embedding = Embedding(vocab_size, embed_dim)

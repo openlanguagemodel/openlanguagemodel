@@ -1,9 +1,15 @@
 # `olm.nn.attention.flash`
 
+Source: [`src/olm/nn/attention/flash.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L1)
+
 ## Classes
 
 ### `FlashAttention(embed_dim: int, num_heads: int, dropout: float = 0.0, causal: bool = False, use_flash_attn: bool | None = None)`
 
+**Bases:** `olm.nn.attention.base.AttentionBase`
+
+Source: [`src/olm/nn/attention/flash.py:12`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L12)
+
 Flash Attention implementation for efficient attention computation.
 
 Uses PyTorch's native scaled_dot_product_attention (which includes Flash Attention 2
@@ -35,15 +41,46 @@ Example:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention using Flash Attention when available.
-- `extra_repr(self) -> str`
-  String representation of the module.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass with Flash Attention.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L73)
+
+Computes attention using Flash Attention when available.
+
+Args:
+    q: Query tensor [batch, heads, seq, head_dim]
+    k: Key tensor [batch, heads, seq, head_dim]
+    v: Value tensor [batch, heads, seq, head_dim]
+    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+Returns:
+    Attention output [batch, heads, seq, head_dim]
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/attention/flash.py:206`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L206)
+
+String representation of the module.
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:177`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L177)
+
+Forward pass with Flash Attention.
+
+Args:
+    x: Input tensor [batch, seq_len, embed_dim]
+    mask: Optional attention mask
+
+Returns:
+    Output tensor [batch, seq_len, embed_dim]
 
 ### `FlashAttentionwithRoPE(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False, bias: bool = True, rope_theta: float = 10000.0, use_flash_attn: bool | None = None)`
 
+**Bases:** `olm.nn.attention.base.AttentionwithRoPEBase`
+
+Source: [`src/olm/nn/attention/flash.py:215`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L215)
+
 Flash Attention implementation for efficient attention computation.
 
 Uses PyTorch's native scaled_dot_product_attention (which includes Flash Attention 2
@@ -75,9 +112,36 @@ Example:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention using Flash Attention when available.
-- `extra_repr(self) -> str`
-  String representation of the module.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass with Flash Attention and RoPE.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:286`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L286)
+
+Computes attention using Flash Attention when available.
+
+Args:
+    q: Query tensor [batch, heads, seq, head_dim]
+    k: Key tensor [batch, heads, seq, head_dim]
+    v: Value tensor [batch, heads, seq, head_dim]
+    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+Returns:
+    Attention output [batch, heads, seq, head_dim]
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/attention/flash.py:428`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L428)
+
+String representation of the module.
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:390`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L390)
+
+Forward pass with Flash Attention and RoPE.
+
+Args:
+    x: Input tensor [batch, seq_len, embed_dim]
+    mask: Optional attention mask
+
+Returns:
+    Output tensor [batch, seq_len, embed_dim]

@@ -108,6 +108,14 @@ class Gemma2Block(Block):
 class Gemma2Model(Block):
     """
     Base class for Gemma 2 models.
+
+    Structure:
+        Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
+        tied OutputHead -> optional final logit softcap.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
 
     def __init__(

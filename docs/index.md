@@ -5,6 +5,7 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 ## Start Here
 
 - [`getting-started.md`](getting-started.md): install OLM and run a small local training loop.
+- [`installation.md`](installation.md): supported Python versions, extras, dependency ranges, and release-build commands.
 - [`datasets-and-training.md`](datasets-and-training.md): use local text, FineWeb-Edu, `Trainer`, `AutoTrainer`, callbacks, checkpointing, DDP, and FSDP.
 - [`architecture.md`](architecture.md): understand `Block`, `Residual`, `Repeat`, `Parallel`, and how OLM assembles custom models.
 - [`api.md`](api.md): generated API reference with signatures, docstrings, and source-defined methods.
@@ -13,6 +14,7 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 
 | Task | Where to go |
 |---|---|
+| Install OLM or choose extras | [`installation.md`](installation.md) |
 | Train from local `.txt` files | [`getting-started.md`](getting-started.md) |
 | Stream FineWeb-Edu | [`datasets-and-training.md`](datasets-and-training.md) |
 | Let OLM pick CPU/GPU/DDP/FSDP | [`datasets-and-training.md#6-automatic-trainer-selection-autotrainer`](datasets-and-training.md#6-automatic-trainer-selection-autotrainer) |
@@ -36,4 +38,4 @@ Each model family is implemented as source code, not hidden configuration:
 
 ## Project Direction
 
-The v2.2 work is focused on stabilization and polish: bug fixes, model-configuration checks, API-reference quality, docs/website integration, SEO, roadmap cleanup, and release readiness. New features are intentionally out of scope for v2.2.
+v2.2 is focused on stabilization and polish: bug fixes, model-configuration checks, API-reference quality, docs/website integration, SEO foundations, roadmap cleanup, and release readiness. New research features are intentionally out of scope for v2.2.

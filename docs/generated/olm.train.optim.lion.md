@@ -1,8 +1,14 @@
 # `olm.train.optim.lion`
 
+Source: [`src/olm/train/optim/lion.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L1)
+
 ## Classes
 
 ### `Lion(params: Iterable, lr: float = 0.0001, betas: Tuple[float, float] = (0.9, 0.99), weight_decay: float = 0.0, use_triton: bool = False)`
+
+**Bases:** `olm.train.optim.base.OptimizerBase`
+
+Source: [`src/olm/train/optim/lion.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L7)
 
 Lion optimizer (EvoLved Sign Momentum).
 
@@ -33,7 +39,24 @@ Example:
 
 #### Methods
 
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized tensors to zero.
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py:67`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py#L67)
+
+Performs a single optimization step.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/lion.py:126`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L126)
+
+Sets gradients of all optimized tensors to zero.
+
+Args:
+    set_to_none: instead of setting to zero, set the grads to None.
+        This is more memory efficient and can slightly improve performance.

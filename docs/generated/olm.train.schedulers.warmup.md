@@ -1,10 +1,16 @@
 # `olm.train.schedulers.warmup`
 
+Source: [`src/olm/train/schedulers/warmup.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L1)
+
 Warmup learning rate scheduler.
 
 ## Classes
 
 ### `WarmupCosineScheduler(optimizer, warmup_steps: int, total_steps: int, min_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:62`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L62)
 
 Combined warmup and cosine annealing scheduler.
 
@@ -32,10 +38,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate with warmup and cosine decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:102`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L102)
+
+Compute learning rate with warmup and cosine decay.
 
 ### `WarmupLR(optimizer, warmup_steps: int, start_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L6)
 
 Learning rate warmup scheduler.
 
@@ -57,5 +70,8 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate during warmup.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L38)
+
+Compute learning rate during warmup.

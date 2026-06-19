@@ -85,7 +85,11 @@ class Llama3Model(Block):
         behavior may differ from the released Meta checkpoints.
 
     Structure:
-        Embedding -> [Llama3Block] x N -> RMSNorm -> Linear Head
+        Embedding -> [Llama3Block] x N -> RMSNorm -> tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
 
     def __init__(

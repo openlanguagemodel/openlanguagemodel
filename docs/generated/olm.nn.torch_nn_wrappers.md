@@ -1,5 +1,7 @@
 # `olm.nn.torch_nn_wrappers`
 
+Source: [`src/olm/nn/torch_nn_wrappers.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/torch_nn_wrappers.py#L1)
+
 Thin wrappers around torch.nn modules.
 
 Example::
@@ -11,6 +13,10 @@ Example::
 ## Classes
 
 ### `Linear(*args, **kwargs)`
+
+**Bases:** `Linear`
+
+Source: [`src/olm/nn/torch_nn_wrappers.py:12`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/torch_nn_wrappers.py#L12)
 
 Applies an affine linear transformation to the incoming data: :math:`y = xA^T + b`.
 
@@ -50,9 +56,20 @@ Examples::
 
 #### Methods
 
-- `extra_repr(self) -> str`
-  Return the extra representation of the module.
-- `forward(self, x)`
-  Runs the forward pass.
-- `reset_parameters(self) -> None`
-  Resets parameters based on their initialization used in ``__init__``.
+##### `extra_repr(self) -> str`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/nn/modules/linear.py:136`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/nn/modules/linear.py#L136)
+
+Return the extra representation of the module.
+
+##### `forward(self, x)`
+
+Source: [`src/olm/nn/torch_nn_wrappers.py:16`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/torch_nn_wrappers.py#L16)
+
+Runs the forward pass.
+
+##### `reset_parameters(self) -> None`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/nn/modules/linear.py:117`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/nn/modules/linear.py#L117)
+
+Resets parameters based on their initialization used in ``__init__``.

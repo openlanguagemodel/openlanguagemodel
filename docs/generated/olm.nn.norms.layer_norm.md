@@ -1,8 +1,14 @@
 # `olm.nn.norms.layer_norm`
 
+Source: [`src/olm/nn/norms/layer_norm.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L1)
+
 ## Classes
 
 ### `LayerNorm(d_model: int, eps: float = 1e-05, elementwise_affine: bool = True, device: torch.device | None = None, dtype: torch.dtype | None = None)`
+
+**Bases:** `olm.nn.norms.base.NormBase`
+
+Source: [`src/olm/nn/norms/layer_norm.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L7)
 
 Layer Normalization layer.
 
@@ -21,5 +27,14 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor) -> torch.Tensor`
-  Forward pass of LayerNorm.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/norms/layer_norm.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L36)
+
+Forward pass of LayerNorm.
+
+Args:
+    x (torch.Tensor): Input tensor of shape (batch_size, sequence_length, d_model).
+
+Returns:
+    torch.Tensor: Normalized output tensor of the same shape.

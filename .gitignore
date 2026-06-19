@@ -183,6 +183,17 @@ claude_bkp/
 website/.next/
 website/node_modules/
 website/out/
+website/public/docs-assets/
+website/tsconfig.tsbuildinfo
+
+# Keep website source helpers visible despite the Python template's broad lib/ rule.
+!website/app/lib/
+!website/app/lib/**
+
+# Website build/dependency output
+website/.next/
+website/node_modules/
+website/out/
 website/tsconfig.tsbuildinfo
 
 # Keep website source helpers visible despite the Python template's broad lib/ rule.

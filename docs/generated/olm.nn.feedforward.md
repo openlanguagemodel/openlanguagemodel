@@ -1,8 +1,14 @@
 # `olm.nn.feedforward`
 
+Source: [`src/olm/nn/feedforward/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/__init__.py#L1)
+
 ## Classes
 
 ### `ClassicFFN(embed_dim, hidden_dim=None, activation_fn=None, dropout=0.0, bias=True)`
+
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/classic_ffn.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_ffn.py#L7)
 
 Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
 
@@ -21,10 +27,23 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x)`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/classic_ffn.py:51`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_ffn.py#L51)
+
+Apply the position-wise feed-forward network.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
 ### `ClassicMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, activation_fn=None, dropout: float = 0.0, bias: bool = True, **kwargs)`
+
+**Bases:** `olm.nn.feedforward.moe_base.MoEFeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/classic_moe.py:4`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_moe.py#L4)
 
 Mixture of Experts version of ClassicFFN.
 
@@ -38,7 +57,25 @@ Args:
     dropout (float, optional): Dropout probability.
     bias (bool, optional): Whether to use bias in linear layers.
 
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `MoEFeedForwardBase`)
+
+Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/moe_base.py#L100)
+
+Forward pass with MoE routing.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
 ### `FeedForwardBase(embed_dim: int, **kwargs)`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/feedforward/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/base.py#L5)
 
 Abstract base class for feedforward networks in a transformer block.
 
@@ -49,10 +86,23 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor) -> torch.Tensor`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/base.py:25`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/base.py#L25)
+
+Forward pass of the feedforward network.
+
+Args:
+    x (torch.Tensor): Input tensor of shape (batch, seq_len, embed_dim).
+
+Returns:
+    torch.Tensor: Output tensor of shape (batch, seq_len, embed_dim).
 
 ### `GeGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 4.0)`
+
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/geglu_ffn.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_ffn.py#L8)
 
 Feed-Forward Network using GeGLU activation.
 
@@ -68,14 +118,45 @@ Args:
 
 #### Methods
 
-- `forward(self, x)`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/geglu_ffn.py:54`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_ffn.py#L54)
+
+Apply GeGLU feed-forward projection.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
 ### `GeGLUMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 4.0, **kwargs)`
 
+**Bases:** `olm.nn.feedforward.moe_base.MoEFeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/geglu_moe.py:4`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_moe.py#L4)
+
 Mixture of Experts version of GeGLUFFN.
 
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `MoEFeedForwardBase`)
+
+Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/moe_base.py#L100)
+
+Forward pass with MoE routing.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
 ### `SwiGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5)`
+
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L8)
 
 SwiGLU-based feed-forward network used in modern Transformers (e.g., LLaMA, PaLM).
 
@@ -105,9 +186,36 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x)`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:68`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L68)
+
+Apply SwiGLU feed-forward projection.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
 ### `SwiGLUMoEFFN(embed_dim: int, num_experts: int = 8, num_shared_experts: int = 0, top_k: int = 2, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5, **kwargs)`
 
+**Bases:** `olm.nn.feedforward.moe_base.MoEFeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/swiglu_moe.py:4`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_moe.py#L4)
+
 Mixture of Experts version of SwiGLUFFN.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `MoEFeedForwardBase`)
+
+Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/moe_base.py#L100)
+
+Forward pass with MoE routing.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.

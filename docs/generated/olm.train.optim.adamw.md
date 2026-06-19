@@ -1,8 +1,14 @@
 # `olm.train.optim.adamw`
 
+Source: [`src/olm/train/optim/adamw.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/adamw.py#L1)
+
 ## Classes
 
 ### `AdamW(params, lr: float = 0.001, betas: Tuple[float, float] = (0.9, 0.999), eps: float = 1e-08, weight_decay: float = 0.01, amsgrad: bool = False, maximize: bool = False, fused: bool | None = None)`
+
+**Bases:** `AdamW`
+
+Source: [`src/olm/train/optim/adamw.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/adamw.py#L7)
 
 AdamW optimizer with decoupled weight decay regularization.
 

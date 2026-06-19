@@ -9,7 +9,7 @@ OLM gives you:
 - local and Hugging Face dataset streams in `olm.data`
 - single-device, DDP, FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
 
-[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
+[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
 
 ## Why OLM
 
@@ -130,6 +130,8 @@ See [`docs/api.md`](docs/api.md) for the generated API reference and [`examples/
 
 ## Installation
 
+Use Python 3.10, 3.11, or 3.12.
+
 ```bash
 git clone https://github.com/openlanguagemodel/openlanguagemodel.git
 cd openlanguagemodel
@@ -143,8 +145,19 @@ pip install -e ".[dev]"
 pytest tests
 ```
 
+Optional extras:
+
+```bash
+pip install -e ".[wandb]"  # Weights & Biases logging
+pip install -e ".[docs]"   # documentation tooling
+pip install -e ".[flash]"  # external flash-attn package, when needed
+```
+
+See [`docs/installation.md`](docs/installation.md) for dependency and release-build details.
+
 ## Documentation Flow
 
+- Install from [`docs/installation.md`](docs/installation.md)
 - Start with [`docs/getting-started.md`](docs/getting-started.md)
 - Review architecture concepts in [`docs/architecture.md`](docs/architecture.md)
 - Train from examples in [`examples/`](examples/)
@@ -153,7 +166,7 @@ pytest tests
 
 ## Project Status
 
-OLM v2.1 focuses on a stable PyTorch-native training path with model-family coverage, streaming datasets, AMP, checkpointing, DDP, FSDP, and AutoTrainer. The v2.2 work is focused on stabilization, documentation, website/SEO polish, API-reference quality, and release readiness rather than new features.
+OLM v2.2 is the stabilization and release-readiness pass: tied output embeddings by default, model-family smoke coverage, AutoTrainer, streaming datasets, AMP, checkpointing, DDP/FSDP paths, clearer installation docs, and a stronger generated API reference. New research features are intentionally deferred to later roadmap milestones.
 
 ## Citation
 

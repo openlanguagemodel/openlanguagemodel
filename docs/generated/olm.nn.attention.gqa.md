@@ -1,8 +1,14 @@
 # `olm.nn.attention.gqa`
 
+Source: [`src/olm/nn/attention/gqa.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/gqa.py#L1)
+
 ## Classes
 
 ### `GroupedQueryAttention(embed_dim: int, num_heads: int, num_kv_heads: int, max_seq_len: int, head_dim: int | None = None, dropout: float = 0.0, rope_theta: float = 10000.0, use_bias: bool = False, qkv_bias: bool = False, use_qk_norm: bool = False, rms_norm_eps: float = 1e-06, attention_scale: float | None = None, attn_logit_softcap: float | None = None)`
+
+**Bases:** `Module`
+
+Source: [`src/olm/nn/attention/gqa.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/gqa.py#L11)
 
 Grouped Query Attention (GQA) with Rotary Positional Embeddings.
 
@@ -24,5 +30,16 @@ Args:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass of Grouped Query Attention.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/gqa.py:104`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/gqa.py#L104)
+
+Forward pass of Grouped Query Attention.
+
+Args:
+    x (torch.Tensor): Input tensor of shape [batch, seq_len, embed_dim].
+    mask (torch.Tensor, optional): Attention mask of shape [batch, 1, seq_len, seq_len]
+        or [batch, seq_len, seq_len]. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor of shape [batch, seq_len, embed_dim].

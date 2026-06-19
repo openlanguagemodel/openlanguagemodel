@@ -82,7 +82,11 @@ class Llama2Model(Block):
     Base class for Llama 2 models.
 
     Structure:
-        Embedding -> [Llama2Block] x N -> RMSNorm -> Linear Head
+        Embedding -> [Llama2Block] x N -> RMSNorm -> tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
 
     def __init__(

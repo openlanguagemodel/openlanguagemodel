@@ -1,10 +1,16 @@
 # `olm.train.callbacks.validation_cb`
 
+Source: [`src/olm/train/callbacks/validation_cb.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L1)
+
 Validation callback for running validation during training.
 
 ## Classes
 
 ### `ValidationCallback(val_dataloader, eval_every: int = 500, device: str | None = None, use_amp: bool = True)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L11)
 
 Callback to perform validation at specified intervals.
 
@@ -16,5 +22,8 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Run validation after each optimization step if needed.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L36)
+
+Run validation after each optimization step if needed.

@@ -1,8 +1,14 @@
 # `olm.train.optim`
 
+Source: [`src/olm/train/optim/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/__init__.py#L1)
+
 ## Classes
 
 ### `AdamW(params, lr: float = 0.001, betas: Tuple[float, float] = (0.9, 0.999), eps: float = 1e-08, weight_decay: float = 0.01, amsgrad: bool = False, maximize: bool = False, fused: bool | None = None)`
+
+**Bases:** `AdamW`
+
+Source: [`src/olm/train/optim/adamw.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/adamw.py#L7)
 
 AdamW optimizer with decoupled weight decay regularization.
 
@@ -38,6 +44,10 @@ Example:
 
 ### `Lion(params: Iterable, lr: float = 0.0001, betas: Tuple[float, float] = (0.9, 0.99), weight_decay: float = 0.0, use_triton: bool = False)`
 
+**Bases:** `olm.train.optim.base.OptimizerBase`
+
+Source: [`src/olm/train/optim/lion.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L7)
+
 Lion optimizer (EvoLved Sign Momentum).
 
 Implements the Lion algorithm from "Symbolic Discovery of Optimization Algorithms"
@@ -67,12 +77,33 @@ Example:
 
 #### Methods
 
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized tensors to zero.
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py:67`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py#L67)
+
+Performs a single optimization step.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/lion.py:126`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L126)
+
+Sets gradients of all optimized tensors to zero.
+
+Args:
+    set_to_none: instead of setting to zero, set the grads to None.
+        This is more memory efficient and can slightly improve performance.
 
 ### `OptimizerBase(params: collections.abc.Iterable[torch.Tensor] | collections.abc.Iterable[dict[str, Any]] | collections.abc.Iterable[tuple[str, torch.Tensor]], defaults: dict[str, typing.Any]) -> None`
+
+**Bases:** `Optimizer`, `ABC`
+
+Source: [`src/olm/train/optim/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L8)
 
 Abstract base class for all optimizers in the OLM framework.
 
@@ -87,18 +118,70 @@ Subclasses must implement the step() method to define the optimization logic.
 
 #### Methods
 
-- `extra_repr(self) -> str`
-  String representation of the optimizer for debugging.
-- `load_state_dict(self, state_dict: Dict[str, Any])`
-  Loads the optimizer state.
-- `state_dict(self) -> Dict[str, Any]`
-  Returns the state of the optimizer as a dict.
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized tensors to zero or None.
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/train/optim/base.py:74`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L74)
+
+String representation of the optimizer for debugging.
+
+Override this in subclasses to provide useful information.
+
+##### `load_state_dict(self, state_dict: Dict[str, Any])`
+
+Source: [`src/olm/train/optim/base.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L64)
+
+Loads the optimizer state.
+
+Args:
+    state_dict: optimizer state. Should be an object returned
+        from a call to state_dict().
+
+##### `state_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/optim/base.py:48`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L48)
+
+Returns the state of the optimizer as a dict.
+
+It contains two entries:
+
+- ``state``: dict holding current optimization state. Its content
+  differs between optimizer classes.
+- ``param_groups``: list containing all parameter groups where each
+  parameter group is a dict.
+
+Returns:
+    Dictionary containing optimizer state
+
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`src/olm/train/optim/base.py:22`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L22)
+
+Performs a single optimization step.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+        Some optimization algorithms (e.g., L-BFGS) require multiple
+        evaluations of the loss function.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/base.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L37)
+
+Sets gradients of all optimized tensors to zero or None.
+
+Args:
+    set_to_none: Instead of setting to zero, set the grads to None.
+        This is more memory efficient and can slightly improve performance.
+        Default: True
 
 ### `ZeROOptimizer(optimizer: torch.optim.optimizer.Optimizer, partition_optimizer_states: bool = True, overlap_communication: bool = True, world_size: int | None = None, rank: int | None = None)`
+
+**Bases:** `olm.train.optim.base.OptimizerBase`
+
+Source: [`src/olm/train/optim/zero.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L9)
 
 ZeRO (Zero Redundancy Optimizer) wrapper for distributed training.
 
@@ -119,17 +202,69 @@ Args:
     world_size: Number of distributed processes (default: None, auto-detected)
     rank: Process rank in distributed group (default: None, auto-detected)
 
+#### Properties
+
+- `defaults`
+  Access underlying optimizer's defaults.
+- `param_groups`
+  Access underlying optimizer's parameter groups.
+- `state`
+  Access underlying optimizer's state.
+
 #### Methods
 
-- `add_param_group(self, param_group: Dict[str, Any])`
-  Add a param group to the Optimizer's param_groups.
-- `extra_repr(self) -> str`
-  String representation for debugging.
-- `load_state_dict(self, state_dict: Dict[str, Any])`
-  Loads the optimizer state.
-- `state_dict(self) -> Dict[str, Any]`
-  Returns the state of the optimizer as a dict.
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized parameters to zero.
+##### `add_param_group(self, param_group: Dict[str, Any])`
+
+Source: [`src/olm/train/optim/zero.py:204`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L204)
+
+Add a param group to the Optimizer's param_groups.
+
+Args:
+    param_group: parameter group to add
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/train/optim/zero.py:227`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L227)
+
+String representation for debugging.
+
+##### `load_state_dict(self, state_dict: Dict[str, Any])`
+
+Source: [`src/olm/train/optim/zero.py:137`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L137)
+
+Loads the optimizer state.
+
+Args:
+    state_dict: optimizer state dict
+
+##### `state_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/optim/zero.py:107`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L107)
+
+Returns the state of the optimizer as a dict.
+
+In distributed mode, only returns states for parameters owned by this rank.
+
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py:156`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py#L156)
+
+Performs a single optimization step.
+
+In distributed mode, synchronizes optimizer states across ranks as needed.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/zero.py:194`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/zero.py#L194)
+
+Sets gradients of all optimized parameters to zero.
+
+Args:
+    set_to_none: instead of setting to zero, set the grads to None.
+        Default: True (overriding base class to match modern PyTorch conventions)

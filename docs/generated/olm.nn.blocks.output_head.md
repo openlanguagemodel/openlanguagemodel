@@ -1,14 +1,26 @@
 # `olm.nn.blocks.output_head`
 
+Source: [`src/olm/nn/blocks/output_head.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/output_head.py#L1)
+
 ## Classes
 
 ### `OutputHead(embed_dim: int, vocab_size: int, bias: bool = False, tied_embedding=None, tie_weights: bool = True, norm: torch.nn.modules.module.Module | None = None, use_norm: bool = True)`
 
-Final output projection layer for the Language Model.
+**Bases:** `olm.nn.structure.block.Block`
 
-Consists of a LayerNorm followed by a projection to the vocabulary size.
-The projection is tied to the input token embedding by default; pass
-``tie_weights=False`` when you want a separate output matrix.
+Source: [`src/olm/nn/blocks/output_head.py:56`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/output_head.py#L56)
+
+Final normalization and vocabulary projection for language models.
+
+``OutputHead`` applies a normalization layer and then maps hidden states to
+vocabulary logits. The projection is tied to the input token embedding by
+default. In the tied path, logits are computed as
+``F.linear(hidden, embedding.weight)`` so the output head and token
+embedding share one parameter matrix.
+
+Forward:
+    Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
+    returns logits with shape ``[batch, seq_len, vocab_size]``.
 
 Args:
     embed_dim (int): The dimension of the embedding space.
@@ -24,4 +36,25 @@ Args:
         an identity layer instead of LayerNorm. Defaults to True.
 
 Attributes:
-    layers (nn.ModuleList): The normalization and linear layers.
+    blocks (nn.ModuleList): ``[norm, projection]``.
+
+#### Properties
+
+- `projection` -> `Module`
+  Projection module used after normalization.
+- `weight` -> `Parameter`
+  Output projection weight; tied to the embedding matrix by default.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `Block`)
+
+Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L26)
+
+Apply each block to the input in sequence.
+
+Args:
+    x: Input tensor.
+
+Returns:
+    Output tensor after all blocks have been applied.

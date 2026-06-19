@@ -8,14 +8,22 @@ from olm.nn.structure.combinators import Repeat
 
 class LM(Block):
     """
-    A simple Language Model (LM) architecture.
+    GPT-style causal language model assembled from OLM blocks.
 
-    This model consists of an embedding layer, a stack of Transformer blocks,
-    and a final output projection to the vocabulary size. It is designed for
-    causal language modeling (next-token prediction).
+    ``LM`` is the small, configurable model used throughout the beginner
+    examples. It consists of a token embedding, ``num_layers`` repeated
+    ``TransformerBlock`` modules, and an ``OutputHead`` that projects hidden
+    states back to vocabulary logits. The output projection reuses the input
+    embedding matrix by default.
 
     Structure:
-        Input IDs -> Embedding -> [TransformerBlock] x N -> OutputHead -> Logits
+        ``input_ids`` -> ``Embedding`` -> ``TransformerBlock`` x N ->
+        ``OutputHead`` -> logits.
+
+    Forward:
+        Accepts integer token IDs with shape ``[batch, seq_len]`` and returns
+        logits with shape ``[batch, seq_len, vocab_size]``. The inherited
+        ``Block.forward`` applies each submodule sequentially.
 
     Args:
         vocab_size (int): Size of the vocabulary.
@@ -30,7 +38,7 @@ class LM(Block):
             the input embedding matrix. Defaults to True.
 
     Attributes:
-        layers (nn.ModuleList): The sequence of layers in the model.
+        blocks (nn.ModuleList): ``[embedding, transformer_stack, output_head]``.
     """
 
     def __init__(

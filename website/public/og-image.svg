@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">OpenLanguageModel</title>
+  <desc id="desc">OpenLanguageModel social preview image</desc>
+  <rect width="1200" height="630" fill="#f4f4f0"/>
+  <rect x="48" y="48" width="1104" height="534" fill="none" stroke="#0a0a0a" stroke-width="2"/>
+  <circle cx="102" cy="104" r="10" fill="#b30000"/>
+  <text x="128" y="111" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, monospace" font-size="30" font-weight="700" fill="#0a0a0a">OLM</text>
+  <text x="92" y="306" font-family="Georgia, 'Times New Roman', serif" font-size="86" fill="#0a0a0a">OpenLanguageModel</text>
+  <text x="96" y="378" font-family="Inter, Arial, sans-serif" font-size="32" fill="#333333">PyTorch-native language model training, learning, and ablations.</text>
+  <text x="96" y="474" font-family="JetBrains Mono, ui-monospace, SFMono-Regular, monospace" font-size="24" fill="#b30000">train language models · custom transformer architectures · distributed LLM training</text>
+</svg>

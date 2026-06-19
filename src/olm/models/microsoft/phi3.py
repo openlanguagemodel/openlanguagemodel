@@ -84,6 +84,13 @@ class Phi3Model(Block):
     """
     Base class for Phi 3 models.
 
+    Structure:
+        Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
+
     Implementation note:
         This implementation uses standard Rotary Positional Embeddings (RoPE)
         parameterized via `rope_theta`. Phi-3/Phi-3.5 official checkpoints use

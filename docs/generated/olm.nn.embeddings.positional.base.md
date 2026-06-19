@@ -1,8 +1,14 @@
 # `olm.nn.embeddings.positional.base`
 
+Source: [`src/olm/nn/embeddings/positional/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L1)
+
 ## Classes
 
 ### `PositionalEmbeddingBase(*args: Any, **kwargs: Any) -> None`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L8)
 
 Abstract base class for all positional embedding implementations.
 
@@ -20,7 +26,24 @@ and implement the forward method.
 
 #### Methods
 
-- `extra_repr(self) -> str`
-  String representation of the module for debugging.
-- `forward(self, *args, **kwargs) -> torch.Tensor`
-  Apply positional information to input tensor(s).
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:40`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L40)
+
+String representation of the module for debugging.
+
+Override this in subclasses to provide useful information.
+
+##### `forward(self, *args, **kwargs) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:25`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L25)
+
+Apply positional information to input tensor(s).
+
+The signature and behavior of this method varies by implementation:
+- Some add to embeddings (Absolute, Sinusoidal)
+- Some rotate representations (RoPE)
+- Some return bias to add to attention scores (ALiBi)
+
+Returns:
+    Transformed tensor(s) with positional information applied

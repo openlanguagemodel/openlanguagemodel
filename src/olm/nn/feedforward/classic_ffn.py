@@ -48,7 +48,16 @@ class ClassicFFN(FeedForwardBase):
         self.down_proj = Linear(hidden_dim, embed_dim, bias=bias) # torch.nn.Linear can also be used
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Apply the position-wise feed-forward network.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+        Returns:
+            torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+        """
         x = self.up_proj(x)
         x = self.act(x)
         x = self.down_proj(x)

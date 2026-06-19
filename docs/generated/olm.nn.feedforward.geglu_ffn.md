@@ -1,8 +1,14 @@
 # `olm.nn.feedforward.geglu_ffn`
 
+Source: [`src/olm/nn/feedforward/geglu_ffn.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_ffn.py#L1)
+
 ## Classes
 
 ### `GeGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 4.0)`
+
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/geglu_ffn.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_ffn.py#L8)
 
 Feed-Forward Network using GeGLU activation.
 
@@ -18,5 +24,14 @@ Args:
 
 #### Methods
 
-- `forward(self, x)`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/geglu_ffn.py:54`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/geglu_ffn.py#L54)
+
+Apply GeGLU feed-forward projection.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.

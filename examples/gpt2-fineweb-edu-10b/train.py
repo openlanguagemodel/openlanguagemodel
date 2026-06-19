@@ -2,8 +2,6 @@
 """
 GPT-2 124M Training on FineWeb Edu 10B Tokens
 
-Target: Achieve 3.28 validation loss
-
 Usage:
     python -u train.py --config config.yaml
     python -u train.py --config config.yaml --resume checkpoints/step_5000.pt
@@ -27,7 +25,7 @@ import torch
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from olm.models.gpt import GPT2
+from olm.models.openai import GPT2
 from olm.data.datasets.fineweb_edu import FineWebEduDataset
 from olm.train.optim import AdamW
 from olm.data.datasets import DataLoader

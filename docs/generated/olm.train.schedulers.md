@@ -1,10 +1,16 @@
 # `olm.train.schedulers`
 
+Source: [`src/olm/train/schedulers/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/__init__.py#L1)
+
 Learning rate schedulers for OLM training.
 
 ## Classes
 
 ### `CosineAnnealingLR(optimizer, T_max: int, eta_min: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/cosine.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L7)
 
 Cosine annealing learning rate scheduler.
 
@@ -26,10 +32,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using cosine annealing.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/cosine.py:39`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L39)
+
+Compute learning rate using cosine annealing.
 
 ### `LinearDecayLR(optimizer, total_steps: int, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:66`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L66)
 
 Simple linear decay scheduler that decays to zero.
 
@@ -49,10 +62,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:89`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L89)
+
+Compute learning rate using linear decay.
 
 ### `LinearLR(optimizer, total_steps: int, end_lr: float = 0, start_factor: float = 1.0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L6)
 
 Linear learning rate scheduler.
 
@@ -76,10 +96,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear interpolation.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L42)
+
+Compute learning rate using linear interpolation.
 
 ### `SchedulerBase(optimizer, last_epoch: int = -1, verbose: bool = False)`
+
+**Bases:** `_LRScheduler`, `ABC`
+
+Source: [`src/olm/train/schedulers/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L8)
 
 Base class for all OLM learning rate schedulers.
 
@@ -108,16 +135,50 @@ Example:
 
 #### Methods
 
-- `get_last_lr(self) -> List[float]`
-  Return last computed learning rate by current scheduler.
-- `get_lr(self) -> List[float]`
-  Compute learning rate for each parameter group.
-- `load_state_dict(self, state_dict)`
-  Load the scheduler state from a checkpoint.
-- `state_dict(self)`
-  Returns the state of the scheduler as a dict.
+##### `get_last_lr(self) -> List[float]`
+
+Source: [`src/olm/train/schedulers/base.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L64)
+
+Return last computed learning rate by current scheduler.
+
+Returns:
+    List of last computed learning rates.
+
+##### `get_lr(self) -> List[float]`
+
+Source: [`src/olm/train/schedulers/base.py:39`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L39)
+
+Compute learning rate for each parameter group.
+
+This method must be implemented by subclasses to define the
+learning rate schedule logic.
+
+Returns:
+    List of learning rates, one per parameter group.
+
+##### `load_state_dict(self, state_dict)`
+
+Source: [`src/olm/train/schedulers/base.py:86`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L86)
+
+Load the scheduler state from a checkpoint.
+
+Args:
+    state_dict: Scheduler state returned by state_dict().
+
+##### `state_dict(self)`
+
+Source: [`src/olm/train/schedulers/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L73)
+
+Returns the state of the scheduler as a dict.
+
+Contains all non-callable attributes that are specific to
+the scheduler and required for checkpointing.
 
 ### `WarmupCosineScheduler(optimizer, warmup_steps: int, total_steps: int, min_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:62`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L62)
 
 Combined warmup and cosine annealing scheduler.
 
@@ -145,10 +206,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate with warmup and cosine decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:102`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L102)
+
+Compute learning rate with warmup and cosine decay.
 
 ### `WarmupLR(optimizer, warmup_steps: int, start_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L6)
 
 Learning rate warmup scheduler.
 
@@ -170,5 +238,8 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate during warmup.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L38)
+
+Compute learning rate during warmup.

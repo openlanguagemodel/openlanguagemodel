@@ -55,11 +55,17 @@ def _resolve_embedding_weight(tied_embedding: nn.Module | nn.Parameter) -> nn.Pa
 
 class OutputHead(Block):
     """
-    Final output projection layer for the Language Model.
+    Final normalization and vocabulary projection for language models.
 
-    Consists of a LayerNorm followed by a projection to the vocabulary size.
-    The projection is tied to the input token embedding by default; pass
-    ``tie_weights=False`` when you want a separate output matrix.
+    ``OutputHead`` applies a normalization layer and then maps hidden states to
+    vocabulary logits. The projection is tied to the input token embedding by
+    default. In the tied path, logits are computed as
+    ``F.linear(hidden, embedding.weight)`` so the output head and token
+    embedding share one parameter matrix.
+
+    Forward:
+        Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
+        returns logits with shape ``[batch, seq_len, vocab_size]``.
 
     Args:
         embed_dim (int): The dimension of the embedding space.
@@ -75,7 +81,7 @@ class OutputHead(Block):
             an identity layer instead of LayerNorm. Defaults to True.
 
     Attributes:
-        layers (nn.ModuleList): The normalization and linear layers.
+        blocks (nn.ModuleList): ``[norm, projection]``.
     """
 
     def __init__(
@@ -117,8 +123,10 @@ class OutputHead(Block):
 
     @property
     def projection(self) -> nn.Module:
+        """Projection module used after normalization."""
         return self.blocks[1]
 
     @property
     def weight(self) -> nn.Parameter:
+        """Output projection weight; tied to the embedding matrix by default."""
         return self.projection.weight

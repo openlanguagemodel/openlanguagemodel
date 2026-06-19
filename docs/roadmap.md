@@ -1,99 +1,53 @@
-# Version-wise Roadmap
+# Roadmap
 
-This document outlines the development trajectory of OpenLanguageModel (OLM). Our goal is to move from a flexible single-GPU research tool to a scalable, high-performance distributed training framework.
+OpenLanguageModel is moving toward a stable, readable, PyTorch-native stack for language-model learning, ablation, and training. The near-term goal is not to add more surface area; it is to make the existing library feel clean, dependable, and easy to teach from.
 
-## v1.0: Foundation & Core Architectures
+## v2.2: Stability, Documentation, and Release Readiness
 
-The focus of v1.0 is to establish a solid, bug-free foundation for single-GPU training and to support a diverse set of standard architecture families.
+v2.2 is the stabilization release. The focus is a polished library and documentation set, not new research features.
 
-- [x] **Core Architecture Support**:
-    - [x] GPT-2 (Base, Medium, Large, XL)
-    - [x] OLMo (standard and variant architectures)
-    - [x] Phi-3 / Phi-4 (including variable grouped-query attention)
-    - [x] Gemma 2 (incorporating specific normalization and gating nuances)
-- [x] **Data Pipeline**:
-    - [x] Unified `LocalTextDataset` and `HuggingFaceTextDataset` interfaces
-    - [x] Efficient streaming and tokenization
-    - [x] Robust train/validation splitting
-- [x] **Training Engine**:
-    - [x] Mixed Precision Training (AMP) support
-    - [x] Gradient Clipping and Weight Decay integration
-    - [x] Basic learning rate scheduling (Cosine, Linear)
-    - [x] Checkpoint saving and loading
-- [x] **Infrastructure**:
-    - [x] Comprehensive Unit Tests for all core modules
-    - [x] CI/CD pipeline setup
+- [x] Move onto the v2.1 bug-fix and AutoTrainer base
+- [x] Make model output heads tied to token embeddings by default
+- [x] Verify model-family smoke tests and one-batch training paths
+- [x] Improve README positioning, citation, model links, and install guidance
+- [x] Regenerate and improve API reference structure
+- [x] Remove empty placeholders and stale public references
+- [x] Add clear examples for local text, FineWeb-Edu, AutoTrainer, and model families
+- [x] Track website source and GitHub Pages deployment workflow
+- [x] Add website SEO metadata, sitemap, robots, social preview, and structured data
+- [ ] Finish mascot integration after the mascot direction is chosen
+- [ ] Add approved Colab notebooks and link them from OLM Learning
+- [ ] Prepare the public v2.2 release notes, PyPI release, and GitHub release
 
-## v1.1: Optimization & Refinement
+## v3.0: Further Training and Alignment
 
-v1.1 targets extracting maximum performance from a single GPU and enhancing the user experience.
+v3 is for post-pretraining workflows. The goal is to let people continue from a pretrained or base model while staying inside ordinary PyTorch.
 
-- [x] **Performance Optimization**:
-    - [x] Flash Attention integration
-    - [x] `torch.compile` compatibility
-    - [x] Memory optimization (activation checkpointing)
-- [x] **Advanced Architectures**:
-    - [x] Support for RoPE scaling variations
-    - [x] ALiBi positional embeddings
-    - [x] Custom activation wrappers refinement
-- [x] **Observability**:
-    - [x] Integration with Weights & Biases (WandB)
-    - [x] Detailed training logs and metrics (perplexity, tokens/sec)
-- [ ] **Documentation**:
-    - [ ] Full API reference
-    - [ ] End-to-end tutorials and notebooks
+- [ ] Supervised fine-tuning (SFT) recipes and trainers
+- [ ] LoRA and parameter-efficient fine-tuning
+- [ ] Preference optimization with DPO
+- [ ] RLHF workflows with PPO
+- [ ] RLVR / reasoning-oriented training with GRPO-style methods
+- [ ] Evaluation hooks for common language-model and instruction-following tasks
+- [ ] Checkpoint conversion and compatibility guidance for fine-tuned models
 
-## v2.0: Scaling Up (Multi-GPU)
+## v4.0: Multi-Node Training
 
-v2.0 introduces distributed training capabilities, allowing OLM to utilize multiple GPUs on a single node.
+v4 moves from single-node training to cluster-scale training. The intent is to keep the user-facing API understandable while exposing the distributed systems pieces needed for serious runs.
 
-- [x] **Distributed Training**:
-    - [x] Distributed Data Parallel (DDP) support
-    - [x] Fully Sharded Data Parallel (FSDP) integration
-- [x] **Mixture of Experts (MoE)**:
-    - [x] Sparse MoE layer implementation
-    - [x] Top-k gating mechanisms
-    - [x] Load balancing auxiliary losses
+- [ ] Multi-node launch and configuration helpers
+- [ ] Slurm and common cluster integration
+- [ ] Fault-tolerant checkpointing and auto-resume
+- [ ] Multi-node streaming and deterministic data sharding
+- [ ] Pipeline parallelism
+- [ ] Tensor parallelism
+- [ ] Multi-node FSDP recipes and performance guidance
 
-## v2.1: Distributed Optimization
+## Longer-Term Ideas
 
-v2.1 focuses on making multi-GPU training highly efficient and stable.
+These are intentionally outside v2.2.
 
-- [x] **Efficiency**:
-    - [x] Zero Redundancy Optimizer (ZeRO) stages
-    - [x] Efficient communication overlap
-- [ ] **MoE Enhancements**:
-    - [ ] Expert parallelism
-    - [ ] Expert routing optimization
-
-## v3.0: Scaling Out (Multi-Node)
-
-v3.0 expands the horizon to multi-node clusters for training large-scale models.
-
-- [ ] **Cluster Support**:
-    - [ ] Slurm integration
-    - [ ] Fault tolerance and auto-resume
-    - [ ] Multi-node data streaming handling
-- [ ] **Large Model Training**:
-    - [ ] Pipeline Parallelism
-    - [ ] Tensor Parallelism
-
-## v3.1: The "Open Source" Goal
-
-v3.1 aims to make OLM capable of reproducing widely used open-source models from scratch.
-
-- [ ] **Reproduction Recipes**:
-    - [ ] Verified configs to retrain Llama 3, Mistral, etc. from scratch
-- [ ] **Ecosystem**:
-    - [ ] Evaluation harness integration (HellaSwag, MMLU)
-    - [ ] Quantization-aware training
-    
-## v4.0: Further Training
-
-- [ ] Implement SFT
-- [ ] Implement LoRA
-- [ ] Implement RLHF, DDP & RLVR methods
-- [ ] Implement model fine-tuning
-
-## Other Ideas
-- [ ] Visual model builder: Drag and drop components to build models
+- Verified reproduction recipes for open-source model families
+- More model-family implementations, including Mistral-style and DeepSeek-style variants
+- A visual model builder for composing blocks interactively
+- Export and conversion tooling once the core training/documentation path is fully stable

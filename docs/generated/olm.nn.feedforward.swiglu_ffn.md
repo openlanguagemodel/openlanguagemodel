@@ -1,8 +1,14 @@
 # `olm.nn.feedforward.swiglu_ffn`
 
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L1)
+
 ## Classes
 
 ### `SwiGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5)`
+
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L8)
 
 SwiGLU-based feed-forward network used in modern Transformers (e.g., LLaMA, PaLM).
 
@@ -32,5 +38,14 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x)`
-  Forward pass of the feedforward network.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:68`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L68)
+
+Apply SwiGLU feed-forward projection.
+
+Args:
+    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+Returns:
+    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.

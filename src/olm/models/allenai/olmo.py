@@ -68,6 +68,13 @@ class OLMoBlock(Block):
 class OLMoModel(Block):
     """
     Base class for the OLMo (Open Language Model) architecture.
+
+    Structure:
+        Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
 
     def __init__(

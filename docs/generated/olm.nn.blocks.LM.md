@@ -1,17 +1,31 @@
 # `olm.nn.blocks.LM`
 
+Source: [`src/olm/nn/blocks/LM.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/LM.py#L1)
+
 ## Classes
 
 ### `LM(vocab_size: int, embed_dim: int, num_heads: int, num_layers: int, max_seq_len: int, dropout: float = 0.0, causal: bool = True, ff_multiplier: float = 2.5, tie_embeddings: bool = True)`
 
-A simple Language Model (LM) architecture.
+**Bases:** `olm.nn.structure.block.Block`
 
-This model consists of an embedding layer, a stack of Transformer blocks,
-and a final output projection to the vocabulary size. It is designed for
-causal language modeling (next-token prediction).
+Source: [`src/olm/nn/blocks/LM.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/LM.py#L9)
+
+GPT-style causal language model assembled from OLM blocks.
+
+``LM`` is the small, configurable model used throughout the beginner
+examples. It consists of a token embedding, ``num_layers`` repeated
+``TransformerBlock`` modules, and an ``OutputHead`` that projects hidden
+states back to vocabulary logits. The output projection reuses the input
+embedding matrix by default.
 
 Structure:
-    Input IDs -> Embedding -> [TransformerBlock] x N -> OutputHead -> Logits
+    ``input_ids`` -> ``Embedding`` -> ``TransformerBlock`` x N ->
+    ``OutputHead`` -> logits.
+
+Forward:
+    Accepts integer token IDs with shape ``[batch, seq_len]`` and returns
+    logits with shape ``[batch, seq_len, vocab_size]``. The inherited
+    ``Block.forward`` applies each submodule sequentially.
 
 Args:
     vocab_size (int): Size of the vocabulary.
@@ -26,4 +40,18 @@ Args:
         the input embedding matrix. Defaults to True.
 
 Attributes:
-    layers (nn.ModuleList): The sequence of layers in the model.
+    blocks (nn.ModuleList): ``[embedding, transformer_stack, output_head]``.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `Block`)
+
+Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L26)
+
+Apply each block to the input in sequence.
+
+Args:
+    x: Input tensor.
+
+Returns:
+    Output tensor after all blocks have been applied.

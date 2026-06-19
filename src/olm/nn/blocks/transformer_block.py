@@ -8,14 +8,18 @@ from olm.nn.norms import LayerNorm
 
 class TransformerBlock(Block):
     """
-    A single Transformer block containing Multi-Head Attention and a FeedForward Network.
+    Pre-norm transformer block for causal language modeling.
 
-    This block implements the standard Transformer architecture with pre-normalization,
-    Rotary Positional Embeddings (RoPE), and SwiGLU activation in the feedforward layer.
-    It supports causal masking for autoregressive modeling.
+    The block contains two residual branches: LayerNorm + FlashAttention with
+    RoPE, followed by LayerNorm + SwiGLU feed-forward network. It is the default
+    repeated block used by ``LM``.
 
     Structure:
-        Input -> LayerNorm -> MHA(RoPE) -> Residual -> LayerNorm -> SwiGLU FFN -> Residual -> Output
+        ``x`` -> residual(LayerNorm, attention) -> residual(LayerNorm, FFN).
+
+    Forward:
+        Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
+        returns hidden states with the same shape.
 
     Args:
         embed_dim (int): The dimension of the embedding space (d_model).
@@ -27,7 +31,7 @@ class TransformerBlock(Block):
             Commonly 4.0 (standard) or 8/3 (SwiGLU). Defaults to 2.5.
 
     Attributes:
-        layers (nn.ModuleList): The sequential list of layers within the block.
+        blocks (nn.ModuleList): Sequential OLM block structure.
     """
 
     def __init__(

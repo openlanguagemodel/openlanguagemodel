@@ -1,5 +1,7 @@
 # `olm.data.datasets.data_loader`
 
+Source: [`src/olm/data/datasets/data_loader.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/datasets/data_loader.py#L1)
+
 DataLoader wrapper for OLM library.
 
 This module provides a clean wrapper around PyTorch's DataLoader with
@@ -9,6 +11,10 @@ sensible defaults for language model training and convenient helpers.
 
 ### `DataLoader(dataset: torch.utils.data.dataset.Dataset | torch.utils.data.dataset.IterableDataset, batch_size: int = 8, shuffle: bool | None = None, num_workers: int = 0, pin_memory: bool = True, drop_last: bool = False, persistent_workers: bool | None = None, prefetch_factor: int | None = 2, collate_fn: Callable | None = None, distributed: bool = False, rank: int | None = None, world_size: int | None = None, sampler: torch.utils.data.sampler.Sampler | None = None, **kwargs)`
 
+**Bases:** `DataLoader`
+
+Source: [`src/olm/data/datasets/data_loader.py:13`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/datasets/data_loader.py#L13)
+
 Wrapper around PyTorch's DataLoader with sensible defaults for LLM training.
 
 This class extends torch.utils.data.DataLoader with:
@@ -17,6 +23,9 @@ This class extends torch.utils.data.DataLoader with:
 - Pin memory optimization for GPU training
 - Persistent workers for efficiency
 - Distributed training support with DistributedSampler
+
+For OLM text datasets, iteration usually yields batched
+``(input_ids, labels)`` tensors with shape ``[batch, context_length]``.
 
 Args:
     dataset: Dataset to load from (can be map-style or iterable).
@@ -50,6 +59,12 @@ Example:
     ...         # Training loop
     ...         pass
 
+#### Properties
+
+- `multiprocessing_context`
+
 #### Methods
 
-- `check_worker_number_rationality(self) -> 'None'`
+##### `check_worker_number_rationality(self) -> 'None'`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/utils/data/dataloader.py:548`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/data/dataloader.py#L548)

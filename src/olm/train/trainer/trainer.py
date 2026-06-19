@@ -63,6 +63,12 @@ class Trainer:
     - Learning rate scheduling support
     - Gradient clipping
 
+    Training contract:
+        The dataloader must yield ``(input_ids, labels)``. Both tensors are
+        moved to ``device`` and truncated to ``context_length``. The model must
+        return logits shaped ``[batch, seq_len, vocab_size]`` so the configured
+        loss can compare logits against ``labels`` shaped ``[batch, seq_len]``.
+
     Attributes:
         model (Pipeline): The model to train.
         optimizer (torch.optim.Optimizer): The optimizer to use.

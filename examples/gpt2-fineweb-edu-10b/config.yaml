@@ -1,5 +1,5 @@
 # GPT-2 124M Training on FineWeb Edu 10B Tokens
-# Target: 3.28 validation loss
+# Example configuration for a 10B-token FineWeb-Edu run
 
 # Model Configuration
 model:

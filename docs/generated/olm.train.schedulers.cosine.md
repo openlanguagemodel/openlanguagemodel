@@ -1,10 +1,16 @@
 # `olm.train.schedulers.cosine`
 
+Source: [`src/olm/train/schedulers/cosine.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L1)
+
 Cosine annealing learning rate scheduler.
 
 ## Classes
 
 ### `CosineAnnealingLR(optimizer, T_max: int, eta_min: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/cosine.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L7)
 
 Cosine annealing learning rate scheduler.
 
@@ -26,5 +32,8 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using cosine annealing.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/cosine.py:39`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L39)
+
+Compute learning rate using cosine annealing.

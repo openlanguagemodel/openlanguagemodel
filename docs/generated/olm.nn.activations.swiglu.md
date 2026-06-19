@@ -1,8 +1,14 @@
 # `olm.nn.activations.swiglu`
 
+Source: [`src/olm/nn/activations/swiglu.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/swiglu.py#L1)
+
 ## Classes
 
 ### `SwiGLU(*, device: torch.device | None = None, dtype: torch.dtype | None = None) -> None`
+
+**Bases:** `olm.nn.activations.base.ActivationBase`
+
+Source: [`src/olm/nn/activations/swiglu.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/swiglu.py#L7)
 
 SwiGLU activation function.
 
@@ -21,5 +27,14 @@ Args:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor) -> torch.Tensor`
-  Forward pass of SwiGLU.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/activations/swiglu.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/swiglu.py#L26)
+
+Forward pass of SwiGLU.
+
+Args:
+    x (torch.Tensor): Input tensor. Expected to have an even last dimension size.
+
+Returns:
+    torch.Tensor: Output tensor with half the last dimension of the input.

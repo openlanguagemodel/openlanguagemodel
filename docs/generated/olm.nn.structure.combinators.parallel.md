@@ -1,8 +1,14 @@
 # `olm.nn.structure.combinators.parallel`
 
+Source: [`src/olm/nn/structure/combinators/parallel.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L1)
+
 ## Classes
 
 ### `Parallel(blocks: List[torch.nn.modules.module.Module], merge: Callable = None, dim: int = -1)`
+
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
+
+Source: [`src/olm/nn/structure/combinators/parallel.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L6)
 
 Apply multiple blocks to the same input and merge their outputs.
 
@@ -20,5 +26,14 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor) -> torch.Tensor`
-  Apply all blocks in parallel and merge their outputs.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/structure/combinators/parallel.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L37)
+
+Apply all blocks in parallel and merge their outputs.
+
+Args:
+    x: Input tensor.
+
+Returns:
+    Merged output tensor.

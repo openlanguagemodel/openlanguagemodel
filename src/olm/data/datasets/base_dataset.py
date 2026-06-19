@@ -9,8 +9,23 @@ class BaseTextDataset(IterableDataset, ABC):
     """
     Abstract base class for text-based streaming datasets.
 
-    Handles tokenization buffering and sequence generation generically.
-    Subclasses must implement `_get_text_iterator` to yield text chunks.
+    ``BaseTextDataset`` handles tokenization, buffering, next-token target
+    construction, worker sharding, and distributed-rank sharding. Subclasses
+    only need to implement ``_get_text_iterator`` and yield raw text strings.
+
+    Iteration:
+        Yields ``(input_ids, labels)`` tuples. Both tensors have shape
+        ``[context_length]`` and dtype ``torch.long``. ``labels`` is the
+        one-token-shifted target sequence for causal language modeling.
+
+    Args:
+        tokenizer: Tokenizer with an ``encode`` method.
+        context_length (int): Number of input tokens per sample.
+        skip_batches (int): Number of yielded samples to skip, useful for
+            coarse resume behavior.
+        shuffle (bool): Whether the concrete dataset should shuffle its source
+            stream when supported.
+        seed (int): Shuffle seed.
     """
 
     def __init__(
@@ -31,15 +46,23 @@ class BaseTextDataset(IterableDataset, ABC):
     @abstractmethod
     def _get_text_iterator(self) -> Iterator[str]:
         """
-        Yields strings of text to be tokenized and buffered.
-        The size of these strings does not matter; they will be concatenated.
+        Yield raw text chunks to be tokenized and buffered.
+
+        Returns:
+            Iterator[str]: Text fragments. Fragment size does not matter because
+            ``BaseTextDataset`` concatenates tokens into a rolling buffer.
         """
         pass
 
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         """
         Iterate over tokens, yielding (input, target) tensors.
+
         Handles distributed-rank and multi-worker sharding and buffering.
+
+        Returns:
+            Iterator[tuple[torch.Tensor, torch.Tensor]]: ``input_ids`` and
+            ``labels`` tensors, each shaped ``[context_length]``.
         """
         worker_info = get_worker_info()
         batches_yielded = 0

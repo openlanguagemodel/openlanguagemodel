@@ -1,6 +1,7 @@
 from olm.nn.feedforward.base import FeedForwardBase
 from olm.nn.activations import SwiGLU
 from olm.nn.torch_nn_wrappers import Linear
+import torch
 import torch.nn as nn
 
 
@@ -64,7 +65,16 @@ class SwiGLUFFN(FeedForwardBase):
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Apply SwiGLU feed-forward projection.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+        Returns:
+            torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+        """
         x = self.up_proj(x)
         x = self.act(x)
         x = self.down_proj(x)

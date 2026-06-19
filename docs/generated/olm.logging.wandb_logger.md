@@ -1,5 +1,7 @@
 # `olm.logging.wandb_logger`
 
+Source: [`src/olm/logging/wandb_logger.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L1)
+
 Weights & Biases (wandb) integration for OLM training.
 
 Provides comprehensive logging, tracking, and monitoring capabilities using wandb.
@@ -7,6 +9,8 @@ Provides comprehensive logging, tracking, and monitoring capabilities using wand
 ## Functions
 
 ### `create_sweep(sweep_config: Dict[str, Any], project: str, entity: str | None = None) -> str`
+
+Source: [`src/olm/logging/wandb_logger.py:442`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L442)
 
 Create a wandb sweep for hyperparameter optimization.
 
@@ -42,6 +46,8 @@ Example:
 
 ### `get_sweep_config_template(method: str = 'bayes') -> Dict[str, Any]`
 
+Source: [`src/olm/logging/wandb_logger.py:487`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L487)
+
 Get a template sweep configuration.
 
 Args:
@@ -61,6 +67,10 @@ Example:
 ## Classes
 
 ### `WandBCallback(project: str, entity: str | None = None, name: str | None = None, tags: List[str] | None = None, notes: str | None = None, config: Dict[str, Any] | None = None, log_frequency: int = 1, log_gradients: bool = False, log_model: bool = False, watch_model: bool = False, watch_freq: int = 1000, log_predictions: bool = False, log_system_metrics: bool = True, alert_thresholds: Dict[str, Dict[str, float]] | None = None, offline: bool = False, resume: str | None = None, group: str | None = None, job_type: str | None = 'train', save_code: bool = True, reinit: bool = True)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/logging/wandb_logger.py:23`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L23)
 
 Callback for Weights & Biases integration with OLM Trainer.
 
@@ -123,13 +133,38 @@ Example:
 
 #### Methods
 
-- `log_predictions(self, step: int, inputs: List[str], predictions: List[str], targets: List[str] | None = None)`
-  Log predictions to wandb table.
-- `on_epoch_end(self, trainer, epoch: int) -> None`
-  Called at the end of each epoch.
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Called at the end of each optimization step.
-- `on_train_begin(self, trainer) -> None`
-  Called at the beginning of training.
-- `on_train_end(self, trainer) -> None`
-  Called at the end of training.
+##### `log_predictions(self, step: int, inputs: List[str], predictions: List[str], targets: List[str] | None = None)`
+
+Source: [`src/olm/logging/wandb_logger.py:414`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L414)
+
+Log predictions to wandb table.
+
+Args:
+    step: Current training step.
+    inputs: Input texts.
+    predictions: Model predictions.
+    targets: Target texts (optional).
+
+##### `on_epoch_end(self, trainer, epoch: int) -> None`
+
+Source: [`src/olm/logging/wandb_logger.py:347`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L347)
+
+Called at the end of each epoch.
+
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/logging/wandb_logger.py:317`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L317)
+
+Called at the end of each optimization step.
+
+##### `on_train_begin(self, trainer) -> None`
+
+Source: [`src/olm/logging/wandb_logger.py:298`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L298)
+
+Called at the beginning of training.
+
+##### `on_train_end(self, trainer) -> None`
+
+Source: [`src/olm/logging/wandb_logger.py:304`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/logging/wandb_logger.py#L304)
+
+Called at the end of training.

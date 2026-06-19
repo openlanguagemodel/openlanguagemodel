@@ -1,8 +1,14 @@
 # `olm.nn.norms.base`
 
+Source: [`src/olm/nn/norms/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L1)
+
 ## Classes
 
 ### `NormBase(d_model: int, device=None, dtype=None)`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/norms/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L5)
 
 Abstract base class for normalization layers (e.g., LayerNorm, RMSNorm).
 
@@ -16,5 +22,8 @@ Attributes:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor) -> torch.Tensor`
-  Apply normalization to the input tensor.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/norms/base.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L32)
+
+Apply normalization to the input tensor.

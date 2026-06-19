@@ -74,6 +74,13 @@ class Phi4Model(Block):
     """
     Base class for Phi 4 models.
 
+    Structure:
+        Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
+
     Implementation note:
         This implementation uses standard Rotary Positional Embeddings (RoPE)
         parameterized via `rope_theta`.

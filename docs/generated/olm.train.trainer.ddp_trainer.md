@@ -1,10 +1,16 @@
 # `olm.train.trainer.ddp_trainer`
 
+Source: [`src/olm/train/trainer/ddp_trainer.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/ddp_trainer.py#L1)
+
 Distributed Data Parallel (DDP) Trainer using PyTorch's native DDP.
 
 ## Classes
 
 ### `DDPTrainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str, context_length: int, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, ddp_backend: str | None = None, find_unused_parameters: bool = False, broadcast_buffers: bool = True, bucket_cap_mb: int = 25, gradient_as_bucket_view: bool = True, static_graph: bool = False)`
+
+**Bases:** `olm.train.trainer.trainer.Trainer`
+
+Source: [`src/olm/train/trainer/ddp_trainer.py:27`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/ddp_trainer.py#L27)
 
 Trainer with PyTorch Distributed Data Parallel (DDP) support.
 
@@ -56,5 +62,17 @@ Example:
 
 #### Methods
 
-- `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
-  Training loop with DDP support.
+##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
+
+Source: [`src/olm/train/trainer/ddp_trainer.py:150`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/ddp_trainer.py#L150)
+
+Training loop with DDP support.
+
+Args:
+    epochs: Number of epochs.
+    log_interval: Log every N steps.
+    max_steps: Maximum steps to train.
+    steps_per_epoch: Max steps per epoch.
+
+Returns:
+    List of loss values (only on rank 0).

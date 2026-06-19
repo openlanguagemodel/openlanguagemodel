@@ -1,8 +1,14 @@
 # `olm.nn.attention`
 
+Source: [`src/olm/nn/attention/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/__init__.py#L1)
+
 ## Classes
 
 ### `AttentionBase(embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = True)`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/attention/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L8)
 
 Abstract base class for attention mechanisms.
 
@@ -23,12 +29,41 @@ Attributes:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes the attention scores and output.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Standard forward pass for attention layers.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:57`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L57)
+
+Computes the attention scores and output.
+
+Args:
+    q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
+    k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
+    v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: The attention output [batch, heads, seq, head_dim].
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L73)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
 
 ### `AttentionwithRoPEBase(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True, rope_theta: float = 10000.0)`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/attention/base.py:95`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L95)
 
 Abstract base class for attention mechanisms with Rotary Positional Embedding.
 
@@ -49,13 +84,42 @@ Attributes:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes the attention scores and output.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Standard forward pass for attention layers.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:148`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L148)
+
+Computes the attention scores and output.
+
+Args:
+    q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
+    k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
+    v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: The attention output [batch, heads, seq, head_dim].
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:164`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L164)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
 
 ### `FlashAttention(embed_dim: int, num_heads: int, dropout: float = 0.0, causal: bool = False, use_flash_attn: bool | None = None)`
 
+**Bases:** `olm.nn.attention.base.AttentionBase`
+
+Source: [`src/olm/nn/attention/flash.py:12`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L12)
+
 Flash Attention implementation for efficient attention computation.
 
 Uses PyTorch's native scaled_dot_product_attention (which includes Flash Attention 2
@@ -87,15 +151,46 @@ Example:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention using Flash Attention when available.
-- `extra_repr(self) -> str`
-  String representation of the module.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass with Flash Attention.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L73)
+
+Computes attention using Flash Attention when available.
+
+Args:
+    q: Query tensor [batch, heads, seq, head_dim]
+    k: Key tensor [batch, heads, seq, head_dim]
+    v: Value tensor [batch, heads, seq, head_dim]
+    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+Returns:
+    Attention output [batch, heads, seq, head_dim]
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/attention/flash.py:206`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L206)
+
+String representation of the module.
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:177`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L177)
+
+Forward pass with Flash Attention.
+
+Args:
+    x: Input tensor [batch, seq_len, embed_dim]
+    mask: Optional attention mask
+
+Returns:
+    Output tensor [batch, seq_len, embed_dim]
 
 ### `FlashAttentionwithRoPE(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False, bias: bool = True, rope_theta: float = 10000.0, use_flash_attn: bool | None = None)`
 
+**Bases:** `olm.nn.attention.base.AttentionwithRoPEBase`
+
+Source: [`src/olm/nn/attention/flash.py:215`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L215)
+
 Flash Attention implementation for efficient attention computation.
 
 Uses PyTorch's native scaled_dot_product_attention (which includes Flash Attention 2
@@ -127,14 +222,45 @@ Example:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention using Flash Attention when available.
-- `extra_repr(self) -> str`
-  String representation of the module.
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass with Flash Attention and RoPE.
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:286`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L286)
+
+Computes attention using Flash Attention when available.
+
+Args:
+    q: Query tensor [batch, heads, seq, head_dim]
+    k: Key tensor [batch, heads, seq, head_dim]
+    v: Value tensor [batch, heads, seq, head_dim]
+    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+Returns:
+    Attention output [batch, heads, seq, head_dim]
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/attention/flash.py:428`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L428)
+
+String representation of the module.
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/flash.py:390`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/flash.py#L390)
+
+Forward pass with Flash Attention and RoPE.
+
+Args:
+    x: Input tensor [batch, seq_len, embed_dim]
+    mask: Optional attention mask
+
+Returns:
+    Output tensor [batch, seq_len, embed_dim]
 
 ### `GroupedQueryAttention(embed_dim: int, num_heads: int, num_kv_heads: int, max_seq_len: int, head_dim: int | None = None, dropout: float = 0.0, rope_theta: float = 10000.0, use_bias: bool = False, qkv_bias: bool = False, use_qk_norm: bool = False, rms_norm_eps: float = 1e-06, attention_scale: float | None = None, attn_logit_softcap: float | None = None)`
+
+**Bases:** `Module`
+
+Source: [`src/olm/nn/attention/gqa.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/gqa.py#L11)
 
 Grouped Query Attention (GQA) with Rotary Positional Embeddings.
 
@@ -156,10 +282,25 @@ Args:
 
 #### Methods
 
-- `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Forward pass of Grouped Query Attention.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/gqa.py:104`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/gqa.py#L104)
+
+Forward pass of Grouped Query Attention.
+
+Args:
+    x (torch.Tensor): Input tensor of shape [batch, seq_len, embed_dim].
+    mask (torch.Tensor, optional): Attention mask of shape [batch, 1, seq_len, seq_len]
+        or [batch, seq_len, seq_len]. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor of shape [batch, seq_len, embed_dim].
 
 ### `MultiHeadAttention(embed_dims: int, num_heads: int, dropout: float = 0.0, causal: bool = False)`
+
+**Bases:** `olm.nn.attention.base.AttentionBase`
+
+Source: [`src/olm/nn/attention/mha.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/mha.py#L8)
 
 Implements Multi-Head Attention (MHA) as described in "Attention Is All You Need".
 
@@ -178,10 +319,41 @@ Attributes:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes the scaled dot-product attention.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor` (inherited from `AttentionBase`)
+
+Source: [`src/olm/nn/attention/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L73)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
+
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/mha.py:29`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/mha.py#L29)
+
+Computes the scaled dot-product attention.
+
+Args:
+    q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
+    k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
+    v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: The result of the attention mechanism applied to v.
 
 ### `MultiHeadAttentionwithALiBi(embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = False, causal: bool = True, max_seq_len: int = 2048)`
+
+**Bases:** `olm.nn.attention.base.AttentionBase`
+
+Source: [`src/olm/nn/attention/alibi.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/alibi.py#L9)
 
 Multi-Head Attention with ALiBi (Attention with Linear Biases).
 
@@ -199,10 +371,32 @@ Args:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention scores with ALiBi bias.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor` (inherited from `AttentionBase`)
+
+Source: [`src/olm/nn/attention/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L73)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
+
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/alibi.py:41`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/alibi.py#L41)
+
+Computes attention scores with ALiBi bias.
 
 ### `MultiHeadAttentionwithRoPE(embed_dims: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False, bias: bool = True, rope_theta: float = 10000.0)`
+
+**Bases:** `olm.nn.attention.base.AttentionwithRoPEBase`
+
+Source: [`src/olm/nn/attention/mha.py:58`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/mha.py#L58)
 
 Implements Multi-Head Attention (MHA) with Rotary Positional Embedding (RoPE).
 
@@ -222,5 +416,32 @@ Attributes:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes the scaled dot-product attention suited for RoPE.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor` (inherited from `AttentionwithRoPEBase`)
+
+Source: [`src/olm/nn/attention/base.py:164`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L164)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
+
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/mha.py:80`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/mha.py#L80)
+
+Computes the scaled dot-product attention suited for RoPE.
+
+Args:
+    q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
+    k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
+    v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: The result of the attention mechanism applied to v.

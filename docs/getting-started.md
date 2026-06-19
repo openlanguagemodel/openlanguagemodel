@@ -4,6 +4,8 @@ This page is the shortest path from a fresh clone to a model that trains. OLM ke
 
 ## Install
 
+Use Python 3.10, 3.11, or 3.12.
+
 ```bash
 git clone https://github.com/openlanguagemodel/openlanguagemodel.git
 cd openlanguagemodel
@@ -110,6 +112,7 @@ Use `Trainer`, `DDPTrainer`, or `FSDPTrainer` directly when you want explicit co
 
 ## Next Steps
 
+- Read [`installation.md`](installation.md) for optional extras, supported Python versions, and release-build commands.
 - Read [`datasets-and-training.md`](datasets-and-training.md) for data streaming, callbacks, checkpointing, DDP, FSDP, and AutoTrainer.
 - Read [`architecture.md`](architecture.md) for blocks, residuals, and custom architectures.
 - Use [`api.md`](api.md) for exact signatures and method docs.

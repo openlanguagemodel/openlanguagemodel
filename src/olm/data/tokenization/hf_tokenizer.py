@@ -12,7 +12,7 @@ class HFTokenizer(TokenizerBase):
 
     def encode(self, text: str) -> torch.Tensor:
         """
-        Encodes a single string into a 1D PyTorch tensor of input IDs. 
+        Encodes a single string into a 1D PyTorch tensor of input IDs.
         Padding is implicitly disabled for single inputs.
         """
         encoded_data = self.tokenizer(

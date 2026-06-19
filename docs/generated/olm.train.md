@@ -1,10 +1,14 @@
 # `olm.train`
 
+Source: [`src/olm/train/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/__init__.py#L1)
+
 Training infrastructure for OLM.
 
 ## Functions
 
 ### `AutoTrainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str | olm.train.device.DeviceConfig = 'auto', context_length: int = 1024, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None, verbose: bool = True, ddp_find_unused_parameters: bool = False, ddp_broadcast_buffers: bool = True, ddp_bucket_cap_mb: int = 25, fsdp_min_num_params: int = 100000000, fsdp_transformer_layer_cls: Type[torch.nn.modules.module.Module] | None = None, fsdp_backward_prefetch: str = 'BACKWARD_PRE', fsdp_limit_all_gathers: bool = True, fsdp_use_orig_params: bool = True) -> olm.train.trainer.trainer.Trainer | olm.train.trainer.ddp_trainer.DDPTrainer | olm.train.trainer.fsdp_trainer.FSDPTrainer`
+
+Source: [`src/olm/train/trainer/auto_trainer.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/auto_trainer.py#L32)
 
 Automatically select and configure the optimal trainer based on hardware.
 
@@ -12,6 +16,13 @@ This factory function intelligently chooses between Trainer, DDPTrainer,
 and FSDPTrainer based on available GPUs and model size. It handles all
 the complexity of distributed training setup, device selection, and
 parameter configuration.
+
+Forward/training contract:
+    The model is expected to accept ``input_ids`` shaped
+    ``[batch, context_length]`` and return logits shaped
+    ``[batch, context_length, vocab_size]``. The dataloader should yield
+    ``(input_ids, labels)`` where both tensors are shaped
+    ``[batch, context_length]``.
 
 Args:
     model: Model to train.
@@ -96,12 +107,21 @@ Example:
 
 ### `auto_trainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str | olm.train.device.DeviceConfig = 'auto', context_length: int = 1024, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None, verbose: bool = True, ddp_find_unused_parameters: bool = False, ddp_broadcast_buffers: bool = True, ddp_bucket_cap_mb: int = 25, fsdp_min_num_params: int = 100000000, fsdp_transformer_layer_cls: Type[torch.nn.modules.module.Module] | None = None, fsdp_backward_prefetch: str = 'BACKWARD_PRE', fsdp_limit_all_gathers: bool = True, fsdp_use_orig_params: bool = True) -> olm.train.trainer.trainer.Trainer | olm.train.trainer.ddp_trainer.DDPTrainer | olm.train.trainer.fsdp_trainer.FSDPTrainer`
 
+Source: [`src/olm/train/trainer/auto_trainer.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/auto_trainer.py#L32)
+
 Automatically select and configure the optimal trainer based on hardware.
 
 This factory function intelligently chooses between Trainer, DDPTrainer,
 and FSDPTrainer based on available GPUs and model size. It handles all
 the complexity of distributed training setup, device selection, and
 parameter configuration.
+
+Forward/training contract:
+    The model is expected to accept ``input_ids`` shaped
+    ``[batch, context_length]`` and return logits shaped
+    ``[batch, context_length, vocab_size]``. The dataloader should yield
+    ``(input_ids, labels)`` where both tensors are shaped
+    ``[batch, context_length]``.
 
 Args:
     model: Model to train.
@@ -186,6 +206,8 @@ Example:
 
 ### `detect_devices(verbose: bool = True) -> olm.train.device.DeviceConfig`
 
+Source: [`src/olm/train/device.py:84`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L84)
+
 Detect available hardware and create device configuration.
 
 Args:
@@ -199,6 +221,8 @@ Example:
     >>> print(f"Found {config.num_gpus} GPUs")
 
 ### `determine_strategy(device_config: olm.train.device.DeviceConfig, model: torch.nn.modules.module.Module | None = None, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None) -> olm.train.device.DeviceConfig`
+
+Source: [`src/olm/train/device.py:217`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L217)
 
 Determine optimal training strategy based on hardware and model.
 
@@ -222,6 +246,8 @@ Example:
 
 ### `estimate_model_size(model: torch.nn.modules.module.Module, verbose: bool = False) -> Dict[str, float]`
 
+Source: [`src/olm/train/device.py:147`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L147)
+
 Estimate memory footprint of a model.
 
 Args:
@@ -241,6 +267,8 @@ Example:
     >>> print(f"Model requires ~{memory['total_gb']:.2f} GB")
 
 ### `parse_device_string(device: str, model: torch.nn.modules.module.Module | None = None) -> olm.train.device.DeviceConfig`
+
+Source: [`src/olm/train/device.py:353`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L353)
 
 Parse device string and return configuration.
 
@@ -265,6 +293,8 @@ Example:
 
 ### `print_strategy_summary(config: olm.train.device.DeviceConfig) -> None`
 
+Source: [`src/olm/train/device.py:416`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L416)
+
 Print a summary of the selected training strategy.
 
 Args:
@@ -273,6 +303,10 @@ Args:
 ## Classes
 
 ### `AdamW(params, lr: float = 0.001, betas: Tuple[float, float] = (0.9, 0.999), eps: float = 1e-08, weight_decay: float = 0.01, amsgrad: bool = False, maximize: bool = False, fused: bool | None = None)`
+
+**Bases:** `AdamW`
+
+Source: [`src/olm/train/optim/adamw.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/adamw.py#L7)
 
 AdamW optimizer with decoupled weight decay regularization.
 
@@ -308,6 +342,10 @@ Example:
 
 ### `CheckpointCallback(checkpoint_dir: str = 'checkpoints', save_every: int = 1000, keep_last_n: int = 5, save_best: bool = True)`
 
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/checkpoint_cb.py:12`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/checkpoint_cb.py#L12)
+
 Callback to save model checkpoints at specified intervals.
 
 Args:
@@ -318,10 +356,17 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Save checkpoint after each optimization step if needed.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/checkpoint_cb.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/checkpoint_cb.py#L36)
+
+Save checkpoint after each optimization step if needed.
 
 ### `CosineAnnealingLR(optimizer, T_max: int, eta_min: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/cosine.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L7)
 
 Cosine annealing learning rate scheduler.
 
@@ -343,10 +388,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using cosine annealing.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/cosine.py:39`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/cosine.py#L39)
+
+Compute learning rate using cosine annealing.
 
 ### `DDPTrainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str, context_length: int, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, ddp_backend: str | None = None, find_unused_parameters: bool = False, broadcast_buffers: bool = True, bucket_cap_mb: int = 25, gradient_as_bucket_view: bool = True, static_graph: bool = False)`
+
+**Bases:** `olm.train.trainer.trainer.Trainer`
+
+Source: [`src/olm/train/trainer/ddp_trainer.py:27`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/ddp_trainer.py#L27)
 
 Trainer with PyTorch Distributed Data Parallel (DDP) support.
 
@@ -398,10 +450,24 @@ Example:
 
 #### Methods
 
-- `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
-  Training loop with DDP support.
+##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
+
+Source: [`src/olm/train/trainer/ddp_trainer.py:150`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/ddp_trainer.py#L150)
+
+Training loop with DDP support.
+
+Args:
+    epochs: Number of epochs.
+    log_interval: Log every N steps.
+    max_steps: Maximum steps to train.
+    steps_per_epoch: Max steps per epoch.
+
+Returns:
+    List of loss values (only on rank 0).
 
 ### `DeviceConfig(num_gpus: int, num_cpus: int, cuda_available: bool, gpu_memory_per_device: float | None = None, total_gpu_memory: float | None = None, strategy: olm.train.device.TrainerStrategy | None = None, device_type: str = 'cuda', local_rank: int = 0, world_size: int = 1, backend: str | None = None, mixed_precision: str | None = None, sharding_strategy: str | None = None, auto_wrap_policy: str | None = None, cpu_offload: bool = False) -> None`
+
+Source: [`src/olm/train/device.py:27`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L27)
 
 Configuration for device and training strategy.
 
@@ -423,10 +489,17 @@ Attributes:
 
 #### Methods
 
-- `to_dict(self) -> Dict[str, Any]`
-  Convert config to dictionary.
+##### `to_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/device.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L64)
+
+Convert config to dictionary.
 
 ### `EarlyStoppingCallback(patience: int = 5, min_delta: float = 0.0)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/early_stopping_cb.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/early_stopping_cb.py#L8)
 
 Callback to stop training early if validation loss doesn't improve.
 
@@ -436,10 +509,17 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Check for early stopping after each step.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/early_stopping_cb.py:24`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/early_stopping_cb.py#L24)
+
+Check for early stopping after each step.
 
 ### `FSDPTrainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str, context_length: int, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, sharding_strategy: str = 'FULL_SHARD', auto_wrap_policy: str | None = 'size', min_num_params: int = 100000000, transformer_layer_cls: Type[torch.nn.modules.module.Module] | None = None, cpu_offload: bool = False, backward_prefetch: str = 'BACKWARD_PRE', mixed_precision_policy: str | None = None, limit_all_gathers: bool = True, use_orig_params: bool = True)`
+
+**Bases:** `olm.train.trainer.trainer.Trainer`
+
+Source: [`src/olm/train/trainer/fsdp_trainer.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L38)
 
 Trainer with PyTorch Fully Sharded Data Parallel (FSDP) support.
 
@@ -502,12 +582,39 @@ Example:
 
 #### Methods
 
-- `save_checkpoint(self, path: str, state_dict_type: str = 'FULL_STATE_DICT') -> None`
-  Save FSDP checkpoint.
-- `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
-  Training loop with FSDP support.
+##### `save_checkpoint(self, path: str, state_dict_type: str = 'FULL_STATE_DICT') -> None`
+
+Source: [`src/olm/train/trainer/fsdp_trainer.py:497`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L497)
+
+Save FSDP checkpoint.
+
+Args:
+    path: Path to save checkpoint.
+    state_dict_type: Type of state dict to save:
+        - "FULL_STATE_DICT": Gather full model on rank 0 (recommended)
+        - "LOCAL_STATE_DICT": Save local shards on each rank
+        - "SHARDED_STATE_DICT": Save sharded checkpoint
+
+##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
+
+Source: [`src/olm/train/trainer/fsdp_trainer.py:236`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L236)
+
+Training loop with FSDP support.
+
+Args:
+    epochs: Number of epochs.
+    log_interval: Log every N steps.
+    max_steps: Maximum steps to train.
+    steps_per_epoch: Max steps per epoch.
+
+Returns:
+    List of loss values (only on rank 0).
 
 ### `LRMonitorCallback(log_every: int = 100)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/lr_monitor_cb.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/lr_monitor_cb.py#L8)
 
 Callback to monitor and log learning rate.
 
@@ -516,10 +623,17 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Log learning rate after each optimization step if needed.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/lr_monitor_cb.py:19`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/lr_monitor_cb.py#L19)
+
+Log learning rate after each optimization step if needed.
 
 ### `LinearDecayLR(optimizer, total_steps: int, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:66`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L66)
 
 Simple linear decay scheduler that decays to zero.
 
@@ -539,10 +653,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:89`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L89)
+
+Compute learning rate using linear decay.
 
 ### `LinearLR(optimizer, total_steps: int, end_lr: float = 0, start_factor: float = 1.0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L6)
 
 Linear learning rate scheduler.
 
@@ -566,10 +687,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear interpolation.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L42)
+
+Compute learning rate using linear interpolation.
 
 ### `Lion(params: Iterable, lr: float = 0.0001, betas: Tuple[float, float] = (0.9, 0.99), weight_decay: float = 0.0, use_triton: bool = False)`
+
+**Bases:** `olm.train.optim.base.OptimizerBase`
+
+Source: [`src/olm/train/optim/lion.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L7)
 
 Lion optimizer (EvoLved Sign Momentum).
 
@@ -600,12 +728,33 @@ Example:
 
 #### Methods
 
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized tensors to zero.
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py:67`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py#L67)
+
+Performs a single optimization step.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/lion.py:126`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/lion.py#L126)
+
+Sets gradients of all optimized tensors to zero.
+
+Args:
+    set_to_none: instead of setting to zero, set the grads to None.
+        This is more memory efficient and can slightly improve performance.
 
 ### `MetricsLoggerCallback(log_dir: str = 'logs', log_every: int = 10)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/metrics_logger_cb.py:10`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/metrics_logger_cb.py#L10)
 
 Callback to log metrics to a JSONL file.
 
@@ -615,10 +764,17 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Log metrics after each optimization step if needed.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/metrics_logger_cb.py:30`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/metrics_logger_cb.py#L30)
+
+Log metrics after each optimization step if needed.
 
 ### `OptimizerBase(params: collections.abc.Iterable[torch.Tensor] | collections.abc.Iterable[dict[str, Any]] | collections.abc.Iterable[tuple[str, torch.Tensor]], defaults: dict[str, typing.Any]) -> None`
+
+**Bases:** `Optimizer`, `ABC`
+
+Source: [`src/olm/train/optim/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L8)
 
 Abstract base class for all optimizers in the OLM framework.
 
@@ -633,18 +789,70 @@ Subclasses must implement the step() method to define the optimization logic.
 
 #### Methods
 
-- `extra_repr(self) -> str`
-  String representation of the optimizer for debugging.
-- `load_state_dict(self, state_dict: Dict[str, Any])`
-  Loads the optimizer state.
-- `state_dict(self) -> Dict[str, Any]`
-  Returns the state of the optimizer as a dict.
-- `step(self, closure: Callable[[], float] | None = None) -> float | None`
-  Performs a single optimization step.
-- `zero_grad(self, set_to_none: bool = True)`
-  Sets gradients of all optimized tensors to zero or None.
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/train/optim/base.py:74`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L74)
+
+String representation of the optimizer for debugging.
+
+Override this in subclasses to provide useful information.
+
+##### `load_state_dict(self, state_dict: Dict[str, Any])`
+
+Source: [`src/olm/train/optim/base.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L64)
+
+Loads the optimizer state.
+
+Args:
+    state_dict: optimizer state. Should be an object returned
+        from a call to state_dict().
+
+##### `state_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/optim/base.py:48`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L48)
+
+Returns the state of the optimizer as a dict.
+
+It contains two entries:
+
+- ``state``: dict holding current optimization state. Its content
+  differs between optimizer classes.
+- ``param_groups``: list containing all parameter groups where each
+  parameter group is a dict.
+
+Returns:
+    Dictionary containing optimizer state
+
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`src/olm/train/optim/base.py:22`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L22)
+
+Performs a single optimization step.
+
+Args:
+    closure: A closure that reevaluates the model and returns the loss.
+        Some optimization algorithms (e.g., L-BFGS) require multiple
+        evaluations of the loss function.
+
+Returns:
+    Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/base.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L37)
+
+Sets gradients of all optimized tensors to zero or None.
+
+Args:
+    set_to_none: Instead of setting to zero, set the grads to None.
+        This is more memory efficient and can slightly improve performance.
+        Default: True
 
 ### `SchedulerBase(optimizer, last_epoch: int = -1, verbose: bool = False)`
+
+**Bases:** `_LRScheduler`, `ABC`
+
+Source: [`src/olm/train/schedulers/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L8)
 
 Base class for all OLM learning rate schedulers.
 
@@ -673,16 +881,50 @@ Example:
 
 #### Methods
 
-- `get_last_lr(self) -> List[float]`
-  Return last computed learning rate by current scheduler.
-- `get_lr(self) -> List[float]`
-  Compute learning rate for each parameter group.
-- `load_state_dict(self, state_dict)`
-  Load the scheduler state from a checkpoint.
-- `state_dict(self)`
-  Returns the state of the scheduler as a dict.
+##### `get_last_lr(self) -> List[float]`
+
+Source: [`src/olm/train/schedulers/base.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L64)
+
+Return last computed learning rate by current scheduler.
+
+Returns:
+    List of last computed learning rates.
+
+##### `get_lr(self) -> List[float]`
+
+Source: [`src/olm/train/schedulers/base.py:39`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L39)
+
+Compute learning rate for each parameter group.
+
+This method must be implemented by subclasses to define the
+learning rate schedule logic.
+
+Returns:
+    List of learning rates, one per parameter group.
+
+##### `load_state_dict(self, state_dict)`
+
+Source: [`src/olm/train/schedulers/base.py:86`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L86)
+
+Load the scheduler state from a checkpoint.
+
+Args:
+    state_dict: Scheduler state returned by state_dict().
+
+##### `state_dict(self)`
+
+Source: [`src/olm/train/schedulers/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/base.py#L73)
+
+Returns the state of the scheduler as a dict.
+
+Contains all non-callable attributes that are specific to
+the scheduler and required for checkpointing.
 
 ### `ThroughputCallback(log_every: int = 100, context_length: int = 1024, batch_size: int = 8)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/throughput_cb.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/throughput_cb.py#L9)
 
 Callback to monitor training throughput (tokens/sec, samples/sec).
 
@@ -693,12 +935,21 @@ Args:
 
 #### Methods
 
-- `on_step_begin(self, trainer, step: int) -> None`
-  Record start time of the step.
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Calculate and log throughput.
+##### `on_step_begin(self, trainer, step: int) -> None`
+
+Source: [`src/olm/train/callbacks/throughput_cb.py:30`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/throughput_cb.py#L30)
+
+Record start time of the step.
+
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/throughput_cb.py:34`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/throughput_cb.py#L34)
+
+Calculate and log throughput.
 
 ### `Trainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str, context_length: int, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True)`
+
+Source: [`src/olm/train/trainer/trainer.py:53`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L53)
 
 Manages the training loop for Open Language Model (OLM) architectures.
 
@@ -710,6 +961,12 @@ This trainer handles the core training logic including:
 - Callbacks for validation, checkpointing, and custom logic
 - Learning rate scheduling support
 - Gradient clipping
+
+Training contract:
+    The dataloader must yield ``(input_ids, labels)``. Both tensors are
+    moved to ``device`` and truncated to ``context_length``. The model must
+    return logits shaped ``[batch, seq_len, vocab_size]`` so the configured
+    loss can compare logits against ``labels`` shaped ``[batch, seq_len]``.
 
 Attributes:
     model (Pipeline): The model to train.
@@ -731,41 +988,102 @@ Attributes:
 
 #### Methods
 
-- `add_callback(self, callback: olm.train.trainer.trainer.TrainerCallback) -> None`
-  Add a callback to the trainer.
-- `remove_callback(self, callback: olm.train.trainer.trainer.TrainerCallback) -> None`
-  Remove a callback from the trainer.
-- `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
-  Executes the training loop for a specified number of epochs.
+##### `add_callback(self, callback: olm.train.trainer.trainer.TrainerCallback) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:213`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L213)
+
+Add a callback to the trainer.
+
+##### `remove_callback(self, callback: olm.train.trainer.trainer.TrainerCallback) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:217`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L217)
+
+Remove a callback from the trainer.
+
+##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
+
+Source: [`src/olm/train/trainer/trainer.py:267`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L267)
+
+Executes the training loop for a specified number of epochs.
+
+Args:
+    epochs (int): The number of complete passes through the dataset.
+    log_interval (int): How often to print the loss. Defaults to 10.
+    max_steps (int, optional): Maximum number of steps to train for.
+    steps_per_epoch (int, optional): Maximum number of steps per epoch. Defaults to None (unlimited).
+
+Returns:
+    list[float]: A list of recorded loss values.
 
 ### `TrainerCallback()`
+
+Source: [`src/olm/train/trainer/trainer.py:17`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L17)
 
 Base class for trainer callbacks.
 
 #### Methods
 
-- `on_batch_begin(self, trainer: 'Trainer', batch_idx: int) -> None`
-  Called at the beginning of each batch.
-- `on_batch_end(self, trainer: 'Trainer', batch_idx: int, loss: float) -> None`
-  Called at the end of each batch.
-- `on_epoch_begin(self, trainer: 'Trainer', epoch: int) -> None`
-  Called at the beginning of each epoch.
-- `on_epoch_end(self, trainer: 'Trainer', epoch: int) -> None`
-  Called at the end of each epoch.
-- `on_step_begin(self, trainer: 'Trainer', step: int) -> None`
-  Called at the beginning of each optimization step (after gradient accumulation).
-- `on_step_end(self, trainer: 'Trainer', step: int, loss: float) -> None`
-  Called at the end of each optimization step.
-- `on_train_begin(self, trainer: 'Trainer') -> None`
-  Called at the beginning of training.
-- `on_train_end(self, trainer: 'Trainer') -> None`
-  Called at the end of training.
+##### `on_batch_begin(self, trainer: 'Trainer', batch_idx: int) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L36)
+
+Called at the beginning of each batch.
+
+##### `on_batch_end(self, trainer: 'Trainer', batch_idx: int, loss: float) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:40`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L40)
+
+Called at the end of each batch.
+
+##### `on_epoch_begin(self, trainer: 'Trainer', epoch: int) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:28`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L28)
+
+Called at the beginning of each epoch.
+
+##### `on_epoch_end(self, trainer: 'Trainer', epoch: int) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L32)
+
+Called at the end of each epoch.
+
+##### `on_step_begin(self, trainer: 'Trainer', step: int) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:44`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L44)
+
+Called at the beginning of each optimization step (after gradient accumulation).
+
+##### `on_step_end(self, trainer: 'Trainer', step: int, loss: float) -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:48`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L48)
+
+Called at the end of each optimization step.
+
+##### `on_train_begin(self, trainer: 'Trainer') -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:20`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L20)
+
+Called at the beginning of training.
+
+##### `on_train_end(self, trainer: 'Trainer') -> None`
+
+Source: [`src/olm/train/trainer/trainer.py:24`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/trainer.py#L24)
+
+Called at the end of training.
 
 ### `TrainerStrategy(*values)`
+
+**Bases:** `Enum`
+
+Source: [`src/olm/train/device.py:17`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L17)
 
 Training strategy based on available hardware.
 
 ### `ValidationCallback(val_dataloader, eval_every: int = 500, device: str | None = None, use_amp: bool = True)`
+
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L11)
 
 Callback to perform validation at specified intervals.
 
@@ -777,10 +1095,17 @@ Args:
 
 #### Methods
 
-- `on_step_end(self, trainer, step: int, loss: float) -> None`
-  Run validation after each optimization step if needed.
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L36)
+
+Run validation after each optimization step if needed.
 
 ### `WarmupCosineScheduler(optimizer, warmup_steps: int, total_steps: int, min_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:62`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L62)
 
 Combined warmup and cosine annealing scheduler.
 
@@ -808,10 +1133,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate with warmup and cosine decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:102`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L102)
+
+Compute learning rate with warmup and cosine decay.
 
 ### `WarmupLR(optimizer, warmup_steps: int, start_lr: float = 0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/warmup.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L6)
 
 Learning rate warmup scheduler.
 
@@ -833,5 +1165,8 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate during warmup.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/warmup.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L38)
+
+Compute learning rate during warmup.

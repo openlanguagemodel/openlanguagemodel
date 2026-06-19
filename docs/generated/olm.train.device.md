@@ -1,5 +1,7 @@
 # `olm.train.device`
 
+Source: [`src/olm/train/device.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L1)
+
 Device detection and automatic trainer strategy selection.
 
 This module provides automatic hardware detection and intelligent selection
@@ -9,6 +11,8 @@ resources and model characteristics.
 ## Functions
 
 ### `detect_devices(verbose: bool = True) -> olm.train.device.DeviceConfig`
+
+Source: [`src/olm/train/device.py:84`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L84)
 
 Detect available hardware and create device configuration.
 
@@ -23,6 +27,8 @@ Example:
     >>> print(f"Found {config.num_gpus} GPUs")
 
 ### `determine_strategy(device_config: olm.train.device.DeviceConfig, model: torch.nn.modules.module.Module | None = None, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None) -> olm.train.device.DeviceConfig`
+
+Source: [`src/olm/train/device.py:217`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L217)
 
 Determine optimal training strategy based on hardware and model.
 
@@ -46,6 +52,8 @@ Example:
 
 ### `estimate_model_size(model: torch.nn.modules.module.Module, verbose: bool = False) -> Dict[str, float]`
 
+Source: [`src/olm/train/device.py:147`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L147)
+
 Estimate memory footprint of a model.
 
 Args:
@@ -65,6 +73,8 @@ Example:
     >>> print(f"Model requires ~{memory['total_gb']:.2f} GB")
 
 ### `parse_device_string(device: str, model: torch.nn.modules.module.Module | None = None) -> olm.train.device.DeviceConfig`
+
+Source: [`src/olm/train/device.py:353`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L353)
 
 Parse device string and return configuration.
 
@@ -89,6 +99,8 @@ Example:
 
 ### `print_strategy_summary(config: olm.train.device.DeviceConfig) -> None`
 
+Source: [`src/olm/train/device.py:416`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L416)
+
 Print a summary of the selected training strategy.
 
 Args:
@@ -97,6 +109,8 @@ Args:
 ## Classes
 
 ### `DeviceConfig(num_gpus: int, num_cpus: int, cuda_available: bool, gpu_memory_per_device: float | None = None, total_gpu_memory: float | None = None, strategy: olm.train.device.TrainerStrategy | None = None, device_type: str = 'cuda', local_rank: int = 0, world_size: int = 1, backend: str | None = None, mixed_precision: str | None = None, sharding_strategy: str | None = None, auto_wrap_policy: str | None = None, cpu_offload: bool = False) -> None`
+
+Source: [`src/olm/train/device.py:27`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L27)
 
 Configuration for device and training strategy.
 
@@ -118,9 +132,16 @@ Attributes:
 
 #### Methods
 
-- `to_dict(self) -> Dict[str, Any]`
-  Convert config to dictionary.
+##### `to_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/device.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L64)
+
+Convert config to dictionary.
 
 ### `TrainerStrategy(*values)`
+
+**Bases:** `Enum`
+
+Source: [`src/olm/train/device.py:17`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/device.py#L17)
 
 Training strategy based on available hardware.

@@ -74,6 +74,11 @@ class OPTModel(Block):
     - Pre-normalization with LayerNorm
     - Multi-Head Attention with Causal Masking
     - ReLU activation in Feed-Forward Networks
+    - Tied output projection through ``OutputHead`` by default
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
 
     Args:
         vocab_size (int): Vocabulary size.

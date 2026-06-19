@@ -1,8 +1,14 @@
 # `olm.nn.attention.alibi`
 
+Source: [`src/olm/nn/attention/alibi.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/alibi.py#L1)
+
 ## Classes
 
 ### `MultiHeadAttentionwithALiBi(embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = False, causal: bool = True, max_seq_len: int = 2048)`
+
+**Bases:** `olm.nn.attention.base.AttentionBase`
+
+Source: [`src/olm/nn/attention/alibi.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/alibi.py#L9)
 
 Multi-Head Attention with ALiBi (Attention with Linear Biases).
 
@@ -20,5 +26,23 @@ Args:
 
 #### Methods
 
-- `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
-  Computes attention scores with ALiBi bias.
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor` (inherited from `AttentionBase`)
+
+Source: [`src/olm/nn/attention/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L73)
+
+Standard forward pass for attention layers.
+
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
+
+Args:
+    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
+    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+Returns:
+    torch.Tensor: Output tensor [batch, seq, embed_dim].
+
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/alibi.py:41`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/alibi.py#L41)
+
+Computes attention scores with ALiBi bias.

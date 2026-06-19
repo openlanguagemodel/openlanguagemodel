@@ -139,7 +139,7 @@ trainer = Trainer(..., callbacks=[MyLogger()])
 
 <h3>5. Distributed Training (Multi-GPU)</h3>
 
-For large models or faster training, you can use multiple GPUs across one or more machines. OLM provides two approaches using PyTorch's native distributed backends:
+For large models or faster training, v2.2 supports multiple GPUs on a single machine. OLM provides two approaches using PyTorch's native distributed backends:
 
 **DDP (Distributed Data Parallel)** - Best for models that fit on a single GPU
 
@@ -160,8 +160,7 @@ Both approaches use `torchrun` to launch multiple processes:
 # Single machine, 4 GPUs
 torchrun --nproc_per_node=4 train.py
 
-# Multi-node: 2 machines, 4 GPUs each (run on both machines)
-torchrun --nproc_per_node=4 --nnodes=2 --node_rank=0 --master_addr=192.168.1.1 train.py
+# Multi-node launch helpers are planned for v4.
 ```
 
 **DDP Training Example**
@@ -239,7 +238,7 @@ trainer.train(epochs=10)
 > - **Sharding strategies**:
 >     - `FULL_SHARD`: Shard everything (parameters, gradients, optimizer states) - most memory efficient
 >     - `SHARD_GRAD_OP`: Shard gradients and optimizer only - faster than FULL_SHARD
->     - `HYBRID_SHARD`: Full shard within node, replicate across nodes - for multi-node
+>     - `HYBRID_SHARD`: PyTorch strategy for hybrid setups; OLM's documented multi-node workflow is planned for v4
 >     - `NO_SHARD`: No sharding (equivalent to DDP)
 > - **Auto-wrap policies**:
 >     - `"size"`: Wraps layers based on parameter count (use `min_num_params` to control)
@@ -270,7 +269,7 @@ trainer.save_checkpoint(
 | ------------------------------- | --------------------------------------------------- |
 | Model fits on single GPU        | Use **DDP** (simpler, faster)                       |
 | Model doesn't fit on single GPU | Use **FSDP** with `FULL_SHARD`                      |
-| Multi-node training             | Use **FSDP** with `HYBRID_SHARD`                    |
+| Multi-node training             | Planned for **v4**                                  |
 | Maximum throughput              | Use **DDP** or **FSDP** with `SHARD_GRAD_OP`        |
 | Maximum model size              | Use **FSDP** with `FULL_SHARD` + `cpu_offload=True` |
 
@@ -445,13 +444,7 @@ Launch with torchrun:
 # Single node, 4 GPUs
 torchrun --nproc_per_node=4 train_script.py
 
-# Multi-node, 8 GPUs per node
-torchrun --nproc_per_node=8 \
-         --nnodes=2 \
-         --node_rank=0 \
-         --master_addr="192.168.1.1" \
-         --master_port=29500 \
-         train_script.py
+# Multi-node launch helpers are planned for v4.
 ```
 
 **Advanced Configuration**

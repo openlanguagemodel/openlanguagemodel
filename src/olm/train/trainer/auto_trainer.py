@@ -70,6 +70,13 @@ def AutoTrainer(
     the complexity of distributed training setup, device selection, and
     parameter configuration.
 
+    Forward/training contract:
+        The model is expected to accept ``input_ids`` shaped
+        ``[batch, context_length]`` and return logits shaped
+        ``[batch, context_length, vocab_size]``. The dataloader should yield
+        ``(input_ids, labels)`` where both tensors are shaped
+        ``[batch, context_length]``.
+
     Args:
         model: Model to train.
         optimizer: Optimizer instance or class.

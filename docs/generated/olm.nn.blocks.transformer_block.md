@@ -1,17 +1,27 @@
 # `olm.nn.blocks.transformer_block`
 
+Source: [`src/olm/nn/blocks/transformer_block.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/transformer_block.py#L1)
+
 ## Classes
 
 ### `TransformerBlock(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False, ff_multiplier: float = 2.5)`
 
-A single Transformer block containing Multi-Head Attention and a FeedForward Network.
+**Bases:** `olm.nn.structure.block.Block`
 
-This block implements the standard Transformer architecture with pre-normalization,
-Rotary Positional Embeddings (RoPE), and SwiGLU activation in the feedforward layer.
-It supports causal masking for autoregressive modeling.
+Source: [`src/olm/nn/blocks/transformer_block.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/transformer_block.py#L9)
+
+Pre-norm transformer block for causal language modeling.
+
+The block contains two residual branches: LayerNorm + FlashAttention with
+RoPE, followed by LayerNorm + SwiGLU feed-forward network. It is the default
+repeated block used by ``LM``.
 
 Structure:
-    Input -> LayerNorm -> MHA(RoPE) -> Residual -> LayerNorm -> SwiGLU FFN -> Residual -> Output
+    ``x`` -> residual(LayerNorm, attention) -> residual(LayerNorm, FFN).
+
+Forward:
+    Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
+    returns hidden states with the same shape.
 
 Args:
     embed_dim (int): The dimension of the embedding space (d_model).
@@ -23,4 +33,18 @@ Args:
         Commonly 4.0 (standard) or 8/3 (SwiGLU). Defaults to 2.5.
 
 Attributes:
-    layers (nn.ModuleList): The sequential list of layers within the block.
+    blocks (nn.ModuleList): Sequential OLM block structure.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `Block`)
+
+Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L26)
+
+Apply each block to the input in sequence.
+
+Args:
+    x: Input tensor.
+
+Returns:
+    Output tensor after all blocks have been applied.

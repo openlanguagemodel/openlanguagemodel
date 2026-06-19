@@ -1,10 +1,16 @@
 # `olm.train.schedulers.linear`
 
+Source: [`src/olm/train/schedulers/linear.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L1)
+
 Linear learning rate scheduler.
 
 ## Classes
 
 ### `LinearDecayLR(optimizer, total_steps: int, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:66`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L66)
 
 Simple linear decay scheduler that decays to zero.
 
@@ -24,10 +30,17 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear decay.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:89`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L89)
+
+Compute learning rate using linear decay.
 
 ### `LinearLR(optimizer, total_steps: int, end_lr: float = 0, start_factor: float = 1.0, last_epoch: int = -1)`
+
+**Bases:** `olm.train.schedulers.base.SchedulerBase`
+
+Source: [`src/olm/train/schedulers/linear.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L6)
 
 Linear learning rate scheduler.
 
@@ -51,5 +64,8 @@ Example:
 
 #### Methods
 
-- `get_lr(self)`
-  Compute learning rate using linear interpolation.
+##### `get_lr(self)`
+
+Source: [`src/olm/train/schedulers/linear.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/linear.py#L42)
+
+Compute learning rate using linear interpolation.
