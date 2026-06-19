@@ -5,6 +5,7 @@ from .transformer_block import TransformerBlock
 from .output_head import OutputHead
 from olm.nn.structure.combinators import Repeat
 
+
 class LM(Block):
     """
     A simple Language Model (LM) architecture.
@@ -25,10 +26,13 @@ class LM(Block):
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         causal (bool, optional): Whether to use causal masking. Defaults to True.
         ff_multiplier (float, optional): Multiplier for FFN hidden dimension. Defaults to 2.5.
+        tie_embeddings (bool, optional): Whether the output head should reuse
+            the input embedding matrix. Defaults to True.
 
     Attributes:
         layers (nn.ModuleList): The sequence of layers in the model.
     """
+
     def __init__(
         self,
         vocab_size: int,
@@ -39,24 +43,30 @@ class LM(Block):
         dropout: float = 0.0,
         causal: bool = True,
         ff_multiplier: float = 2.5,
+        tie_embeddings: bool = True,
     ):
-        super().__init__([
-            # Embedding
-            Embedding(vocab_size, embed_dim),
-
-            # Stack of transformer blocks
-            Repeat(
-                lambda: TransformerBlock(
-                    embed_dim=embed_dim,
-                    num_heads=num_heads,
-                    max_seq_len=max_seq_len,
-                    dropout=dropout,
-                    causal=causal,
-                    ff_multiplier=ff_multiplier,
+        embedding = Embedding(vocab_size, embed_dim)
+        super().__init__(
+            [
+                # Embedding
+                embedding,
+                # Stack of transformer blocks
+                Repeat(
+                    lambda: TransformerBlock(
+                        embed_dim=embed_dim,
+                        num_heads=num_heads,
+                        max_seq_len=max_seq_len,
+                        dropout=dropout,
+                        causal=causal,
+                        ff_multiplier=ff_multiplier,
+                    ),
+                    num_layers,
                 ),
-                num_layers,
-            ),
-
-            # Final projection to logits
-            OutputHead(embed_dim, vocab_size),
-        ])
+                # Final projection to logits
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding if tie_embeddings else None,
+                ),
+            ]
+        )

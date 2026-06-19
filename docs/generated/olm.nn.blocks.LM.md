@@ -2,7 +2,7 @@
 
 ## Classes
 
-### `LM(vocab_size: int, embed_dim: int, num_heads: int, num_layers: int, max_seq_len: int, dropout: float = 0.0, causal: bool = True, ff_multiplier: float = 2.5)`
+### `LM(vocab_size: int, embed_dim: int, num_heads: int, num_layers: int, max_seq_len: int, dropout: float = 0.0, causal: bool = True, ff_multiplier: float = 2.5, tie_embeddings: bool = True)`
 
 A simple Language Model (LM) architecture.
 
@@ -22,6 +22,8 @@ Args:
     dropout (float, optional): Dropout probability. Defaults to 0.0.
     causal (bool, optional): Whether to use causal masking. Defaults to True.
     ff_multiplier (float, optional): Multiplier for FFN hidden dimension. Defaults to 2.5.
+    tie_embeddings (bool, optional): Whether the output head should reuse
+        the input embedding matrix. Defaults to True.
 
 Attributes:
     layers (nn.ModuleList): The sequence of layers in the model.

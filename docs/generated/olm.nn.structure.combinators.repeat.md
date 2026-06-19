@@ -6,14 +6,15 @@
 
 Repeat a module a fixed number of times in sequence.
 
-The module function should return a new module instance each call.
+The module function should return a new module instance each call. It is
+used to build ``stack`` during initialization and is not needed for forward
+passes after the modules have been created.
 
 Args:
     module_func: Callable returning a new module instance.
     num_repeat: Number of times to repeat the module.
 
 Attributes:
-    module: Factory callable used to create new modules.
     num_repeat: Number of repeats.
     stack: ModuleList containing the repeated modules.
 

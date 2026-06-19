@@ -63,6 +63,9 @@ trainer = Trainer(
 losses = trainer.train(epochs=1, max_steps=100)
 ```
 
+`LM` ties the output projection to the input token embedding by default. Pass
+`tie_embeddings=False` when you want a separate output head matrix.
+
 ## Train From FineWeb-Edu
 
 For real language-model data, use the built-in FineWeb-Edu wrapper:
