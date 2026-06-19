@@ -146,7 +146,7 @@ pytest tests
 ## Documentation Flow
 
 - Start with [`docs/getting-started.md`](docs/getting-started.md)
-- Review terms and concepts in [`docs/design-notes.md`](docs/design-notes.md) and [`docs/architecture.md`](docs/architecture.md)
+- Review architecture concepts in [`docs/architecture.md`](docs/architecture.md)
 - Train from examples in [`examples/`](examples/)
 - Use [`docs/datasets-and-training.md`](docs/datasets-and-training.md) for data, trainer, AutoTrainer, callbacks, and checkpointing
 - Use [`docs/api.md`](docs/api.md) when you need exact signatures and source-defined methods

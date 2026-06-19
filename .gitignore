@@ -175,3 +175,12 @@ pyrightconfig.json
 
 # ignore checkpoint dir from any level
 **/checkpoints
+
+# Local agent/worktree backups
+claude_bkp/
+
+# Website build/dependency output
+website/.next/
+website/node_modules/
+website/out/
+website/tsconfig.tsbuildinfo

@@ -12,7 +12,6 @@ from olm.train import callbacks
 from olm.train import optim
 from olm.train import schedulers
 from olm.train import losses
-from olm.train import regularization
 from olm.train import device
 
 # Re-export common components
@@ -56,7 +55,6 @@ __all__ = [
     "optim",
     "schedulers",
     "losses",
-    "regularization",
     "device",
     # Callbacks
     "CheckpointCallback",
