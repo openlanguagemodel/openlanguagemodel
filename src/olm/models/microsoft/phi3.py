@@ -1,4 +1,3 @@
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import FlashAttentionwithRoPE, GroupedQueryAttention
@@ -6,6 +5,7 @@ from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.feedforward.geglu_ffn import GeGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 
 class Phi3Block(Block):
@@ -103,11 +103,12 @@ class Phi3Model(Block):
         rope_theta: float = 10000.0,
         activation: str = "swiglu",
         dropout: float = 0.0,
-        tie_weights: bool = False,
+        tie_weights: bool = True,
     ):
+        embedding = Embedding(vocab_size, embed_dim)
         super().__init__(
             [
-                Embedding(vocab_size, embed_dim),
+                embedding,
                 Repeat(
                     lambda: Phi3Block(
                         embed_dim,
@@ -122,14 +123,15 @@ class Phi3Model(Block):
                     num_layers,
                 ),
                 RMSNorm(embed_dim, eps=1e-5),
-                Linear(
-                    embed_dim, vocab_size, bias=False
-                ),  # torch.nn.Linear can also be used
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding,
+                    tie_weights=tie_weights,
+                    use_norm=False,
+                ),
             ]
         )
-
-        if tie_weights:
-            self.blocks[3].weight = self.blocks[0].embedding.weight
 
 
 class Phi3_5_Mini(Phi3Model):

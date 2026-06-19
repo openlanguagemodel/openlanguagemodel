@@ -3,13 +3,13 @@ import math
 import torch
 import torch.nn as nn
 
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import GeGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 
 class Gemma2Embedding(Embedding):
@@ -126,10 +126,12 @@ class Gemma2Model(Block):
         attn_logit_softcap: float | None = 50.0,
         final_logit_softcap: float | None = 30.0,
         query_pre_attn_scalar: float | None = 256.0,
+        tie_weights: bool = True,
     ):
+        embedding = Gemma2Embedding(vocab_size, embed_dim)
         super().__init__(
             [
-                Gemma2Embedding(vocab_size, embed_dim),
+                embedding,
                 Repeat(
                     lambda: Gemma2Block(
                         embed_dim,
@@ -147,21 +149,19 @@ class Gemma2Model(Block):
                     num_layers,
                 ),
                 RMSNorm(embed_dim, eps=1e-6),
-                Linear(
-                    embed_dim, vocab_size, bias=False
-                ),  # torch.nn.Linear can also be used
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding,
+                    tie_weights=tie_weights,
+                    use_norm=False,
+                ),
                 Gemma2FinalLogitSoftcap(final_logit_softcap),
             ]
         )
 
         for layer_idx, block in enumerate(self.blocks[1].stack):
             block.sliding_window = sliding_window if layer_idx % 2 == 0 else None
-
-        # Tie weights: Output head linear = Embedding
-        # Gemma 2 ties weights.
-        # self.blocks[0] is Embedding wrapper
-        # self.blocks[3] is Linear head
-        self.blocks[3].weight = self.blocks[0].embedding.weight
 
 
 class Gemma2_27B(Gemma2Model):

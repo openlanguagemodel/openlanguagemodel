@@ -72,7 +72,6 @@ def _model_cases():
                 num_kv_heads=2,
                 max_seq_len=16,
                 rope_theta=10000.0,
-                tie_weights=True,
             ),
         ),
         (
@@ -195,15 +194,52 @@ def test_model_family_trains_one_step(name, model):
     assert torch.isfinite(torch.tensor(losses[0]))
 
 
-def test_phi_and_olmo_heads_are_not_tied_by_default():
+def _embedding_weight(model):
+    if isinstance(model, GPT2Model):
+        return model.blocks[0].blocks[0].embedding.weight
+    return model.blocks[0].embedding.weight
+
+
+def _head_weight(model):
+    if isinstance(model, GPT2Model):
+        return model.blocks[2].weight
+    if isinstance(model, OPTModel):
+        return model.blocks[5].weight
+    return model.blocks[3].weight
+
+
+@pytest.mark.parametrize("name,model", _model_cases())
+def test_model_families_tie_heads_by_default(name, model):
+    del name
+    assert _head_weight(model) is _embedding_weight(model)
+
+
+def test_model_families_can_disable_tied_heads():
     cases = [
-        Phi3Model(128, 32, 64, 1, 4, 4, 16),
-        Phi4Model(128, 32, 64, 1, 4, 2, 16),
-        OLMoModel(128, 32, 64, 1, 4, 16),
+        (
+            Phi3Model(128, 32, 64, 1, 4, 4, 16, tie_weights=False),
+            lambda model: model.blocks[3].weight,
+        ),
+        (
+            Phi4Model(128, 32, 64, 1, 4, 2, 16, tie_weights=False),
+            lambda model: model.blocks[3].weight,
+        ),
+        (
+            OLMoModel(128, 32, 64, 1, 4, 16, tie_weights=False),
+            lambda model: model.blocks[3].weight,
+        ),
+        (
+            GPT2Model(128, 32, 1, 4, 16, tie_weights=False),
+            lambda model: model.blocks[2].weight,
+        ),
+        (
+            OPTModel(128, 32, 64, 1, 4, dropout=0.0, tie_weights=False),
+            lambda model: model.blocks[5].weight,
+        ),
     ]
 
-    for model in cases:
-        assert model.blocks[3].weight is not model.blocks[0].embedding.weight
+    for model, head_weight in cases:
+        assert head_weight(model) is not _embedding_weight(model)
 
 
 def test_phi4_uses_reference_rope_theta():
@@ -245,15 +281,15 @@ def test_gemma2_attention_reference_features():
     assert logits.abs().max().item() <= 30.0
 
 
-def test_llama32_presets_tie_embeddings():
-    model = Llama3Model(128, 32, 64, 1, 4, 2, 16, tie_weights=True)
+def test_llama3_ties_embeddings_by_default():
+    model = Llama3Model(128, 32, 64, 1, 4, 2, 16)
     assert model.blocks[3].weight is model.blocks[0].embedding.weight
 
     with patch.object(llama3_module.Llama3Model, "__init__", return_value=None) as init:
         llama3_module.Llama3_2_1B()
         llama3_module.Llama3_2_3B()
 
-    assert [call.kwargs["tie_weights"] for call in init.call_args_list] == [True, True]
+    assert [call.kwargs.get("tie_weights", True) for call in init.call_args_list] == [True, True]
 
 
 def test_phi3_reference_preset_constants():

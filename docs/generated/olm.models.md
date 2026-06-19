@@ -14,7 +14,7 @@ GPT-2 Large (774M).
 
 GPT-2 Medium (355M).
 
-### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1)`
+### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True)`
 
 Base class for GPT-2 models.
 
@@ -22,7 +22,7 @@ Base class for GPT-2 models.
 
 GPT-2 XL (1.5B).
 
-### `Gemma2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, head_dim: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0, sliding_window: int | None = 4096, attn_logit_softcap: float | None = 50.0, final_logit_softcap: float | None = 30.0, query_pre_attn_scalar: float | None = 256.0)`
+### `Gemma2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, head_dim: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0, sliding_window: int | None = 4096, attn_logit_softcap: float | None = 50.0, final_logit_softcap: float | None = 30.0, query_pre_attn_scalar: float | None = 256.0, tie_weights: bool = True)`
 
 Base class for Gemma 2 models.
 
@@ -38,7 +38,7 @@ Gemma 2 2B Model.
 
 Gemma 2 9B Model.
 
-### `Llama2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0)`
+### `Llama2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
 Base class for Llama 2 models.
 
@@ -57,7 +57,7 @@ Llama 2 70B (GQA).
 
 Llama 2 7B (MHA).
 
-### `Llama3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 500000.0, dropout: float = 0.0, tie_weights: bool = False)`
+### `Llama3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 500000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
 Base class for Llama 3, 3.1, and 3.2 models.
 
@@ -92,7 +92,7 @@ Llama 3.2 1B Model (Pruned/Distilled).
 
 Llama 3.2 3B Model (Edge-optimized).
 
-### `OLMoModel(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, max_seq_len: int = 2048, dropout: float = 0.0, tie_weights: bool = False)`
+### `OLMoModel(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, max_seq_len: int = 2048, dropout: float = 0.0, tie_weights: bool = True)`
 
 Base class for the OLMo (Open Language Model) architecture.
 
@@ -104,7 +104,7 @@ OLMo 7B Model.
 
 OPT 125M Model Definition.
 
-### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1)`
+### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1, tie_weights=True)`
 
 OPT Model Definition.
 
@@ -121,7 +121,7 @@ Args:
     num_heads (int): Number of heads.
     dropout (float, optional): Dropout probability. Defaults to 0.1.
 
-### `Phi3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, activation: str = 'swiglu', dropout: float = 0.0, tie_weights: bool = False)`
+### `Phi3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, activation: str = 'swiglu', dropout: float = 0.0, tie_weights: bool = True)`
 
 Base class for Phi 3 models.
 
@@ -146,7 +146,7 @@ Distinguished by GeGLU activations and the public checkpoint dimensions.
 LongRoPE and Phi-3 Small's block-sparse/dense attention schedule are not
 represented by this lightweight preset.
 
-### `Phi4Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 250000.0, dropout: float = 0.0, tie_weights: bool = False)`
+### `Phi4Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 250000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
 Base class for Phi 4 models.
 
@@ -158,7 +158,7 @@ Implementation note:
 
 Phi-4 14B Model.
 
-### `Qwen2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = False, dropout: float = 0.0, rms_norm_eps: float = 1e-06)`
+### `Qwen2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = True, dropout: float = 0.0, rms_norm_eps: float = 1e-06)`
 
 Base class for Qwen 2 / 2.5 models.
 

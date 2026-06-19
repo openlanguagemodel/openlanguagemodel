@@ -1,10 +1,10 @@
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 
 class Phi4Block(Block):
@@ -90,11 +90,12 @@ class Phi4Model(Block):
         max_seq_len: int,
         rope_theta: float = 250000.0,
         dropout: float = 0.0,
-        tie_weights: bool = False,
+        tie_weights: bool = True,
     ):
+        embedding = Embedding(vocab_size, embed_dim)
         super().__init__(
             [
-                Embedding(vocab_size, embed_dim),
+                embedding,
                 Repeat(
                     lambda: Phi4Block(
                         embed_dim,
@@ -108,14 +109,15 @@ class Phi4Model(Block):
                     num_layers,
                 ),
                 RMSNorm(embed_dim, eps=1e-5),
-                Linear(
-                    embed_dim, vocab_size, bias=False
-                ),  # torch.nn.Linear can also be used
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding,
+                    tie_weights=tie_weights,
+                    use_norm=False,
+                ),
             ]
         )
-
-        if tie_weights:
-            self.blocks[3].weight = self.blocks[0].embedding.weight
 
 
 class Phi4_14B(Phi4Model):

@@ -14,7 +14,7 @@ GPT-2 Large (774M).
 
 GPT-2 Medium (355M).
 
-### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1)`
+### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True)`
 
 Base class for GPT-2 models.
 

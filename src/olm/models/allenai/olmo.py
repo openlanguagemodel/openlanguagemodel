@@ -1,10 +1,10 @@
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import FlashAttentionwithRoPE
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms.layer_norm import LayerNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 
 class OLMoBlock(Block):
@@ -79,11 +79,12 @@ class OLMoModel(Block):
         num_heads: int,
         max_seq_len: int = 2048,
         dropout: float = 0.0,
-        tie_weights: bool = False,
+        tie_weights: bool = True,
     ):
+        embedding = Embedding(vocab_size, embed_dim)
         super().__init__(
             [
-                Embedding(vocab_size, embed_dim),
+                embedding,
                 Repeat(
                     lambda: OLMoBlock(
                         embed_dim, intermediate_size, num_heads, max_seq_len, dropout
@@ -91,14 +92,15 @@ class OLMoModel(Block):
                     num_layers,
                 ),
                 LayerNorm(embed_dim, elementwise_affine=False),
-                Linear(
-                    embed_dim, vocab_size, bias=False
-                ),  # torch.nn.Linear can also be used
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding,
+                    tie_weights=tie_weights,
+                    use_norm=False,
+                ),
             ]
         )
-
-        if tie_weights:
-            self.blocks[3].weight = self.blocks[0].embedding.weight
 
 
 class OLMo_7B(OLMoModel):

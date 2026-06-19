@@ -1,13 +1,13 @@
-import torch
 import torch.nn as nn
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import FlashAttention
 from olm.nn.feedforward import ClassicFFN
 from olm.nn.activations import ReLU
-from olm.nn.norms import RMSNorm, LayerNorm
+from olm.nn.norms import LayerNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.embeddings.positional.absolute import AbsolutePositionalEmbedding
+from olm.nn.blocks import OutputHead
 
 
 class OPTBlock(Block):
@@ -92,9 +92,16 @@ class OPTModel(Block):
         num_layers,
         num_heads,
         dropout=0.1,
+        tie_weights=True,
     ):
         token_embedding = Embedding(vocab_size, embed_dim)
-        lm_head = nn.Linear(embed_dim, vocab_size, bias=False)
+        lm_head = OutputHead(
+            embed_dim,
+            vocab_size,
+            tied_embedding=token_embedding,
+            tie_weights=tie_weights,
+            use_norm=False,
+        )
 
         super().__init__(
             [
@@ -114,9 +121,6 @@ class OPTModel(Block):
 
         self.token_embedding = token_embedding
         self.lm_head = lm_head
-
-        # tie weights
-        self.lm_head.weight = self.token_embedding.embedding.weight
 
 
 class OPT125M(OPTModel):

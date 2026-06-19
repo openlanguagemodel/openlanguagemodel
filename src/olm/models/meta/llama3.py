@@ -1,10 +1,10 @@
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 
 class Llama3Block(Block):
@@ -99,11 +99,12 @@ class Llama3Model(Block):
         max_seq_len: int,
         rope_theta: float = 500000.0,
         dropout: float = 0.0,
-        tie_weights: bool = False,
+        tie_weights: bool = True,
     ):
+        embedding = Embedding(vocab_size, embed_dim)
         super().__init__(
             [
-                Embedding(vocab_size, embed_dim),
+                embedding,
                 Repeat(
                     lambda: Llama3Block(
                         embed_dim,
@@ -117,14 +118,15 @@ class Llama3Model(Block):
                     num_layers,
                 ),
                 RMSNorm(embed_dim, eps=1e-5),
-                Linear(
-                    embed_dim, vocab_size, bias=False
-                ),  # torch.nn.Linear can also be used
+                OutputHead(
+                    embed_dim,
+                    vocab_size,
+                    tied_embedding=embedding,
+                    tie_weights=tie_weights,
+                    use_norm=False,
+                ),
             ]
         )
-
-        if tie_weights:
-            self.blocks[3].weight = self.blocks[0].embedding.weight
 
 
 # --- Llama 3.1 ---
@@ -194,7 +196,6 @@ class Llama3_2_3B(Llama3Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,
-            tie_weights=True,
         )
 
 
@@ -211,5 +212,4 @@ class Llama3_2_1B(Llama3Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,
-            tie_weights=True,
         )

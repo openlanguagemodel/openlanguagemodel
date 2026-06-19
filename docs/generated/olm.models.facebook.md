@@ -6,7 +6,7 @@
 
 OPT 125M Model Definition.
 
-### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1)`
+### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1, tie_weights=True)`
 
 OPT Model Definition.
 

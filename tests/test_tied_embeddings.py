@@ -39,6 +39,23 @@ def test_lm_can_disable_tied_embeddings():
     assert model.blocks[2].weight is not model.blocks[0].embedding.weight
 
 
+def test_output_head_ties_by_default_and_requires_embedding():
+    with pytest.raises(ValueError, match="ties weights by default"):
+        OutputHead(embed_dim=16, vocab_size=32)
+
+
+def test_output_head_can_disable_tying():
+    embedding = Embedding(vocab_size=32, embedding_dim=16)
+    head = OutputHead(
+        embed_dim=16,
+        vocab_size=32,
+        tied_embedding=embedding,
+        tie_weights=False,
+    )
+
+    assert head.weight is not embedding.embedding.weight
+
+
 def test_lm_save_load_preserves_tied_embeddings(tmp_path):
     torch.manual_seed(0)
     model = LM(

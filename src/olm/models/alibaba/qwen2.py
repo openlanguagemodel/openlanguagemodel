@@ -1,10 +1,10 @@
-from olm.nn import Linear
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
+from olm.nn.blocks import OutputHead
 
 class Qwen2Block(Block):
     """
@@ -48,27 +48,26 @@ class Qwen2Model(Block):
     Structure:
         Embedding -> [Qwen2Block] x N -> RMSNorm -> Linear Head
     """
-    def __init__(self, vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = False, dropout: float = 0.0, rms_norm_eps: float = 1e-6):
+    def __init__(self, vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = True, dropout: float = 0.0, rms_norm_eps: float = 1e-6):
 
         # Core Structure
+        embedding = Embedding(vocab_size, embed_dim)
         layers = [
-            Embedding(vocab_size, embed_dim),
+            embedding,
             Repeat(lambda: Qwen2Block(
                 embed_dim, intermediate_size, num_heads, num_kv_heads, max_seq_len, dropout, rope_theta, rms_norm_eps
             ), num_layers),
             RMSNorm(embed_dim, eps=rms_norm_eps),
-            Linear(embed_dim, vocab_size, bias=False) # torch.nn.Linear can also be used
+            OutputHead(
+                embed_dim,
+                vocab_size,
+                tied_embedding=embedding,
+                tie_weights=tie_weights,
+                use_norm=False,
+            )
         ]
 
         super().__init__(layers)
-
-        # Tie weights logic is post-hoc, but Block init doesn't handle it easily unless we hook it.
-        # But we can access the created modules in self.blocks
-        if tie_weights:
-            # Output head weight (last block) = Embedding weight (first block)
-            # Embedding is blocks[0], Linear is blocks[3]
-            # blocks[0] is our Wrapper Embedding class, so we access .embedding.weight
-            self.blocks[3].weight = self.blocks[0].embedding.weight
 
 # --- Qwen 2.5 Family ---
 
@@ -84,7 +83,6 @@ class Qwen2_5_72B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False,
             rms_norm_eps=1e-5
         )
 
@@ -100,7 +98,6 @@ class Qwen2_5_32B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False,
             rms_norm_eps=1e-5
         )
 
@@ -116,7 +113,6 @@ class Qwen2_5_14B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False,
             rms_norm_eps=1e-5
         )
 
@@ -132,7 +128,6 @@ class Qwen2_5_7B(Qwen2Model):
             num_kv_heads=4,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=False
         )
 
 class Qwen2_5_3B(Qwen2Model):
@@ -147,7 +142,6 @@ class Qwen2_5_3B(Qwen2Model):
             num_kv_heads=2,
             max_seq_len=32768, 
             rope_theta=1000000.0,
-            tie_weights=True
         )
 
 class Qwen2_5_1_5B(Qwen2Model):
@@ -162,7 +156,6 @@ class Qwen2_5_1_5B(Qwen2Model):
             num_kv_heads=2,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            tie_weights=True
         )
 
 class Qwen2_5_0_5B(Qwen2Model):
@@ -177,5 +170,4 @@ class Qwen2_5_0_5B(Qwen2Model):
             num_kv_heads=2,
             max_seq_len=32768,
             rope_theta=1000000.0,
-            tie_weights=True
         )

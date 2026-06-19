@@ -66,7 +66,8 @@ class LM(Block):
                 OutputHead(
                     embed_dim,
                     vocab_size,
-                    tied_embedding=embedding if tie_embeddings else None,
+                    tied_embedding=embedding,
+                    tie_weights=tie_embeddings,
                 ),
             ]
         )
