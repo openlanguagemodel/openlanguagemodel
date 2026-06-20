@@ -218,7 +218,7 @@ const roadmap = [
   { version: "v1.1", desc: "Flash/SDPA attention, RoPE/ALiBi variants, W&B logging, API docs.", done: true },
   { version: "v2.0", desc: "DDP, FSDP, and readable Mixture-of-Experts routing.", done: true },
   { version: "v2.1", desc: "AutoTrainer, hardware-aware training setup, and distributed/attention stability fixes.", done: true },
-  { version: "v2.2", desc: "Website, SEO, mascot, API reference polish, and documentation refinement.", done: true },
+  { version: "v2.2", desc: "Stability and bug fixes, website, SEO, mascot, API reference polish, and documentation refinement.", done: true },
   { version: "v3.0", desc: "Further training: SFT, LoRA, DPO, PPO/RLHF, GRPO-style RLVR, and evaluation recipes.", done: false },
   { version: "v4.0", desc: "Multi-node training and cluster support.", done: false },
 ];
