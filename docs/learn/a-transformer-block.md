@@ -177,9 +177,7 @@ flowchart LR
 Put a token embedding (Lesson 2) in front of this stack and an output head behind
 it, and you have a complete language model. The output head turns each final token
 vector into one score for every token in the vocabulary — the scores used to predict
-the next token. In OLM's ready-made `LM`, the output head is tied to the token
-embedding by default, so the same learned token table helps read tokens in and score
-tokens out.
+the next token.
 
 ## What you learned
 
