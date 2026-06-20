@@ -28,9 +28,9 @@ We'll push this `x` through each part we build and watch what happens to its sha
 A transformer block is made from four kinds of part. Here's the job of each:
 
 - **Attention** — each token gathers context from the other tokens (Lesson 3).
-- **Feed-forward** — each token is then passed through its own little network.
-  Attention mixes information *between* tokens; the feed-forward works on *each token
-  on its own*.
+- **Feed-forward** — each token is then passed through its own little two-layer
+  neural network. Attention mixes information *between* tokens; the feed-forward
+  works on *each token on its own*.
 - **Normalization** — gently rescales the numbers to keep them in a healthy range,
   which keeps training steady.
 - **Residual connection** — after a part runs, its input is added back onto its
@@ -73,6 +73,10 @@ vectors, not their size.
 Recall the residual connection — "add the input back onto the output." `Residual`
 does exactly that: you wrap a part in it, and it computes `the part's output + its
 input`.
+
+In symbols, instead of replacing `x` with `small(x)`, a residual connection returns
+`x + small(x)`. The part can add useful changes, while the original signal still
+has a direct path forward.
 
 ```python
 from olm.nn.structure.combinators import Residual
@@ -119,13 +123,14 @@ Two small things on the attention line:
 - `causal=True` lets each token look only at earlier tokens, which is what you want
   when the job is predicting the next one.
 
-And here's the diagram that code matches, piece for piece:
+This is the same GPT-style block shape written as a figure, with the residual adds
+labelled explicitly:
 
 ```mermaid
 flowchart TD
-    x[tokens in] --> n1[normalize] --> a[attention] --> r1(("+"))
+    x[tokens in] --> n1[normalize] --> a[attention] --> r1["add residual: x + attention(x)"]
     x --> r1
-    r1 --> n2[normalize] --> f[feed-forward] --> r2(("+"))
+    r1 --> n2[normalize] --> f[feed-forward] --> r2["add residual: previous + feed-forward(previous)"]
     r1 --> r2
     r2 --> y[tokens out]
 ```
@@ -142,10 +147,12 @@ You give it a small function that makes a fresh block, and how many you want:
 ```python
 from olm.nn.structure.combinators import Repeat
 
-stack = Repeat(lambda: Block([
+transformer_block = lambda: Block([
     Residual(Block([RMSNorm(embed_dim), MultiHeadAttention(embed_dim, num_heads=4, causal=True)])),
     Residual(Block([RMSNorm(embed_dim), ClassicFFN(embed_dim)])),
-]), 6)   # six blocks in a row
+])
+
+stack = Repeat(transformer_block, 6)   # six blocks in a row
 
 print(stack(x).shape)   # torch.Size([1, 6, 16])
 ```
@@ -157,14 +164,22 @@ times, all six positions would accidentally share weights. Same shape the whole 
 through. Real models stack anywhere from a dozen blocks to over a hundred — that
 depth is a big part of what "a bigger model" means.
 
+```mermaid
+flowchart LR
+    x[tokens in] --> b1[block 1] --> b2[block 2] --> dots[...] --> b6[block 6] --> y[tokens out]
+```
+
 > [!NOTE]
 > Real architectures add one more ingredient — a sense of word order, called
 > *positional information* — which OLM's RoPE attention variants handle. You can see
 > all the components side by side in [Building Blocks](../guides/components.md).
 
-Put a token embedding (Lesson 2) in front of this stack and an output layer behind
-it, and you have a complete language model — which is exactly what you'll build and
-train next.
+Put a token embedding (Lesson 2) in front of this stack and an output head behind
+it, and you have a complete language model. The output head turns each final token
+vector into one score for every token in the vocabulary — the scores used to predict
+the next token. In OLM's ready-made `LM`, the output head is tied to the token
+embedding by default, so the same learned token table helps read tokens in and score
+tokens out.
 
 ## What you learned
 
@@ -175,7 +190,7 @@ train next.
   `Repeat` stacks many blocks.
 - Every part keeps the shape `(1, 6, 16)` → `(1, 6, 16)`, which is exactly why blocks
   can stack endlessly.
-- A token embedding in front and an output layer behind turn a stack of blocks into a
+- A token embedding in front and an output head behind turn a stack of blocks into a
   language model.
 
 You've built the core of a transformer. The one thing left is what makes it any

@@ -14,6 +14,10 @@ Token IDs are just labels. The tokenizer might give "cat" the ID `3797` and
 "dog", and the gap between them means nothing. Yet we know cat and dog are
 related (both pets, both animals), while cat and "democracy" are not.
 
+Those IDs are assigned by the tokenizer when it builds or loads its vocabulary.
+They are like row numbers in a spreadsheet: useful for lookup, but not meaningful
+by themselves. ID `3797` simply means "go to row 3797."
+
 So how do we give the model a sense of what words *mean*, and how they relate to
 each other? We give each token a **list of numbers** instead of a single one.
 
@@ -69,6 +73,11 @@ print(ids.shape)
 That last line prints something like `torch.Size([6])` — a flat list of 6 token
 IDs, one per word here. So far, so good.
 
+Now the embedding layer uses each ID as a row lookup. If a token has ID `3797`,
+the layer reads row 3797 of its table. Every row has the same width: here, **16
+numbers**. So every token, no matter what its ID is, becomes a vector of the same
+size.
+
 Now there's one PyTorch habit to know. Model layers don't process a single
 sequence at a time — they process a **batch**: several sequences stacked together
 and run at once, because that's far more efficient. So the embedding layer expects
@@ -111,7 +120,7 @@ that way? Let's look at a set that has *already* been trained.
 The clearest way to believe that meaning becomes geometry is to explore real,
 trained word vectors yourself. The quickest, no-code option: open the
 **[TensorFlow Embedding Projector](https://projector.tensorflow.org)**, type a word
-like "cat" into the search box, and watch its nearest neighbours light up — words
+like "king" into the search box, and watch its nearest neighbours light up — words
 the model learned were related, purely from reading text.
 
 If you'd like to *run* it and even do the famous word arithmetic, expand the demo
@@ -132,15 +141,16 @@ import gensim.downloader as api
 wv = api.load("glove-wiki-gigaword-50")   # each word → 50 trained numbers
 ```
 
-Ask which words sit closest to "cat":
+Ask which words sit closest to "king":
 
 ```python
-wv.most_similar("cat")
+wv.most_similar("king")
 ```
 
-You'll get a list topped by things like *dog*, *pet*, *kitten*, *cats*. Nobody
-labelled these as related — the structure emerged from learning to use them in
-text. Try your own: `wv.most_similar("king")`, `wv.most_similar("python")`.
+You'll get a list with words like *queen*, *prince*, *kings*, and *monarch*.
+Nobody labelled these as related — the structure emerged from learning to use
+them in text. Try your own: `wv.most_similar("python")`,
+`wv.most_similar("music")`.
 
 Now the surprising part — arithmetic on words. Take "king", subtract "man", add
 "woman":
@@ -149,8 +159,14 @@ Now the surprising part — arithmetic on words. Take "king", subtract "man", ad
 wv.most_similar(positive=["king", "woman"], negative=["man"])
 ```
 
-The top answer is **queen**. The direction that means "man → woman" is the same
-direction that turns "king" into "queen" — exactly the shape we drew earlier. One
+Conceptually, that line asks for:
+
+```text
+vector("king") - vector("man") + vector("woman") ≈ vector("queen")
+```
+
+The top answer is **queen**. You remove the "man" direction from "king", add the
+"woman" direction, and land near "queen" — exactly the shape we drew earlier. One
 more to try:
 
 ```python

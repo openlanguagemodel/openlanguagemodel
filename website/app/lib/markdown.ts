@@ -95,7 +95,12 @@ function rehypeRewriteLinks(currentDir: string) {
       if (node.tagName !== "a") return;
       const href = node.properties?.href;
       if (typeof href !== "string") return;
-      if (/^(https?:|mailto:|#)/.test(href)) return;
+      if (/^https?:/.test(href)) {
+        node.properties.target = "_blank";
+        node.properties.rel = "noopener noreferrer";
+        return;
+      }
+      if (/^(mailto:|#)/.test(href)) return;
 
       if (href.startsWith("/")) {
         if (BASE_PATH && !href.startsWith(`${BASE_PATH}/`)) {

@@ -1,4 +1,4 @@
-# Learn Language Modelling From Scratch
+# Course Overview
 
 A guided path from a little Python and a little deep learning to building and
 training your own language model — and understanding every piece. You write and

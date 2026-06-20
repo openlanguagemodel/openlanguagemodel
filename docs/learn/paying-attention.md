@@ -37,12 +37,14 @@ other words.
 
 ```mermaid
 flowchart LR
-    dog -->|"a little"| it
-    chased -->|"a little"| it
-    cat -->|"a lot"| it
+    sentence["The dog chased the cat until it climbed..."] --> target["token to update: it"]
+    dog["dog"] -->|"small weight"| target
+    chased["chased"] -->|"small weight"| target
+    cat["cat"] -->|"large weight"| target
+    target --> meaning["updated meaning: it ≈ cat"]
 ```
 
-Two more things worth knowing, both just one idea each:
+Two details matter:
 
 - **Looking back only.** When the model's job is to predict the *next* word, each
   word is allowed to look at the words *before* it, never after — it can't peek at

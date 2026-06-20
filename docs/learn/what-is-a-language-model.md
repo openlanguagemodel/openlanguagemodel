@@ -53,7 +53,9 @@ Why bother? Splitting into reusable pieces keeps the vocabulary (the list of all
 tokens the model knows) a manageable size, while still being able to spell out any
 word — even ones it has never seen.
 
-The tool that does this splitting is the **tokenizer**. Let's watch it work.
+The tool that does this splitting is the **tokenizer**. We'll use the tokenizer
+from OpenAI's GPT-2 model through OLM's Hugging Face wrapper, then watch the
+text turn into IDs.
 
 ## Try it: turn text into tokens
 

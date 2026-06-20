@@ -1,7 +1,7 @@
 # Lesson 5 · How a Model Learns
 
 In Lesson 4 you built one transformer block and stacked it. Put a token embedding in
-front and an output layer behind, and that stack becomes a *complete* language model.
+front and an output head behind, and that stack becomes a *complete* language model.
 Let's assemble a real one — the GPT-2 architecture — from OLM parts, and then teach it
 to write.
 
@@ -11,7 +11,7 @@ to write.
 
 GPT-2 is nothing more than the pieces you already know, arranged in a set order: a
 token embedding, a positional embedding (so the model knows word order), a stack of
-transformer blocks, and an output layer. Here's the architecture next to the OLM code
+transformer blocks, and an output head. Here's the architecture next to the OLM code
 that builds each part:
 
 ![GPT-2's components, and the OLM code that builds each one](gpt2-architecture.png)

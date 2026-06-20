@@ -9,8 +9,8 @@ const navLinks = [
   { href: "#overview", label: "Overview" },
   { href: "#start", label: "Start Here" },
   { href: "#quickstart", label: "Quickstart" },
-  { href: "#architecture", label: "Architecture" },
   { href: "#training", label: "Training" },
+  { href: "#architecture", label: "Architecture" },
   { href: "#models", label: "Models" },
   { href: "#roadmap", label: "Roadmap" },
   { href: "#contribute", label: "Contribute" },
@@ -363,10 +363,10 @@ export default function Home() {
               <article className="entry">
                 <h3>Write the GPT-2 Architecture</h3>
                 <p>
-                  OLM models are ordinary <code className="inline">torch.nn.Module</code>
-                  objects composed from visible pieces. Start with the ready-made
-                  <code className="inline">LM</code>, then open the blocks and swap
-                  any part when you need to.
+                  Start with a compact GPT-style model, then trace how embeddings,
+                  transformer blocks, and the output head fit together. The same
+                  pieces are available when you want to open the model and change
+                  a part.
                 </p>
                 <img
                   src={`${BASE_PATH}/gpt2-diagram.png`}
@@ -383,51 +383,10 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="architecture">
-          <div className="section-grid">
-            <div className="section-title">
-              <ScrambleText text="03 — Architecture" className="block" />
-            </div>
-            <div className="section-content">
-              <article className="entry">
-                <h3>A Real Llama-Style Model, Written as Blocks</h3>
-                <p>
-                  The core idea is separation: components say what happens;
-                  <code className="inline">Block</code>,{" "}
-                  <code className="inline">Residual</code>, and{" "}
-                  <code className="inline">Repeat</code> say how those components
-                  are wired. That makes architecture experiments local edits.
-                </p>
-                <div
-                  className="code-block"
-                  dangerouslySetInnerHTML={{ __html: `<pre><code>${llama3Code}</code></pre>` }}
-                />
-                <p>
-                  <Link href="/docs/guides/architecture/" className="hover-link">
-                    Learn the Block system →
-                  </Link>
-                </p>
-              </article>
-              <article className="entry">
-                <h3>Bring Your Own Loop</h3>
-                <p>
-                  Use the trainer when you want batteries included, or drop every
-                  OLM module into your own PyTorch loop. There is no framework
-                  runtime to fight.
-                </p>
-                <div
-                  className="code-block compact"
-                  dangerouslySetInnerHTML={{ __html: `<pre><code>${loopCode}</code></pre>` }}
-                />
-              </article>
-            </div>
-          </div>
-        </section>
-
         <section id="training">
           <div className="section-grid">
             <div className="section-title">
-              <ScrambleText text="04 — For Everyone" className="block" />
+              <ScrambleText text="03 — For Everyone" className="block" />
             </div>
             <div className="section-content">
               <article className="entry">
@@ -495,6 +454,47 @@ export default function Home() {
           </div>
         </section>
 
+        <section id="architecture">
+          <div className="section-grid">
+            <div className="section-title">
+              <ScrambleText text="04 — Architecture" className="block" />
+            </div>
+            <div className="section-content">
+              <article className="entry">
+                <h3>A Real Llama-Style Model, Written as Blocks</h3>
+                <p>
+                  The core idea is separation: components say what happens;
+                  <code className="inline">Block</code>,{" "}
+                  <code className="inline">Residual</code>, and{" "}
+                  <code className="inline">Repeat</code> say how those components
+                  are wired. That makes architecture experiments local edits.
+                </p>
+                <div
+                  className="code-block"
+                  dangerouslySetInnerHTML={{ __html: `<pre><code>${llama3Code}</code></pre>` }}
+                />
+                <p>
+                  <Link href="/docs/guides/architecture/" className="hover-link">
+                    Learn the Block system →
+                  </Link>
+                </p>
+              </article>
+              <article className="entry">
+                <h3>Bring Your Own Loop</h3>
+                <p>
+                  OLM components are ordinary PyTorch modules. You can train with
+                  OLM's trainer, or call the model yourself inside the PyTorch
+                  loop you already use.
+                </p>
+                <div
+                  className="code-block compact"
+                  dangerouslySetInnerHTML={{ __html: `<pre><code>${loopCode}</code></pre>` }}
+                />
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section id="models">
           <div className="section-grid">
             <div className="section-title">
@@ -502,11 +502,11 @@ export default function Home() {
             </div>
             <div className="section-content">
               <article className="entry">
-                <h3>Reference Architectures, Reproduced From Blocks</h3>
+                <h3>Reference Architectures, Reproduced With OLM</h3>
                 <p>
-                  The model zoo is not a separate black box. The presets in{" "}
-                  <code className="inline">olm.models</code> are readable worked
-                  examples assembled from the same public pieces you use.
+                  The presets in <code className="inline">olm.models</code> are
+                  readable implementations of familiar model families, with source
+                  links for each one.
                 </p>
                 <div className="model-grid">
                   {models.map(({ name, count, sizes, source }) => (
@@ -542,16 +542,14 @@ export default function Home() {
         <section id="roadmap">
           <div className="section-grid">
             <div className="section-title">
-              <ScrambleText text="06 — Status" className="block" />
+              <ScrambleText text="06 — Roadmap" className="block" />
             </div>
             <div className="section-content">
               <article className="entry">
-                <h3>What Is Solid Today</h3>
+                <h3>Roadmap</h3>
                 <p>
-                  OLM ships the pieces needed to build, train, inspect, and
-                  modify transformer language models without hiding the PyTorch
-                  underneath. The roadmap is explicit about what is finished and
-                  what is still being hardened.
+                  What is already stable, what is being polished for v2.2, and
+                  where the library is headed next.
                 </p>
                 <div className="roadmap-list">
                   {roadmap.map(({ version, desc, done }) => (

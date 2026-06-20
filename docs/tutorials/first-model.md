@@ -8,6 +8,9 @@ This tutorial runs on CPU in a few minutes, and faster on a GPU. It assumes you 
 > New to terms like *token*, *RoPE*, *logits*, or *perplexity*? You do not need
 > them all to follow along — but [Key Concepts](../concepts.md) explains every one
 > in plain English. Keep it open in a tab.
+>
+> If you are following the beginner path, this tutorial is the handoff after the
+> foundations: [return to the course overview](../learn/index.md).
 
 ## 1. The tokenizer
 
