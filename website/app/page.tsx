@@ -546,8 +546,10 @@ export default function Home() {
               <article className="entry">
                 <h3>Roadmap</h3>
                 <p>
-                  What is already stable, what is being polished for v2.2, and
-                  where the library is headed next.
+                  OLM already supports complete language-model pretraining:
+                  modern architectures, swappable components, streaming data,
+                  checkpoints, mixed precision, and fast single-node multi-GPU
+                  training.
                 </p>
                 <div className="roadmap-list">
                   {roadmap.map(({ version, desc, done }) => (
@@ -569,7 +571,7 @@ export default function Home() {
             </div>
             <div className="section-content">
               <article className="entry">
-                <h3>Open Source Means You Can Read the Whole Thing</h3>
+                <h3>We're Open Source & Looking for Contributors</h3>
                 <p>
                   Contributions are welcome across docs, examples, API reference,
                   model implementations, training stability, release polish, and
