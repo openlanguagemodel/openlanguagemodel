@@ -4,7 +4,7 @@ OpenLanguageModel is moving toward a stable, readable, PyTorch-native stack for 
 
 ## v2.2: Stability, Documentation, and Release Readiness
 
-v2.2 is the stabilization release. The focus is a polished library and documentation set, not new research features.
+**Current release.** v2.2 is the stabilization release. The focus is a polished library and documentation set, not new research features.
 
 - [x] Move onto the v2.1 bug-fix and AutoTrainer base
 - [x] Stabilize single-node multi-GPU training with DDP/FSDP paths
