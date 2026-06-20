@@ -6,6 +6,8 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 
 - [`getting-started.md`](getting-started.md): install OLM and run a small local training loop.
 - [`installation.md`](installation.md): supported Python versions, extras, dependency ranges, and release-build commands.
+- [`release-v2.2.0.md`](release-v2.2.0.md): public release notes for the v2.2 stabilization release.
+- [`releasing.md`](releasing.md): maintainer checklist for GitHub and PyPI releases.
 - [`datasets-and-training.md`](datasets-and-training.md): use local text, FineWeb-Edu, `Trainer`, `AutoTrainer`, callbacks, checkpointing, and single-node DDP/FSDP.
 - [`architecture.md`](architecture.md): understand `Block`, `Residual`, `Repeat`, `Parallel`, and how OLM assembles custom models.
 - [`colab-notebooks.md`](colab-notebooks.md): runnable Colab notebooks for the main learning path.
@@ -16,6 +18,7 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 | Task | Where to go |
 |---|---|
 | Install OLM or choose extras | [`installation.md`](installation.md) |
+| Publish a release | [`releasing.md`](releasing.md) |
 | Train from local `.txt` files | [`getting-started.md`](getting-started.md) |
 | Stream FineWeb-Edu | [`datasets-and-training.md`](datasets-and-training.md) |
 | Let OLM pick CPU/GPU/single-node DDP/FSDP | [`datasets-and-training.md#6-automatic-trainer-selection-autotrainer`](datasets-and-training.md#6-automatic-trainer-selection-autotrainer) |
@@ -40,4 +43,4 @@ Each model family is implemented as source code, not hidden configuration:
 
 ## Project Direction
 
-v2.2 is focused on stabilization and polish: bug fixes, model-configuration checks, API-reference quality, docs/website integration, SEO foundations, roadmap cleanup, and release readiness. New research features are intentionally out of scope for v2.2.
+v2.2 is focused on stabilization and polish: bug fixes, model-configuration checks, API-reference quality, docs/website integration, SEO foundations, roadmap cleanup, and release readiness. See [`release-v2.2.0.md`](release-v2.2.0.md) for the public release notes.

@@ -63,4 +63,4 @@ python -m build
 twine check dist/*
 ```
 
-Publish only after tests pass and the GitHub release notes are ready.
+Publish only after tests pass and the GitHub release notes are ready. See [`releasing.md`](releasing.md) for the maintainer checklist.

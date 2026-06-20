@@ -64,6 +64,7 @@ export const NAV: NavTrack[] = [
           { title: "Distributed Training", path: "tutorials/distributed-training" },
           { title: "Experiment Tracking", path: "tutorials/experiment-tracking" },
           { title: "Roadmap", path: "roadmap" },
+          { title: "v2.2 Release Notes", path: "release-v2.2.0" },
         ],
       },
     ],

@@ -73,6 +73,7 @@ Homepage = "https://openlanguagemodel.github.io/openlanguagemodel/"
 Documentation = "https://openlanguagemodel.github.io/openlanguagemodel/docs/"
 Repository = "https://github.com/openlanguagemodel/openlanguagemodel"
 Issues = "https://github.com/openlanguagemodel/openlanguagemodel/issues"
+"Release Notes" = "https://openlanguagemodel.github.io/openlanguagemodel/docs/release-v2.2.0/"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -18,7 +18,7 @@ OpenLanguageModel is moving toward a stable, readable, PyTorch-native stack for 
 - [x] Add website SEO metadata, sitemap, robots, social preview, and structured data
 - [ ] Finish mascot integration after the mascot direction is chosen
 - [x] Add approved Colab notebooks and link them from OLM Learning
-- [ ] Prepare the public v2.2 release notes, PyPI release, and GitHub release
+- [x] Prepare the public v2.2 release notes and PyPI/GitHub release checklist
 
 ## v3.0: Further Training and Alignment
 
@@ -40,8 +40,6 @@ v4 moves beyond v2's single-node multi-GPU support into cluster-scale training. 
 - [ ] Slurm and common cluster integration
 - [ ] Fault-tolerant checkpointing and auto-resume
 - [ ] Multi-node streaming and deterministic data sharding
-- [ ] Pipeline parallelism
-- [ ] Tensor parallelism
 - [ ] Multi-node FSDP recipes and performance guidance
 
 ## Longer-Term Ideas

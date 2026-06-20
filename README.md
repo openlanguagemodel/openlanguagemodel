@@ -163,6 +163,7 @@ See [`docs/installation.md`](docs/installation.md) for dependency and release-bu
 - Train from examples in [`examples/`](examples/)
 - Use [`docs/datasets-and-training.md`](docs/datasets-and-training.md) for data, trainer, AutoTrainer, callbacks, and checkpointing
 - Use [`docs/api.md`](docs/api.md) when you need exact signatures and source-defined methods
+- Read [`docs/release-v2.2.0.md`](docs/release-v2.2.0.md) for the v2.2 release notes
 
 ## Project Status
 
