@@ -128,9 +128,9 @@ labelled explicitly:
 
 ```mermaid
 flowchart TD
-    x[tokens in] --> n1[normalize] --> a[attention] --> r1["add residual: x + attention(x)"]
+    x[tokens in] --> n1[normalize] --> a[attention] --> r1["Residual (+)"]
     x --> r1
-    r1 --> n2[normalize] --> f[feed-forward] --> r2["add residual: previous + feed-forward(previous)"]
+    r1 --> n2[normalize] --> f[feed-forward] --> r2["Residual (+)"]
     r1 --> r2
     r2 --> y[tokens out]
 ```
