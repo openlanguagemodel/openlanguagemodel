@@ -14,7 +14,6 @@ const navLinks = [
   { href: "#models", label: "Models" },
   { href: "#roadmap", label: "Roadmap" },
   { href: "#contribute", label: "Contribute" },
-  { href: "/articles/", label: "Articles" },
   { href: "/docs/getting-started/", label: "Documentation →" },
 ];
 
@@ -604,7 +603,6 @@ export default function Home() {
           <div className="footer-links">
             <Link href="/docs/learn/">Learn From Scratch</Link>
             <Link href="/docs/getting-started/">Start Building</Link>
-            <Link href="/articles/">Articles</Link>
             <Link href="/education/">Educators</Link>
             <Link href="/docs/guides/architecture/">Block System</Link>
             <Link href="/docs/api/">API Reference</Link>

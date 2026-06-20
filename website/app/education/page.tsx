@@ -94,15 +94,11 @@ export default function EducationPage() {
 
           <p>
             Start with the{" "}
-            <Link href="/docs/learn/">Learn From Scratch course</Link>, or use
-            the articles on{" "}
-            <Link href="/articles/how-transformer-blocks-work/">
-              transformer blocks
-            </Link>{" "}
+            <Link href="/docs/learn/">Learn From Scratch course</Link>, then
+            use the{" "}
+            <Link href="/docs/tutorials/first-model/">first model tutorial</Link>{" "}
             and{" "}
-            <Link href="/articles/build-gpt-2-style-language-model-from-scratch-pytorch/">
-              GPT-style training
-            </Link>{" "}
+            <Link href="/docs/guides/architecture/">Block System guide</Link>{" "}
             as reading material.
           </p>
         </article>
