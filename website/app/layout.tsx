@@ -24,6 +24,7 @@ const playfairDisplay = Playfair_Display({
 });
 
 const assetPath = (path: string) => `${BASE_PATH}${path}`;
+const iconPath = (path: string) => assetPath(`${path}?v=2`);
 
 export const metadata: Metadata = {
   metadataBase: new URL(`${SITE.url}/`),
@@ -66,10 +67,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: assetPath("/favicon.ico") },
-      { url: assetPath("/favicon.png"), type: "image/png", sizes: "256x256" },
+      { url: iconPath("/favicon.ico") },
+      { url: iconPath("/favicon.png"), type: "image/png", sizes: "256x256" },
     ],
-    apple: [{ url: assetPath("/apple-touch-icon.png"), sizes: "180x180" }],
+    apple: [{ url: iconPath("/apple-touch-icon.png"), sizes: "180x180" }],
   },
 };
 
