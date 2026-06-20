@@ -48,14 +48,25 @@ export default function ScrambleText({
       let complete = 0;
 
       for (const item of queue) {
+        if (item.to === "\n") {
+          if (frame >= item.end) complete++;
+          output += "<br>";
+          continue;
+        }
+
+        if (item.from === "\n" && frame < item.end) {
+          output += "<br>";
+          continue;
+        }
+
         if (frame >= item.end) {
           complete++;
-          output += item.to === "\n" ? "<br>" : item.to;
+          output += item.to;
         } else if (frame >= item.start) {
           if (!item.char || Math.random() < 0.28) item.char = randomChar();
           output += `<span style="color:var(--text-muted)">${item.char}</span>`;
         } else {
-          output += item.from === "\n" ? "<br>" : item.from;
+          output += item.from;
         }
       }
 
