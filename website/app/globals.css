@@ -1165,7 +1165,7 @@ code.inline {
     position: absolute;
     left: 0;
     bottom: clamp(0.75rem, 2vw, 1.5rem);
-    width: clamp(34px, 3.8vw, 52px);
+    width: clamp(38px, 4vw, 58px);
     filter: drop-shadow(0 5px 4px rgba(0, 0, 0, 0.16));
     opacity: 0.95;
     will-change: transform;
@@ -1181,8 +1181,8 @@ code.inline {
     width: 100%;
     height: auto;
     display: block;
+    transform: scaleX(var(--mascot-facing));
     transform-origin: 50% 100%;
-    animation: mascot-step 0.58s ease-in-out infinite alternate;
     user-select: none;
 }
 
@@ -1223,11 +1223,6 @@ code.inline {
 @keyframes mascot-cross-rtl {
     from { transform: translate3d(calc(100vw + 72px), 0, 0); }
     to { transform: translate3d(-72px, 0, 0); }
-}
-
-@keyframes mascot-step {
-    from { transform: scaleX(var(--mascot-facing)) translateY(0) rotate(-2deg); }
-    to { transform: scaleX(var(--mascot-facing)) translateY(-4px) rotate(2deg); }
 }
 
 @keyframes mascot-pop {

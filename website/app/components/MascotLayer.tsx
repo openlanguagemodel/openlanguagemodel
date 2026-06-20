@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { BASE_PATH } from "../../site.config";
 
-const STAND_SRC = `${BASE_PATH}/mascot/olm-mascot-stand.png`;
+const WALK_SRC = `${BASE_PATH}/mascot/olm-mascot-walk.gif`;
 const CELEBRATE_SRC = `${BASE_PATH}/mascot/olm-mascot-celebrate.png`;
 const WALK_INTERVAL_MS = 5 * 60 * 1000;
 const WALK_DURATION_MS = 14 * 1000;
 const CELEBRATION_MS = 1800;
+const TEST_WALK_PARAM = "mascotWalk";
 
 const CONFETTI = [
   { dx: -34, dy: -58, color: "#b30000" },
@@ -68,20 +69,27 @@ export default function MascotLayer() {
     let closed = false;
     const timers: number[] = [];
 
+    const startWalk = () => {
+      const id = Date.now();
+      setWalk({
+        id,
+        direction: Math.random() < 0.5 ? "ltr" : "rtl",
+      });
+      timers.push(window.setTimeout(() => setWalk(null), WALK_DURATION_MS));
+    };
+
     const scheduleWalk = () => {
       const timer = window.setTimeout(() => {
         if (closed) return;
-        const id = Date.now();
-        setWalk({
-          id,
-          direction: Math.random() < 0.5 ? "ltr" : "rtl",
-        });
-        timers.push(window.setTimeout(() => setWalk(null), WALK_DURATION_MS));
+        startWalk();
         scheduleWalk();
       }, WALK_INTERVAL_MS);
       timers.push(timer);
     };
 
+    if (new URLSearchParams(window.location.search).has(TEST_WALK_PARAM)) {
+      startWalk();
+    }
     scheduleWalk();
 
     return () => {
@@ -116,7 +124,7 @@ export default function MascotLayer() {
           key={walk.id}
           className={`mascot-walk mascot-walk-${walk.direction}`}
         >
-          <img src={STAND_SRC} alt="" draggable={false} />
+          <img src={WALK_SRC} alt="" draggable={false} />
         </div>
       )}
 
