@@ -504,8 +504,7 @@ export default function Home() {
                 <h3>Reference Architectures, Reproduced With OLM</h3>
                 <p>
                   The presets in <code className="inline">olm.models</code> are
-                  readable implementations of familiar model families, with source
-                  links for each one.
+                  readable implementations of familiar model families.
                 </p>
                 <div className="model-grid">
                   {models.map(({ name, count, sizes, source }) => (
