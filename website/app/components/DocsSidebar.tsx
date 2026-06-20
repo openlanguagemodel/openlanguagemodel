@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import ScrambleText from "./ScrambleText";
+import { BASE_PATH } from "../../site.config";
 
 export type NavItem = { title: string; path: string };
 export type NavGroup = { label?: string; items: NavItem[] };
@@ -29,7 +30,12 @@ export default function DocsSidebar({ nav, current, activeTrack, meta }: Props) 
       <div>
         {/* Brand reflects the track you are currently reading. */}
         <Link href="/" className="brand">
-          <div className="status-dot" />
+          <img
+            className="brand-mascot"
+            src={`${BASE_PATH}/mascot/olm-mascot-stand.png`}
+            alt=""
+            draggable={false}
+          />
           <ScrambleText text={active.label} />
         </Link>
         <button

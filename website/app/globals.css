@@ -100,7 +100,6 @@ main {
     font-family: var(--font-mono);
     font-weight: 700;
     font-size: 1.2rem;
-    letter-spacing: -0.05em;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -108,20 +107,17 @@ main {
     text-decoration: none;
 }
 
-.status-dot {
-    width: 8px;
-    height: 8px;
-    background-color: var(--red-accent);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
+.brand-mascot {
+    width: 28px;
+    height: 40px;
+    object-fit: contain;
+    object-position: center;
     flex-shrink: 0;
+    filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.12));
+    transition: transform 0.35s var(--easing);
 }
 
-@keyframes pulse {
-    0%   { opacity: 1; }
-    50%  { opacity: 0.4; }
-    100% { opacity: 1; }
-}
+.brand:hover .brand-mascot { transform: translateY(-1px) rotate(-2deg); }
 
 nav { margin-top: 4rem; }
 nav ul { list-style: none; }
@@ -677,4 +673,130 @@ code.inline {
     .hero { padding: 4rem 1.5rem; }
     .hero h1 { font-size: 3rem; }
     .section-content { padding: 2rem 1.5rem; }
+}
+
+/* Mascot layer */
+.mascot-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.mascot-walk {
+    --mascot-facing: 1;
+    position: absolute;
+    left: 0;
+    bottom: clamp(0.75rem, 2vw, 1.5rem);
+    width: clamp(34px, 3.8vw, 52px);
+    filter: drop-shadow(0 5px 4px rgba(0, 0, 0, 0.16));
+    opacity: 0.95;
+    will-change: transform;
+}
+
+.mascot-walk-ltr { animation: mascot-cross-ltr 14s linear forwards; }
+.mascot-walk-rtl {
+    --mascot-facing: -1;
+    animation: mascot-cross-rtl 14s linear forwards;
+}
+
+.mascot-walk img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transform-origin: 50% 100%;
+    animation: mascot-step 0.58s ease-in-out infinite alternate;
+    user-select: none;
+}
+
+.mascot-celebration {
+    position: absolute;
+    left: var(--mascot-x);
+    top: var(--mascot-y);
+    width: clamp(74px, 8vw, 104px);
+    transform: translate(-50%, -100%);
+    animation: mascot-pop 1.8s var(--easing) forwards;
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.16));
+    will-change: transform, opacity;
+}
+
+.mascot-celebration img {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-select: none;
+}
+
+.mascot-confetti {
+    position: absolute;
+    left: 50%;
+    top: 35%;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    opacity: 0;
+    animation: mascot-confetti 0.95s ease-out forwards;
+}
+
+@keyframes mascot-cross-ltr {
+    from { transform: translate3d(-72px, 0, 0); }
+    to { transform: translate3d(calc(100vw + 72px), 0, 0); }
+}
+
+@keyframes mascot-cross-rtl {
+    from { transform: translate3d(calc(100vw + 72px), 0, 0); }
+    to { transform: translate3d(-72px, 0, 0); }
+}
+
+@keyframes mascot-step {
+    from { transform: scaleX(var(--mascot-facing)) translateY(0) rotate(-2deg); }
+    to { transform: scaleX(var(--mascot-facing)) translateY(-4px) rotate(2deg); }
+}
+
+@keyframes mascot-pop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -85%) scale(0.72) rotate(-4deg);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -112%) scale(1.05) rotate(3deg);
+    }
+    68% {
+        opacity: 1;
+        transform: translate(-50%, -100%) scale(1) rotate(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -116%) scale(0.94) rotate(2deg);
+    }
+}
+
+@keyframes mascot-confetti {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.4);
+    }
+    18% { opacity: 1; }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + var(--confetti-x)),
+            calc(-50% + var(--confetti-y))
+        ) scale(0.9);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .brand-mascot,
+    .mascot-walk,
+    .mascot-walk img,
+    .mascot-celebration,
+    .mascot-confetti {
+        animation: none;
+        transition: none;
+    }
+
+    .mascot-layer { display: none; }
 }

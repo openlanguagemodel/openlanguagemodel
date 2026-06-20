@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ScrambleText from "./ScrambleText";
+import { BASE_PATH } from "../../site.config";
 
 interface NavLink {
   href: string;
@@ -47,7 +48,12 @@ export default function Sidebar({ navLinks, meta, brand = "OLM" }: SidebarProps)
     <aside className={mobileOpen ? "nav-open" : ""}>
       <div>
         <Link href="/" className="brand">
-          <div className="status-dot" />
+          <img
+            className="brand-mascot"
+            src={`${BASE_PATH}/mascot/olm-mascot-stand.png`}
+            alt=""
+            draggable={false}
+          />
           <ScrambleText text={brand} />
         </Link>
         <button
