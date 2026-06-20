@@ -24,12 +24,10 @@ The development extra installs the test and documentation tools used by the repo
 ```bash
 pip install -e ".[wandb]"
 pip install -e ".[docs]"
-pip install -e ".[flash]"
 ```
 
 - `wandb` installs Weights & Biases logging support.
-- `docs` installs the MkDocs/Sphinx-style documentation dependencies used by the generated API reference.
-- `flash` installs `flash-attn`. OLM uses PyTorch scaled dot-product attention by default, so this extra is only for environments that explicitly want the external FlashAttention package.
+- `docs` installs the Sphinx dependencies used by the generated API reference.
 
 ## Core Dependencies
 

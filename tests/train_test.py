@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import TensorDataset
+from torch.utils.data import IterableDataset, TensorDataset
 
 from olm.data.datasets import DataLoader
 from olm.nn.blocks import LM
@@ -8,6 +8,16 @@ from olm.train.callbacks import ValidationCallback
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.optim import AdamW
 from olm.train.trainer import TrainerCallback
+
+
+class FiniteIterablePairs(IterableDataset):
+    def __init__(self, input_ids, labels):
+        self.input_ids = input_ids
+        self.labels = labels
+
+    def __iter__(self):
+        for x, y in zip(self.input_ids, self.labels):
+            yield x, y
 
 
 def test_trainer_runs_tiny_lm_for_two_steps():
@@ -66,6 +76,49 @@ def test_trainer_steps_on_partial_gradient_accumulation():
         TensorDataset(input_ids, labels),
         batch_size=2,
         shuffle=False,
+        num_workers=0,
+        pin_memory=False,
+    )
+    model = LM(
+        vocab_size=vocab_size,
+        embed_dim=32,
+        num_heads=4,
+        num_layers=1,
+        max_seq_len=context_length,
+        dropout=0.0,
+    )
+
+    trainer = Trainer(
+        model,
+        AdamW,
+        loader,
+        device="cpu",
+        context_length=context_length,
+        grad_accum_steps=4,
+        use_amp=False,
+        learning_rate=1e-3,
+        use_warmup_cosine=False,
+    )
+
+    losses = trainer.train(epochs=1, log_interval=100)
+
+    assert len(losses) == 1
+    assert trainer.global_step == 1
+    assert torch.isfinite(torch.tensor(losses[0]))
+
+
+def test_trainer_flushes_partial_accumulation_for_finite_iterables():
+    torch.manual_seed(0)
+
+    vocab_size = 64
+    context_length = 8
+    samples = 6
+
+    input_ids = torch.randint(0, vocab_size, (samples, context_length))
+    labels = torch.roll(input_ids, shifts=-1, dims=1)
+    loader = DataLoader(
+        FiniteIterablePairs(input_ids, labels),
+        batch_size=2,
         num_workers=0,
         pin_memory=False,
     )

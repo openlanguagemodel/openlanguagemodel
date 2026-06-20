@@ -9,9 +9,28 @@ class NumberTokenizer:
         return [int(token) for token in text.split()]
 
 
+class RecordingTokenizer:
+    def __init__(self):
+        self.calls = []
+
+    def encode(self, text, add_special_tokens=True):
+        self.calls.append(add_special_tokens)
+        return [int(token) for token in text.split()]
+
+
+class ErrorTokenizer:
+    def encode(self, text, add_special_tokens=False):
+        del text, add_special_tokens
+        raise ValueError("tokenizer failed")
+
+
 class NumberDataset(BaseTextDataset):
-    def __init__(self, chunks, **kwargs):
-        super().__init__(tokenizer=NumberTokenizer(), context_length=2, **kwargs)
+    def __init__(self, chunks, tokenizer=None, **kwargs):
+        super().__init__(
+            tokenizer=tokenizer or NumberTokenizer(),
+            context_length=2,
+            **kwargs,
+        )
         self.chunks = chunks
 
     def _get_text_iterator(self):
@@ -41,3 +60,23 @@ def test_iterable_dataset_buffer_is_per_iterator():
 
     assert [sample[0].tolist() for sample in first] == [[0, 1]]
     assert [sample[0].tolist() for sample in second] == [[0, 1]]
+
+
+def test_streaming_dataset_disables_special_tokens():
+    tokenizer = RecordingTokenizer()
+    dataset = NumberDataset(["0 1 2"], tokenizer=tokenizer)
+
+    list(dataset)
+
+    assert tokenizer.calls == [False]
+
+
+def test_streaming_dataset_does_not_swallow_tokenizer_errors():
+    dataset = NumberDataset(["0 1 2"], tokenizer=ErrorTokenizer())
+
+    try:
+        list(dataset)
+    except ValueError as exc:
+        assert str(exc) == "tokenizer failed"
+    else:
+        raise AssertionError("expected tokenizer error to propagate")

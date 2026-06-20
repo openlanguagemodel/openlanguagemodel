@@ -7,7 +7,7 @@ name = "openlanguagemodel"
 version = "2.2.0"
 description = "OpenLanguageModel (OLM): a modular PyTorch LLM library for building, training, teaching, and researching transformer language models."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
@@ -50,26 +50,22 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "setuptools>=77.0",
     "pytest>=7.0.0",
     "black>=22.0.0",
     "flake8>=4.0.0",
     "mypy>=0.950",
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.24.0",
+    "sphinx>=7.0.0",
+    "sphinx-markdown-builder>=0.6.0",
     "build",
     "twine",
-]
-flash = [
-    "flash-attn>=2.0.0",
 ]
 wandb = [
     "wandb>=0.16.0",
 ]
 docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.24.0",
+    "sphinx>=7.0.0",
+    "sphinx-markdown-builder>=0.6.0",
 ]
 
 [project.urls]

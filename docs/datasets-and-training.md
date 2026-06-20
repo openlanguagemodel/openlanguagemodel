@@ -513,6 +513,8 @@ model = load_model("./checkpoints/no_tokenizer_model")
 > [!NOTE]
 > **Architecture Preservation**
 > The `.save()` method preserves the entire model object. This means you don't need to manually define the model's configuration (like `vocab_size` or `num_layers`) when loading; the library reconstructs the exact architecture for you.
+> Only load model directories you trust. OLM's current `.save()` format stores
+> Python module objects so custom architectures can round-trip.
 
 ---
 

@@ -24,6 +24,7 @@ from olm.train.callbacks import (
     EarlyStoppingCallback,
 )
 from olm.train.optim import OptimizerBase, AdamW, Lion
+from olm.train.losses import LossBase, CrossEntropyLoss, KLLoss, MaskedCELoss, ZLoss
 from olm.train.schedulers import (
     SchedulerBase,
     CosineAnnealingLR,
@@ -67,6 +68,12 @@ __all__ = [
     "OptimizerBase",
     "AdamW",
     "Lion",
+    # Losses
+    "LossBase",
+    "CrossEntropyLoss",
+    "KLLoss",
+    "MaskedCELoss",
+    "ZLoss",
     # Schedulers
     "SchedulerBase",
     "CosineAnnealingLR",

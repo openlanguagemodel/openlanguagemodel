@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import pytest
 
 from olm.nn.structure import Block, load_block
 
@@ -27,3 +28,12 @@ def test_block_save_can_update_existing_directory(tmp_path):
 
     loaded = load_block(str(save_path))
     assert isinstance(loaded, Block)
+
+
+def test_block_load_requires_trusted_artifact(tmp_path):
+    save_path = tmp_path / "block"
+    block = Block([nn.Linear(4, 4)])
+    block.save(str(save_path))
+
+    with pytest.raises(ValueError, match="trust the artifact"):
+        load_block(str(save_path), trusted=False)

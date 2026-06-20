@@ -413,6 +413,18 @@ Source: [`src/olm/train/schedulers/cosine.py:39`](https://github.com/openlanguag
 
 Compute learning rate using cosine annealing.
 
+### `CrossEntropyLoss(reduction='mean') -> None`
+
+**Bases:** `olm.train.losses.base.LossBase`
+
+Source: [`src/olm/train/losses/cross_entropy.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/cross_entropy.py#L6)
+
+#### Methods
+
+##### `forward(self, logits: torch.Tensor, y: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/train/losses/cross_entropy.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/cross_entropy.py#L8)
+
 ### `DDPTrainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str, context_length: int, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, ddp_backend: str | None = None, find_unused_parameters: bool = False, broadcast_buffers: bool = True, bucket_cap_mb: int = 25, gradient_as_bucket_view: bool = True, static_graph: bool = False)`
 
 **Bases:** `olm.train.trainer.trainer.Trainer`
@@ -546,7 +558,7 @@ Check for early stopping after each step.
 
 **Bases:** `olm.train.trainer.trainer.Trainer`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L38)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L42)
 
 Trainer with PyTorch Fully Sharded Data Parallel (FSDP) support.
 
@@ -608,7 +620,7 @@ trainer.train(epochs=10)
 
 ##### `save_checkpoint(self, path: str, state_dict_type: str = 'FULL_STATE_DICT') -> None`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:497`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L497)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:516`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L516)
 
 Save FSDP checkpoint.
 
@@ -619,7 +631,7 @@ Save FSDP checkpoint.
 
 ##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:236`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L236)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:240`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L240)
 
 Training loop with FSDP support.
 
@@ -633,6 +645,39 @@ Training loop with FSDP support.
 **Returns**
 
 List of loss values (only on rank 0).
+
+### `KLLoss(kl_coeff=1.0, from_logits=True, **kwargs)`
+
+**Bases:** `olm.train.losses.base.LossBase`
+
+Source: [`src/olm/train/losses/kllloss.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/kllloss.py#L7)
+
+Forward KL penalty between a policy distribution and a reference distribution.
+
+Supports two input modes:
+  1) From logits:
+     logits      : [B, T, V]  (policy logits)
+     ref  : [B, T, V]  (reference logits)
+
+  2) From log-probs:
+     logp       : [B, T, V]  (policy log-probs)
+     ref_logp    : [B, T, V]  (reference log-probs)
+
+Optional:
+  loss_mask : [B, T] (bool or 0/1) to mask tokens
+
+Output:
+  scalar loss (unless reduction="none") = kl_coeff * reduced(KL per token)
+
+Notes:
+  - This computes the *full-distribution* KL per token (sums over vocab V).
+  - That's the common KL regularizer used to keep the policy close to a reference.
+
+#### Methods
+
+##### `forward(self, logits, ref, mask=None)`
+
+Source: [`src/olm/train/losses/kllloss.py:57`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/kllloss.py#L57)
 
 ### `LRMonitorCallback(log_every: int = 100)`
 
@@ -774,6 +819,42 @@ Sets gradients of all optimized tensors to zero.
 **Parameters**
 
 - `set_to_none`: instead of setting to zero, set the grads to None. This is more memory efficient and can slightly improve performance.
+
+### `LossBase(reduction='mean') -> None`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/train/losses/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/base.py#L8)
+
+Base class for all loss modules.
+
+#### Methods
+
+##### `forward(self, logits: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor`
+
+Source: [`src/olm/train/losses/base.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/base.py#L32)
+
+Apply loss to ``logits`` and ``y``.
+
+### `MaskedCELoss(ignore_index=-100, **kwargs)`
+
+**Bases:** `olm.train.losses.base.LossBase`
+
+Source: [`src/olm/train/losses/mce.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/mce.py#L5)
+
+Token-level cross-entropy with optional loss_mask.
+
+Expects:
+  batch["logits"] : [B, T, V]
+  batch["labels"] : [B, T]  (use ignore_index for tokens to ignore)
+Optional:
+  batch["loss_mask"] : [B, T] (1/0 or bool)
+
+#### Methods
+
+##### `forward(self, logits, y, mask)`
+
+Source: [`src/olm/train/losses/mce.py:22`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/mce.py#L22)
 
 ### `MetricsLoggerCallback(log_dir: str = 'logs', log_every: int = 10)`
 
@@ -1217,3 +1298,25 @@ for step in range(warmup_steps):
 Source: [`src/olm/train/schedulers/warmup.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/schedulers/warmup.py#L38)
 
 Compute learning rate during warmup.
+
+### `ZLoss(z_coeff=0.0001, **kwargs)`
+
+**Bases:** `olm.train.losses.base.LossBase`
+
+Source: [`src/olm/train/losses/zloss.py:4`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/zloss.py#L4)
+
+Z-loss (logZ^2 penalty), commonly used as an auxiliary regularizer.
+
+For each token:
+  logZ = logsumexp(logits, dim=-1)
+  zloss = (logZ ** 2)
+
+Notes:
+- This does NOT include CE. Usually you add it to CE:
+    total = ce_loss + z_coeff * z_loss
+
+#### Methods
+
+##### `forward(self, logits, y, mask=None)`
+
+Source: [`src/olm/train/losses/zloss.py:24`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/losses/zloss.py#L24)

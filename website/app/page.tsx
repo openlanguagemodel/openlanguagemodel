@@ -300,8 +300,8 @@ export default function Home() {
                 src="https://img.shields.io/github/stars/openlanguagemodel/openlanguagemodel?style=social"
               />
               <img
-                alt="Python 3.10+"
-                src="https://img.shields.io/badge/python-3.10%2B-blue"
+                alt="Python 3.10-3.12"
+                src="https://img.shields.io/badge/python-3.10--3.12-blue"
               />
               <img
                 alt="MIT license"

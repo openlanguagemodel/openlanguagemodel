@@ -102,6 +102,12 @@ API Reference
    generated/olm.train.callbacks.throughput_cb
    generated/olm.train.callbacks.validation_cb
    generated/olm.train.device
+   generated/olm.train.losses
+   generated/olm.train.losses.base
+   generated/olm.train.losses.cross_entropy
+   generated/olm.train.losses.kllloss
+   generated/olm.train.losses.mce
+   generated/olm.train.losses.zloss
    generated/olm.train.optim
    generated/olm.train.optim.adamw
    generated/olm.train.optim.base

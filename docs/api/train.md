@@ -6,7 +6,7 @@ Trainers, callbacks, optimizers, schedules, and device selection.
 
 | Module | Public API |
 |---|---|
-| [`olm.train`](../generated/olm.train.md) | `AdamW`, `CheckpointCallback`, `CosineAnnealingLR`, `DDPTrainer`, `DeviceConfig`, `EarlyStoppingCallback`, `FSDPTrainer`, `LRMonitorCallback`, +20 more |
+| [`olm.train`](../generated/olm.train.md) | `AdamW`, `CheckpointCallback`, `CosineAnnealingLR`, `CrossEntropyLoss`, `DDPTrainer`, `DeviceConfig`, `EarlyStoppingCallback`, `FSDPTrainer`, +25 more |
 | [`olm.train.callbacks`](../generated/olm.train.callbacks.md) | `CheckpointCallback`, `EarlyStoppingCallback`, `LRMonitorCallback`, `MetricsLoggerCallback`, `ThroughputCallback`, `ValidationCallback` |
 | [`olm.train.callbacks.checkpoint_cb`](../generated/olm.train.callbacks.checkpoint_cb.md) | `CheckpointCallback` |
 | [`olm.train.callbacks.early_stopping_cb`](../generated/olm.train.callbacks.early_stopping_cb.md) | `EarlyStoppingCallback` |
@@ -15,6 +15,12 @@ Trainers, callbacks, optimizers, schedules, and device selection.
 | [`olm.train.callbacks.throughput_cb`](../generated/olm.train.callbacks.throughput_cb.md) | `ThroughputCallback` |
 | [`olm.train.callbacks.validation_cb`](../generated/olm.train.callbacks.validation_cb.md) | `ValidationCallback` |
 | [`olm.train.device`](../generated/olm.train.device.md) | `DeviceConfig`, `TrainerStrategy`, `detect_devices`, `determine_strategy`, `estimate_model_size`, `parse_device_string`, `print_strategy_summary` |
+| [`olm.train.losses`](../generated/olm.train.losses.md) | `CrossEntropyLoss`, `KLLoss`, `LossBase`, `MaskedCELoss`, `ZLoss` |
+| [`olm.train.losses.base`](../generated/olm.train.losses.base.md) | `LossBase` |
+| [`olm.train.losses.cross_entropy`](../generated/olm.train.losses.cross_entropy.md) | `CrossEntropyLoss` |
+| [`olm.train.losses.kllloss`](../generated/olm.train.losses.kllloss.md) | `KLLoss` |
+| [`olm.train.losses.mce`](../generated/olm.train.losses.mce.md) | `MaskedCELoss` |
+| [`olm.train.losses.zloss`](../generated/olm.train.losses.zloss.md) | `ZLoss` |
 | [`olm.train.optim`](../generated/olm.train.optim.md) | `AdamW`, `Lion`, `OptimizerBase`, `ZeROOptimizer` |
 | [`olm.train.optim.adamw`](../generated/olm.train.optim.adamw.md) | `AdamW` |
 | [`olm.train.optim.base`](../generated/olm.train.optim.base.md) | `OptimizerBase` |

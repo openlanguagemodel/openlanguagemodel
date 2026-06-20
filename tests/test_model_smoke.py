@@ -289,7 +289,24 @@ def test_llama3_ties_embeddings_by_default():
         llama3_module.Llama3_2_1B()
         llama3_module.Llama3_2_3B()
 
-    assert [call.kwargs.get("tie_weights", True) for call in init.call_args_list] == [True, True]
+    assert [call.kwargs.get("tie_weights", True) for call in init.call_args_list] == [
+        True,
+        True,
+    ]
+
+
+def test_llama3_2_1b_reference_config():
+    with patch.object(llama3_module.Llama3Model, "__init__", return_value=None) as init:
+        llama3_module.Llama3_2_1B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["embed_dim"] == 2048
+    assert kwargs["intermediate_size"] == 8192
+    assert kwargs["num_layers"] == 16
+    assert kwargs["num_heads"] == 32
+    assert kwargs["num_kv_heads"] == 8
+    assert kwargs["max_seq_len"] == 131072
+    assert kwargs["rope_theta"] == 500000.0
 
 
 def test_phi3_reference_preset_constants():
@@ -313,6 +330,20 @@ def test_qwen25_large_eps_matches_public_configs():
         1e-5,
         1e-5,
     ]
+
+
+def test_qwen25_1_5b_reference_config():
+    with patch.object(qwen2_module.Qwen2Model, "__init__", return_value=None) as init:
+        qwen2_module.Qwen2_5_1_5B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["embed_dim"] == 1536
+    assert kwargs["intermediate_size"] == 8960
+    assert kwargs["num_layers"] == 28
+    assert kwargs["num_heads"] == 12
+    assert kwargs["num_kv_heads"] == 2
+    assert kwargs["max_seq_len"] == 131072
+    assert kwargs["rope_theta"] == 1000000.0
 
 
 @pytest.mark.parametrize(

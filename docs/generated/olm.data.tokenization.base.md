@@ -8,7 +8,7 @@ Source: [`src/olm/data/tokenization/base.py:1`](https://github.com/openlanguagem
 
 **Bases:** `ABC`
 
-Source: [`src/olm/data/tokenization/base.py:3`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L3)
+Source: [`src/olm/data/tokenization/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L5)
 
 Abstract base class for all tokenizers in OLM.
 
@@ -19,7 +19,7 @@ Subclasses must implement `encode` and `decode` methods.
 
 ##### `decode(self, tokens: torch.Tensor) -> str`
 
-Source: [`src/olm/data/tokenization/base.py:27`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L27)
+Source: [`src/olm/data/tokenization/base.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L32)
 
 Converts a sequence of token IDs back into a text string.
 
@@ -31,15 +31,16 @@ Converts a sequence of token IDs back into a text string.
 
 - `str`: The decoded text string.
 
-##### `encode(self, text: str) -> torch.Tensor`
+##### `encode(self, text: str, add_special_tokens: bool = True) -> torch.Tensor`
 
-Source: [`src/olm/data/tokenization/base.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L14)
+Source: [`src/olm/data/tokenization/base.py:17`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L17)
 
 Converts a text string into a sequence of token IDs.
 
 **Parameters**
 
 - `text` (`str`): The input text to tokenize.
+- `add_special_tokens` (`bool`): Whether to include tokenizer-specific special tokens such as BOS/EOS markers.
 
 **Returns**
 
@@ -47,7 +48,7 @@ Converts a text string into a sequence of token IDs.
 
 ##### `save(self, path: str) -> None`
 
-Source: [`src/olm/data/tokenization/base.py:40`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L40)
+Source: [`src/olm/data/tokenization/base.py:45`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L45)
 
 Saves the tokenizer to a file.
 

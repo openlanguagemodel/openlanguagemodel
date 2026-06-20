@@ -2,6 +2,7 @@
 Fully Sharded Data Parallel (FSDP) Trainer using PyTorch's native FSDP.
 """
 
+from pathlib import Path
 from typing import Optional, List, Type, Union, Any, Callable
 import torch
 import torch.nn as nn
@@ -11,6 +12,9 @@ from torch.distributed.fsdp import (
     MixedPrecision,
     BackwardPrefetch,
     CPUOffload,
+    FullStateDictConfig,
+    LocalStateDictConfig,
+    ShardedStateDictConfig,
     StateDictType,
 )
 from torch.distributed.fsdp.wrap import (
@@ -269,6 +273,86 @@ class FSDPTrainer(Trainer):
 
         losses = []
 
+        def finish_accumulation(actual_count: int) -> bool:
+            nonlocal accumulated_loss, accumulated_tokens, accumulation_count, epoch_step
+
+            self._call_callbacks("on_step_begin", self, self.global_step)
+
+            needs_unscale = (
+                self.grad_clip_norm is not None or actual_count != accumulation_target
+            )
+            if needs_unscale:
+                self.scaler.unscale_(self.optimizer)
+
+            if actual_count != accumulation_target:
+                grad_scale = accumulation_target / actual_count
+                for group in self.optimizer.param_groups:
+                    for param in group["params"]:
+                        if param.grad is not None:
+                            param.grad.mul_(grad_scale)
+
+            if self.grad_clip_norm is not None:
+                self.model.clip_grad_norm_(self.grad_clip_norm)
+
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.optimizer.zero_grad(set_to_none=True)
+
+            if self.scheduler is not None:
+                self.scheduler.step()
+
+            avg_loss = accumulated_loss / actual_count
+            self.global_step += 1
+
+            current_lr = self.optimizer.param_groups[0]["lr"]
+            perplexity = math.exp(min(avg_loss, 20))
+
+            step_time = (
+                time.time() - self.step_start_time if self.step_start_time else 0.0
+            )
+            tokens_per_sec = accumulated_tokens / step_time if step_time > 0 else 0.0
+
+            if is_distributed():
+                loss_tensor = torch.tensor([avg_loss], device=self.device)
+                all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
+                avg_loss = loss_tensor.item()
+                perplexity = math.exp(min(avg_loss, 20))
+
+                throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
+                all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
+                tokens_per_sec = throughput_tensor.item()
+
+            self.training_state.update(
+                {
+                    "current_loss": avg_loss,
+                    "perplexity": perplexity,
+                    "tokens_per_sec": tokens_per_sec,
+                    "learning_rate": current_lr,
+                    "total_tokens": self.total_tokens_processed,
+                }
+            )
+
+            if is_main_process():
+                losses.append(avg_loss)
+                self.losses.append(avg_loss)
+
+            if self.global_step % log_interval == 0 and is_main_process():
+                print(
+                    f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
+                    f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
+                    flush=True,
+                )
+
+            self._call_callbacks("on_step_end", self, self.global_step, avg_loss)
+            should_stop = self._should_stop_training()
+
+            accumulated_loss = 0.0
+            accumulated_tokens = 0
+            accumulation_count = 0
+            epoch_step += 1
+
+            return should_stop
+
         # Call callbacks
         self._call_callbacks("on_train_begin", self)
 
@@ -346,95 +430,13 @@ class FSDPTrainer(Trainer):
 
                 # Optimizer step after gradient accumulation
                 if accumulation_count == accumulation_target:
-                    self._call_callbacks("on_step_begin", self, self.global_step)
-
-                    # Gradient clipping (FSDP-compatible)
-                    if self.grad_clip_norm is not None:
-                        self.scaler.unscale_(self.optimizer)
-                        self.model.clip_grad_norm_(self.grad_clip_norm)
-
-                    # Optimizer step
-                    self.scaler.step(self.optimizer)
-                    self.scaler.update()
-                    self.optimizer.zero_grad(set_to_none=True)
-
-                    # Scheduler step
-                    if self.scheduler is not None:
-                        self.scheduler.step()
-
-                    avg_loss = accumulated_loss / accumulation_target
-                    self.global_step += 1
-
-                    # Calculate metrics
-                    current_lr = self.optimizer.param_groups[0]["lr"]
-                    perplexity = math.exp(min(avg_loss, 20))
-
-                    # Calculate throughput
-                    step_time = (
-                        time.time() - self.step_start_time
-                        if self.step_start_time
-                        else 0.0
-                    )
-                    tokens_in_step = accumulated_tokens
-                    tokens_per_sec = (
-                        tokens_in_step / step_time if step_time > 0 else 0.0
-                    )
-
-                    # Aggregate metrics across ranks
-                    if is_distributed():
-                        # Average loss
-                        loss_tensor = torch.tensor([avg_loss], device=self.device)
-                        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-                        avg_loss = loss_tensor.item()
-                        perplexity = math.exp(min(avg_loss, 20))
-
-                        # Sum throughput
-                        throughput_tensor = torch.tensor(
-                            [tokens_per_sec], device=self.device
-                        )
-                        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-                        tokens_per_sec = throughput_tensor.item()
-
-                    # Update training state
-                    self.training_state.update(
-                        {
-                            "current_loss": avg_loss,
-                            "perplexity": perplexity,
-                            "tokens_per_sec": tokens_per_sec,
-                            "learning_rate": current_lr,
-                            "total_tokens": self.total_tokens_processed,
-                        }
-                    )
-
-                    if is_main_process():
-                        losses.append(avg_loss)
-                        self.losses.append(avg_loss)
-
-                    # Log only on rank 0
-                    if self.global_step % log_interval == 0 and is_main_process():
-                        print(
-                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
-                            f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
-                            flush=True,
-                        )
-
-                    self._call_callbacks(
-                        "on_step_end", self, self.global_step, avg_loss
-                    )
-
-                    if self._should_stop_training():
+                    if finish_accumulation(accumulation_count):
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
                         if is_main_process():
                             self.losses = losses
                             self._print_training_summary()
                         return losses
-
-                    # Reset accumulated loss
-                    accumulated_loss = 0.0
-                    accumulated_tokens = 0
-                    accumulation_count = 0
-                    epoch_step += 1
 
                     # Check stopping conditions
                     if max_steps and self.global_step >= max_steps:
@@ -447,6 +449,23 @@ class FSDPTrainer(Trainer):
 
                     if steps_per_epoch and epoch_step >= steps_per_epoch:
                         break
+
+            if accumulation_count > 0:
+                if finish_accumulation(accumulation_count):
+                    self._call_callbacks("on_epoch_end", self, epoch)
+                    self._call_callbacks("on_train_end", self)
+                    if is_main_process():
+                        self.losses = losses
+                        self._print_training_summary()
+                    return losses
+
+                if max_steps and self.global_step >= max_steps:
+                    self._call_callbacks("on_epoch_end", self, epoch)
+                    self._call_callbacks("on_train_end", self)
+                    if is_main_process():
+                        self.losses = losses
+                        self._print_training_summary()
+                    return losses
 
             self._call_callbacks("on_epoch_end", self, epoch)
 
@@ -509,18 +528,34 @@ class FSDPTrainer(Trainer):
                 - "LOCAL_STATE_DICT": Save local shards on each rank
                 - "SHARDED_STATE_DICT": Save sharded checkpoint
         """
-        # Set state dict type
         state_dict_type_enum = getattr(StateDictType, state_dict_type)
+        if state_dict_type == "FULL_STATE_DICT":
+            state_dict_config = FullStateDictConfig(
+                offload_to_cpu=True,
+                rank0_only=True,
+            )
+        elif state_dict_type == "LOCAL_STATE_DICT":
+            state_dict_config = LocalStateDictConfig()
+        elif state_dict_type == "SHARDED_STATE_DICT":
+            state_dict_config = ShardedStateDictConfig(offload_to_cpu=True)
+        else:
+            raise ValueError(f"Unsupported FSDP state_dict_type: {state_dict_type}")
 
         # All ranks must participate in the state dict collective (especially for
         # FULL_STATE_DICT, which gathers shards across the process group).
-        with FSDP.state_dict_type(self.model, state_dict_type_enum):
+        with FSDP.state_dict_type(self.model, state_dict_type_enum, state_dict_config):
             state_dict = self.model.state_dict()
 
             is_full = state_dict_type == "FULL_STATE_DICT"
             should_write = is_main_process() if is_full else True
 
             if should_write:
+                checkpoint_path = Path(path)
+                if not is_full:
+                    checkpoint_path = checkpoint_path.with_name(
+                        f"{checkpoint_path.stem}.rank{get_rank()}{checkpoint_path.suffix}"
+                    )
+
                 checkpoint = {
                     "model": state_dict,
                     "optimizer": self.optimizer.state_dict(),
@@ -530,5 +565,8 @@ class FSDPTrainer(Trainer):
                     "global_step": self.global_step,
                     "epoch": self.current_epoch,
                 }
-                torch.save(checkpoint, path)
-                print(f"Checkpoint saved to {path}")
+                torch.save(checkpoint, checkpoint_path)
+                print(f"Checkpoint saved to {checkpoint_path}")
+
+        if is_distributed():
+            barrier()

@@ -212,6 +212,8 @@ model = load_model("./checkpoints/model_only")
 > Because `.save()` stores the whole module, loading reconstructs the exact architecture — there is no need to remember `vocab_size`, `num_layers`, or which attention variant you used.
 > Re-running `model.save("./checkpoints/final_model")` updates the saved model in
 > that directory instead of failing just because the directory already exists.
+> Only load model directories you trust. OLM's current `.save()` format stores
+> Python module objects so custom architectures can round-trip.
 
 ### Resuming trainer checkpoints
 

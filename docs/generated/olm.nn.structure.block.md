@@ -4,17 +4,50 @@ Source: [`src/olm/nn/structure/block.py:1`](https://github.com/openlanguagemodel
 
 ## Functions
 
-### `load(path: str) -> ForwardRef('Block') | tuple`
+### `load(path: str, *, trusted: bool = True) -> ForwardRef('Block') | tuple`
 
-Source: [`src/olm/nn/structure/block.py:49`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L49)
+Source: [`src/olm/nn/structure/block.py:56`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L56)
 
-### `load_block(path: str) -> ForwardRef('Block') | tuple`
+Load a block saved by ``Block.save``.
 
-Source: [`src/olm/nn/structure/block.py:49`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L49)
+``Block.save`` stores the full Python module object so arbitrary custom
+architectures can be restored. This uses Python pickle through PyTorch and is
+only safe for trusted local artifacts.
 
-### `load_model(path: str) -> ForwardRef('Block') | tuple`
+**Parameters**
 
-Source: [`src/olm/nn/structure/block.py:49`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L49)
+- `path`: Directory produced by ``Block.save``.
+- `trusted`: Must be ``True``. Pass this explicitly in security-sensitive code to make the trusted-artifact boundary visible.
+
+### `load_block(path: str, *, trusted: bool = True) -> ForwardRef('Block') | tuple`
+
+Source: [`src/olm/nn/structure/block.py:56`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L56)
+
+Load a block saved by ``Block.save``.
+
+``Block.save`` stores the full Python module object so arbitrary custom
+architectures can be restored. This uses Python pickle through PyTorch and is
+only safe for trusted local artifacts.
+
+**Parameters**
+
+- `path`: Directory produced by ``Block.save``.
+- `trusted`: Must be ``True``. Pass this explicitly in security-sensitive code to make the trusted-artifact boundary visible.
+
+### `load_model(path: str, *, trusted: bool = True) -> ForwardRef('Block') | tuple`
+
+Source: [`src/olm/nn/structure/block.py:56`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L56)
+
+Load a block saved by ``Block.save``.
+
+``Block.save`` stores the full Python module object so arbitrary custom
+architectures can be restored. This uses Python pickle through PyTorch and is
+only safe for trusted local artifacts.
+
+**Parameters**
+
+- `path`: Directory produced by ``Block.save``.
+- `trusted`: Must be ``True``. Pass this explicitly in security-sensitive code to make the trusted-artifact boundary visible.
 
 ## Classes
 
@@ -56,3 +89,9 @@ Output tensor after all blocks have been applied.
 ##### `save(self, path: str, tokenizer: olm.data.tokenization.base.TokenizerBase = None) -> None`
 
 Source: [`src/olm/nn/structure/block.py:40`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L40)
+
+Save this block as a trusted local artifact.
+
+OLM preserves the complete Python module object so custom architectures can
+round-trip without a separate config format. Only load artifacts you created
+yourself or otherwise trust.

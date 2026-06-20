@@ -323,7 +323,7 @@ Check for early stopping after each step.
 
 **Bases:** `olm.train.trainer.trainer.Trainer`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:38`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L38)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L42)
 
 Trainer with PyTorch Fully Sharded Data Parallel (FSDP) support.
 
@@ -385,7 +385,7 @@ trainer.train(epochs=10)
 
 ##### `save_checkpoint(self, path: str, state_dict_type: str = 'FULL_STATE_DICT') -> None`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:497`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L497)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:516`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L516)
 
 Save FSDP checkpoint.
 
@@ -396,7 +396,7 @@ Save FSDP checkpoint.
 
 ##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
 
-Source: [`src/olm/train/trainer/fsdp_trainer.py:236`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L236)
+Source: [`src/olm/train/trainer/fsdp_trainer.py:240`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/trainer/fsdp_trainer.py#L240)
 
 Training loop with FSDP support.
 

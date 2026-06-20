@@ -1,5 +1,7 @@
-from abc import ABC, abstractmethod
 import torch
+from abc import ABC, abstractmethod
+
+
 class TokenizerBase(ABC):
     """
     Abstract base class for all tokenizers in OLM.
@@ -7,17 +9,20 @@ class TokenizerBase(ABC):
     Defines the interface for converting between text strings and integer token IDs.
     Subclasses must implement `encode` and `decode` methods.
     """
+
     def __init__(self):
         """Initializes the tokenizer base."""
         pass
 
     @abstractmethod
-    def encode(self, text: str) -> torch.Tensor:
+    def encode(self, text: str, add_special_tokens: bool = True) -> torch.Tensor:
         """
         Converts a text string into a sequence of token IDs.
 
         Args:
             text (str): The input text to tokenize.
+            add_special_tokens (bool): Whether to include tokenizer-specific
+                special tokens such as BOS/EOS markers.
 
         Returns:
             torch.Tensor: A 1D tensor containing the token IDs.

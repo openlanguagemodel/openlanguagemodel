@@ -92,12 +92,10 @@ class BaseTextDataset(IterableDataset, ABC):
             text_iter = islice(text_iter, shard_id, None, num_shards)
 
         for text in text_iter:
-            # Generic encoding
             try:
-                # Try to use add_special_tokens=False for continuous streaming
                 tokens = self.tokenizer.encode(text, add_special_tokens=False)
-            except Exception:
-                # Fallback for simple tokenizers
+            except TypeError:
+                # Older/simple tokenizers may not expose add_special_tokens.
                 tokens = self.tokenizer.encode(text)
 
             token_buffer.extend(tokens)

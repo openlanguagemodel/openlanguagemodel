@@ -150,7 +150,6 @@ Optional extras:
 ```bash
 pip install -e ".[wandb]"  # Weights & Biases logging
 pip install -e ".[docs]"   # documentation tooling
-pip install -e ".[flash]"  # external flash-attn package, when needed
 ```
 
 See [`docs/installation.md`](docs/installation.md) for dependency and release-build details.

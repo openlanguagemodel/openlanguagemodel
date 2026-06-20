@@ -37,8 +37,8 @@ Composable PyTorch modules for language-model architectures.
 | [`olm.nn.blocks.linear_projections`](../generated/olm.nn.blocks.linear_projections.md) | `QKVProjection` |
 | [`olm.nn.blocks.output_head`](../generated/olm.nn.blocks.output_head.md) | `OutputHead` |
 | [`olm.nn.blocks.transformer_block`](../generated/olm.nn.blocks.transformer_block.md) | `TransformerBlock` |
-| [`olm.nn.embeddings`](../generated/olm.nn.embeddings.md) | `AbsolutePositionalEmbedding`, `Embedding` |
-| [`olm.nn.embeddings.positional`](../generated/olm.nn.embeddings.positional.md) | `ALiBiPositionalBias`, `AbsolutePositionalEmbedding`, `PartialRotaryPositionalEmbedding`, `PositionalEmbeddingBase`, `RotaryPositionalEmbedding`, `SinusoidalPositionalEmbedding` |
+| [`olm.nn.embeddings`](../generated/olm.nn.embeddings.md) | `ALiBiPositionalBias`, `AbsolutePositionalEmbedding`, `Embedding`, `PartialRotaryPositionalEmbedding`, `PartialScaledRotaryPositionalEmbedding`, `PositionalEmbeddingBase`, `RotaryPositionalEmbedding`, `ScaledRotaryPositionalEmbedding`, +1 more |
+| [`olm.nn.embeddings.positional`](../generated/olm.nn.embeddings.positional.md) | `ALiBiPositionalBias`, `AbsolutePositionalEmbedding`, `PartialRotaryPositionalEmbedding`, `PartialScaledRotaryPositionalEmbedding`, `PositionalEmbeddingBase`, `RotaryPositionalEmbedding`, `ScaledRotaryPositionalEmbedding`, `SinusoidalPositionalEmbedding` |
 | [`olm.nn.embeddings.positional.absolute`](../generated/olm.nn.embeddings.positional.absolute.md) | `AbsolutePositionalEmbedding` |
 | [`olm.nn.embeddings.positional.alibi`](../generated/olm.nn.embeddings.positional.alibi.md) | `ALiBiPositionalBias` |
 | [`olm.nn.embeddings.positional.base`](../generated/olm.nn.embeddings.positional.base.md) | `PositionalEmbeddingBase` |

@@ -212,7 +212,7 @@ class Llama3_2_1B(Llama3Model):
             embed_dim=2048,
             intermediate_size=8192,
             num_layers=16,
-            num_heads=16,  # Head dim 128
+            num_heads=32,
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,

@@ -8,7 +8,7 @@
     "prebuild": "node scripts/copy-doc-assets.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
