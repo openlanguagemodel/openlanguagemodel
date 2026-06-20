@@ -218,7 +218,7 @@ const roadmap = [
   { version: "v1.1", desc: "Flash/SDPA attention, RoPE/ALiBi variants, W&B logging, API docs.", done: true },
   { version: "v2.0", desc: "DDP, FSDP, and readable Mixture-of-Experts routing.", done: true },
   { version: "v2.1", desc: "AutoTrainer, hardware-aware training setup, and distributed/attention stability fixes.", done: true },
-  { version: "v2.2", desc: "Current release: website, SEO, mascot, API reference polish, and documentation refinement.", done: false, current: true },
+  { version: "v2.2", desc: "Website, SEO, mascot, API reference polish, and documentation refinement.", done: true },
   { version: "v3.0", desc: "Further training: SFT, LoRA, DPO, PPO/RLHF, GRPO-style RLVR, and evaluation recipes.", done: false },
   { version: "v4.0", desc: "Multi-node training and cluster support.", done: false },
 ];
@@ -552,12 +552,9 @@ export default function Home() {
                   training.
                 </p>
                 <div className="roadmap-list">
-                  {roadmap.map(({ version, desc, done, current }) => (
-                    <div key={version} className={`roadmap-item${done ? " done" : ""}${current ? " current" : ""}`}>
-                      <span className="roadmap-version">
-                        {version}
-                        {current ? <span className="roadmap-current">current</span> : null}
-                      </span>
+                  {roadmap.map(({ version, desc, done }) => (
+                    <div key={version} className={`roadmap-item${done ? " done" : ""}`}>
+                      <span className="roadmap-version">{version}</span>
                       <span className="roadmap-desc">{desc}</span>
                     </div>
                   ))}
