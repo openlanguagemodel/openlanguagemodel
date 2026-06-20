@@ -16,15 +16,20 @@ Source: [`src/olm/train/device.py:84`](https://github.com/openlanguagemodel/open
 
 Detect available hardware and create device configuration.
 
-Args:
-    verbose: Print detection results
+**Parameters**
 
-Returns:
-    DeviceConfig with hardware information
+- `verbose`: Print detection results
 
-Example:
-    >>> config = detect_devices()
-    >>> print(f"Found {config.num_gpus} GPUs")
+**Returns**
+
+DeviceConfig with hardware information
+
+**Example**
+
+```python
+config = detect_devices()
+print(f"Found {config.num_gpus} GPUs")
+```
 
 ### `determine_strategy(device_config: olm.train.device.DeviceConfig, model: torch.nn.modules.module.Module | None = None, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None) -> olm.train.device.DeviceConfig`
 
@@ -32,23 +37,24 @@ Source: [`src/olm/train/device.py:217`](https://github.com/openlanguagemodel/ope
 
 Determine optimal training strategy based on hardware and model.
 
-Args:
-    device_config: Device configuration from detect_devices()
-    model: PyTorch model (optional, for memory estimation)
-    preset: Configuration preset:
-        - "balanced": Intelligent selection (default)
-        - "memory_efficient": Prioritize FSDP, CPU offload
-        - "speed": Prioritize DDP, no offload
-        - "conservative": Use safest options
-    force_strategy: Force specific strategy (overrides auto-selection)
+**Parameters**
 
-Returns:
-    Updated DeviceConfig with strategy and configuration
+- `device_config`: Device configuration from detect_devices()
+- `model`: PyTorch model (optional, for memory estimation)
+- `preset`: Configuration preset: - "balanced": Intelligent selection (default) - "memory_efficient": Prioritize FSDP, CPU offload - "speed": Prioritize DDP, no offload - "conservative": Use safest options
+- `force_strategy`: Force specific strategy (overrides auto-selection)
 
-Example:
-    >>> config = detect_devices()
-    >>> config = determine_strategy(config, model=my_model)
-    >>> print(f"Selected strategy: {config.strategy.value}")
+**Returns**
+
+Updated DeviceConfig with strategy and configuration
+
+**Example**
+
+```python
+config = detect_devices()
+config = determine_strategy(config, model=my_model)
+print(f"Selected strategy: {config.strategy.value}")
+```
 
 ### `estimate_model_size(model: torch.nn.modules.module.Module, verbose: bool = False) -> Dict[str, float]`
 
@@ -56,21 +62,26 @@ Source: [`src/olm/train/device.py:147`](https://github.com/openlanguagemodel/ope
 
 Estimate memory footprint of a model.
 
-Args:
-    model: PyTorch model
-    verbose: Print estimation details
+**Parameters**
 
-Returns:
-    Dictionary with memory estimates in GB:
-        - params_gb: Parameter memory
-        - gradients_gb: Gradient memory
-        - optimizer_gb: Optimizer state memory (assumes AdamW)
-        - total_gb: Total estimated memory
-        - num_params: Total number of parameters
+- `model`: PyTorch model
+- `verbose`: Print estimation details
 
-Example:
-    >>> memory = estimate_model_size(model)
-    >>> print(f"Model requires ~{memory['total_gb']:.2f} GB")
+**Returns**
+
+Dictionary with memory estimates in GB:
+- params_gb: Parameter memory
+- gradients_gb: Gradient memory
+- optimizer_gb: Optimizer state memory (assumes AdamW)
+- total_gb: Total estimated memory
+- num_params: Total number of parameters
+
+**Example**
+
+```python
+memory = estimate_model_size(model)
+print(f"Model requires ~{memory['total_gb']:.2f} GB")
+```
 
 ### `parse_device_string(device: str, model: torch.nn.modules.module.Module | None = None) -> olm.train.device.DeviceConfig`
 
@@ -86,16 +97,21 @@ Supported formats:
     - "cuda:0": Specific CUDA device
     - "cpu": CPU device
 
-Args:
-    device: Device string
-    model: Optional model for memory estimation
+**Parameters**
 
-Returns:
-    DeviceConfig
+- `device`: Device string
+- `model`: Optional model for memory estimation
 
-Example:
-    >>> config = parse_device_string("auto", model=my_model)
-    >>> config = parse_device_string("cuda:auto")
+**Returns**
+
+DeviceConfig
+
+**Example**
+
+```python
+config = parse_device_string("auto", model=my_model)
+config = parse_device_string("cuda:auto")
+```
 
 ### `print_strategy_summary(config: olm.train.device.DeviceConfig) -> None`
 
@@ -103,8 +119,9 @@ Source: [`src/olm/train/device.py:416`](https://github.com/openlanguagemodel/ope
 
 Print a summary of the selected training strategy.
 
-Args:
-    config: Device configuration
+**Parameters**
+
+- `config`: Device configuration
 
 ## Classes
 
@@ -114,21 +131,22 @@ Source: [`src/olm/train/device.py:27`](https://github.com/openlanguagemodel/open
 
 Configuration for device and training strategy.
 
-Attributes:
-    num_gpus: Number of available GPUs
-    num_cpus: Number of CPU cores
-    cuda_available: Whether CUDA is available
-    gpu_memory_per_device: GPU memory in GB per device
-    total_gpu_memory: Total GPU memory in GB
-    strategy: Selected training strategy
-    device_type: Device type ('cuda' or 'cpu')
-    local_rank: Local rank for distributed training
-    world_size: World size for distributed training
-    backend: Distributed backend ('nccl', 'gloo', or None)
-    mixed_precision: Mixed precision dtype ('bf16', 'fp16', or None)
-    sharding_strategy: FSDP sharding strategy (if applicable)
-    auto_wrap_policy: FSDP auto wrap policy (if applicable)
-    cpu_offload: Whether to offload parameters to CPU
+**Attributes**
+
+- `num_gpus`: Number of available GPUs
+- `num_cpus`: Number of CPU cores
+- `cuda_available`: Whether CUDA is available
+- `gpu_memory_per_device`: GPU memory in GB per device
+- `total_gpu_memory`: Total GPU memory in GB
+- `strategy`: Selected training strategy
+- `device_type`: Device type ('cuda' or 'cpu')
+- `local_rank`: Local rank for distributed training
+- `world_size`: World size for distributed training
+- `backend`: Distributed backend ('nccl', 'gloo', or None)
+- `mixed_precision`: Mixed precision dtype ('bf16', 'fp16', or None)
+- `sharding_strategy`: FSDP sharding strategy (if applicable)
+- `auto_wrap_policy`: FSDP auto wrap policy (if applicable)
+- `cpu_offload`: Whether to offload parameters to CPU
 
 #### Methods
 

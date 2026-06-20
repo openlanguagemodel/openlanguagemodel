@@ -851,6 +851,85 @@ code.inline {
     color: inherit;
 }
 
+.api-prose {
+    max-width: 980px;
+}
+
+.api-prose > h2 {
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+}
+
+.api-prose > h3 {
+    border-top: 1px solid #d7d7d2;
+    padding-top: 1.4rem;
+}
+
+.api-prose h4 {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red-accent);
+    margin-top: 2rem;
+}
+
+.api-prose h5 {
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin: 1.6rem 0 0.8rem;
+    color: var(--text-main);
+}
+
+.api-prose h3 code,
+.api-prose h5 code {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border-left: 3px solid var(--red-accent);
+    padding: 0.85rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.55;
+}
+
+.api-prose p:has(> strong:only-child) {
+    margin: 1.4rem 0 0.45rem;
+}
+
+.api-prose p > strong:only-child {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--red-accent);
+}
+
+.api-prose ul {
+    padding-left: 0;
+    list-style: none;
+}
+
+.api-prose li {
+    border-top: 1px solid #ddd;
+    padding-top: 0.55rem;
+    margin-bottom: 0.55rem;
+}
+
+.api-prose li code:first-child {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.api-prose pre {
+    margin-top: 0.75rem;
+}
+
 /* highlight.js token colours */
 .hljs { background: transparent; color: #d4d4d4; }
 .hljs-comment, .hljs-quote { color: #6a9955; font-style: italic; }

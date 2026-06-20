@@ -22,11 +22,13 @@ Source: [`src/olm/nn/structure/combinators/base.py:15`](https://github.com/openl
 
 Compute the combinator output from an input tensor.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor produced by the combinator.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor produced by the combinator.
 
 ### `Parallel(blocks: List[torch.nn.modules.module.Module], merge: Callable = None, dim: int = -1)`
 
@@ -38,15 +40,17 @@ Apply multiple blocks to the same input and merge their outputs.
 
 The merge function takes a list of tensors and a dimension argument.
 
-Args:
-    blocks: Modules applied in parallel to the same input.
-    merge: Function that combines the list of outputs and a dimension.
-    dim: Dimension used by the merge function when applicable.
+**Parameters**
 
-Attributes:
-    blocks: ModuleList storing the parallel blocks.
-    merge: Merge function used to combine outputs.
-    dim: Dimension passed to the merge function.
+- `blocks`: Modules applied in parallel to the same input.
+- `merge`: Function that combines the list of outputs and a dimension.
+- `dim`: Dimension used by the merge function when applicable.
+
+**Attributes**
+
+- `blocks`: ModuleList storing the parallel blocks.
+- `merge`: Merge function used to combine outputs.
+- `dim`: Dimension passed to the merge function.
 
 #### Methods
 
@@ -56,11 +60,13 @@ Source: [`src/olm/nn/structure/combinators/parallel.py:37`](https://github.com/o
 
 Apply all blocks in parallel and merge their outputs.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Merged output tensor.
+- `x`: Input tensor.
+
+**Returns**
+
+Merged output tensor.
 
 ### `Repeat(module_func: Callable[[], torch.nn.modules.module.Module], num_repeat: int)`
 
@@ -74,13 +80,15 @@ The module function should return a new module instance each call. It is
 used to build ``stack`` during initialization and is not needed for forward
 passes after the modules have been created.
 
-Args:
-    module_func: Callable returning a new module instance.
-    num_repeat: Number of times to repeat the module.
+**Parameters**
 
-Attributes:
-    num_repeat: Number of repeats.
-    stack: ModuleList containing the repeated modules.
+- `module_func`: Callable returning a new module instance.
+- `num_repeat`: Number of times to repeat the module.
+
+**Attributes**
+
+- `num_repeat`: Number of repeats.
+- `stack`: ModuleList containing the repeated modules.
 
 #### Methods
 
@@ -90,11 +98,13 @@ Source: [`src/olm/nn/structure/combinators/repeat.py:42`](https://github.com/ope
 
 Apply the repeated modules in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all repeats.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all repeats.
 
 ### `Residual(block: torch.nn.modules.module.Module)`
 
@@ -104,11 +114,13 @@ Source: [`src/olm/nn/structure/combinators/residual.py:5`](https://github.com/op
 
 Residual wrapper that adds the block output to its input.
 
-Args:
-    block: Module applied to the input before residual addition.
+**Parameters**
 
-Attributes:
-    block: Module used for the residual transformation.
+- `block`: Module applied to the input before residual addition.
+
+**Attributes**
+
+- `block`: Module used for the residual transformation.
 
 #### Methods
 
@@ -118,8 +130,10 @@ Source: [`src/olm/nn/structure/combinators/residual.py:26`](https://github.com/o
 
 Apply the block and add the result to the input.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor with residual connection applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor with residual connection applied.

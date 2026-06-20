@@ -17,5 +17,3 @@ PReLU activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/prelu.py:15`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/prelu.py#L15)
-
-Apply activation to ``x``.

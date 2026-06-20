@@ -29,11 +29,13 @@ Source: [`src/olm/nn/embeddings/positional/alibi.py:85`](https://github.com/open
 
 Get ALiBi bias for the given query and key sequence lengths.
 
-Args:
-    seq_len_q: length of query sequence
-    seq_len_k: length of key sequence (usually same as seq_len_q)
-    device: device to place the bias tensor on
+**Parameters**
 
-Returns:
-    Bias tensor of shape (1, num_heads, seq_len_q, seq_len_k)
-    This should be added to attention scores before softmax.
+- `seq_len_q`: length of query sequence
+- `seq_len_k`: length of key sequence (usually same as seq_len_q)
+- `device`: device to place the bias tensor on
+
+**Returns**
+
+Bias tensor of shape (1, num_heads, seq_len_q, seq_len_k)
+This should be added to attention scores before softmax.

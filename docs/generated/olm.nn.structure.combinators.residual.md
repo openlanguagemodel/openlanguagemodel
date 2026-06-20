@@ -12,11 +12,13 @@ Source: [`src/olm/nn/structure/combinators/residual.py:5`](https://github.com/op
 
 Residual wrapper that adds the block output to its input.
 
-Args:
-    block: Module applied to the input before residual addition.
+**Parameters**
 
-Attributes:
-    block: Module used for the residual transformation.
+- `block`: Module applied to the input before residual addition.
+
+**Attributes**
+
+- `block`: Module used for the residual transformation.
 
 #### Methods
 
@@ -26,8 +28,10 @@ Source: [`src/olm/nn/structure/combinators/residual.py:26`](https://github.com/o
 
 Apply the block and add the result to the input.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor with residual connection applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor with residual connection applied.

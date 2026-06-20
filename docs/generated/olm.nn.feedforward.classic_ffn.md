@@ -15,15 +15,17 @@ Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
 Implements a position-wise feed-forward network consisting of two linear transformations
 with a non-linear activation function in between.
 
-Structure:
-    Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+**Structure**
 
-Attributes:
-    hidden_dim (int): Dimension of the inner hidden layer.
-    up_proj (Linear): Projection from embedding dim to hidden dim.
-    act (nn.Module): Activation function.
-    down_proj (Linear): Projection from hidden dim to embedding dim.
-    dropout (nn.Dropout): Dropout layer.
+Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+
+**Attributes**
+
+- `hidden_dim` (`int`): Dimension of the inner hidden layer.
+- `up_proj` (`Linear`): Projection from embedding dim to hidden dim.
+- `act` (`nn.Module`): Activation function.
+- `down_proj` (`Linear`): Projection from hidden dim to embedding dim.
+- `dropout` (`nn.Dropout`): Dropout layer.
 
 #### Methods
 
@@ -33,8 +35,10 @@ Source: [`src/olm/nn/feedforward/classic_ffn.py:51`](https://github.com/openlang
 
 Apply the position-wise feed-forward network.
 
-Args:
-    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+**Parameters**
 
-Returns:
-    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+**Returns**
+
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.

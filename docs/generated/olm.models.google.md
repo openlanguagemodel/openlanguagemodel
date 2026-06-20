@@ -12,13 +12,15 @@ Source: [`src/olm/models/google/gemma2.py:108`](https://github.com/openlanguagem
 
 Base class for Gemma 2 models.
 
-Structure:
-    Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
-    tied OutputHead -> optional final logit softcap.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
+tied OutputHead -> optional final logit softcap.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -28,11 +30,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_27B()`
 
@@ -50,11 +54,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_2B()`
 
@@ -72,11 +78,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_9B()`
 
@@ -94,8 +102,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

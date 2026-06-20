@@ -28,10 +28,11 @@ Source: [`src/olm/nn/embeddings/positional/sinusoidal.py:80`](https://github.com
 
 Apply sinusoidal positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, embed_dim) - token embeddings
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with positional embeddings added.
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.

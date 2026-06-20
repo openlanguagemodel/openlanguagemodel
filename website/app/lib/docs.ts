@@ -125,7 +125,7 @@ export function trackForPath(p: string): string {
       if (g.items.some((i) => i.path === p)) return t.id;
     }
   }
-  if (p.startsWith("api")) return "api";
+  if (p.startsWith("api") || p.startsWith("generated")) return "api";
   if (p.startsWith("guides")) return "docs";
   if (p === "learn" || p.startsWith("learn/")) return "learning";
   return "learning";

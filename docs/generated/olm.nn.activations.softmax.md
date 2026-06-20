@@ -17,5 +17,3 @@ Softmax activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/softmax.py:16`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/softmax.py#L16)
-
-Apply activation to ``x``.

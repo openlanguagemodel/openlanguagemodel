@@ -27,13 +27,14 @@ Source: [`src/olm/nn/embeddings/positional/absolute.py:34`](https://github.com/o
 
 Apply absolute positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, embed_dim) - token embeddings
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with positional embeddings added.
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.
 
 ### `Embedding(vocab_size: int, embedding_dim: int)`
 
@@ -46,12 +47,14 @@ Token Embedding layer.
 Wraps standard PyTorch embedding with a clean interface.
 Maps integer indices to dense vectors.
 
-Args:
-    vocab_size (int): Size of the vocabulary.
-    embedding_dim (int): Dimensionality of the word embeddings.
+**Parameters**
 
-Attributes:
-    embedding (nn.Embedding): The underlying PyTorch embedding layer.
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embedding_dim` (`int`): Dimensionality of the word embeddings.
+
+**Attributes**
+
+- `embedding` (`nn.Embedding`): The underlying PyTorch embedding layer.
 
 #### Methods
 
@@ -61,8 +64,10 @@ Source: [`src/olm/nn/embeddings/token_embed.py:30`](https://github.com/openlangu
 
 Forward pass of the Embedding layer.
 
-Args:
-    x (torch.Tensor): Input tensor of shape (batch_size, seq_len) containing token IDs.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor of shape (batch_size, seq_len, embedding_dim).
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, seq_len) containing token IDs.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape (batch_size, seq_len, embedding_dim).

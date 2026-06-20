@@ -17,5 +17,3 @@ Backward-compatible name for SiLU.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `SiLU`)
 
 Source: [`src/olm/nn/activations/silu.py:16`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/silu.py#L16)
-
-Apply activation to ``x``.

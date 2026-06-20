@@ -19,14 +19,15 @@ than the number of Query heads. This reduces memory bandwidth usage during infer
 If num_kv_heads == num_heads, this is equivalent to MHA.
 If num_kv_heads == 1, this is equivalent to Multi-Query Attention (MQA).
 
-Args:
-    embed_dim (int): Total dimension of the model.
-    num_heads (int): Number of Query heads.
-    num_kv_heads (int): Number of Key/Value heads. Must divide num_heads.
-    max_seq_len (int): Maximum sequence length for RoPE.
-    dropout (float, optional): Dropout probability. Defaults to 0.0.
-    rope_theta (float, optional): Base frequency for RoPE. Defaults to 10000.0.
-    use_bias (bool, optional): Whether to use bias in linear projections. Defaults to False.
+**Parameters**
+
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of Query heads.
+- `num_kv_heads` (`int`): Number of Key/Value heads. Must divide num_heads.
+- `max_seq_len` (`int`): Maximum sequence length for RoPE.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `rope_theta` (`float, optional`): Base frequency for RoPE. Defaults to 10000.0.
+- `use_bias` (`bool, optional`): Whether to use bias in linear projections. Defaults to False.
 
 #### Methods
 
@@ -36,10 +37,11 @@ Source: [`src/olm/nn/attention/gqa.py:104`](https://github.com/openlanguagemodel
 
 Forward pass of Grouped Query Attention.
 
-Args:
-    x (torch.Tensor): Input tensor of shape [batch, seq_len, embed_dim].
-    mask (torch.Tensor, optional): Attention mask of shape [batch, 1, seq_len, seq_len]
-        or [batch, seq_len, seq_len]. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor of shape [batch, seq_len, embed_dim].
+- `x` (`torch.Tensor`): Input tensor of shape [batch, seq_len, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask of shape [batch, 1, seq_len, seq_len] or [batch, seq_len, seq_len]. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape [batch, seq_len, embed_dim].

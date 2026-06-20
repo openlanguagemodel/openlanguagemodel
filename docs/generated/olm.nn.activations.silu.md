@@ -18,8 +18,6 @@ SiLU (Swish) activation wrapper.
 
 Source: [`src/olm/nn/activations/silu.py:16`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/silu.py#L16)
 
-Apply activation to ``x``.
-
 ### `Swish(inplace: bool = False, *, device=None, dtype=None) -> None`
 
 **Bases:** `olm.nn.activations.base.ActivationBase`
@@ -33,5 +31,3 @@ SiLU (Swish) activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/silu.py:16`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/silu.py#L16)
-
-Apply activation to ``x``.

@@ -17,5 +17,3 @@ Tanh activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/tanh.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/tanh.py#L14)
-
-Apply activation to ``x``.

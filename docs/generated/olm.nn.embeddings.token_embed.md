@@ -15,12 +15,14 @@ Token Embedding layer.
 Wraps standard PyTorch embedding with a clean interface.
 Maps integer indices to dense vectors.
 
-Args:
-    vocab_size (int): Size of the vocabulary.
-    embedding_dim (int): Dimensionality of the word embeddings.
+**Parameters**
 
-Attributes:
-    embedding (nn.Embedding): The underlying PyTorch embedding layer.
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embedding_dim` (`int`): Dimensionality of the word embeddings.
+
+**Attributes**
+
+- `embedding` (`nn.Embedding`): The underlying PyTorch embedding layer.
 
 #### Methods
 
@@ -30,8 +32,10 @@ Source: [`src/olm/nn/embeddings/token_embed.py:30`](https://github.com/openlangu
 
 Forward pass of the Embedding layer.
 
-Args:
-    x (torch.Tensor): Input tensor of shape (batch_size, seq_len) containing token IDs.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor of shape (batch_size, seq_len, embedding_dim).
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, seq_len) containing token IDs.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape (batch_size, seq_len, embedding_dim).

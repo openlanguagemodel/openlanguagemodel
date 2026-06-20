@@ -17,5 +17,3 @@ ELU activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/elu.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/elu.py#L14)
-
-Apply activation to ``x``.

@@ -14,8 +14,9 @@ Abstract base class for feedforward networks in a transformer block.
 
 Defines the interface for FFNs/MLPs. Subclasses must implement the `forward` method.
 
-Attributes:
-    embed_dim (int): The input and output dimension.
+**Attributes**
+
+- `embed_dim` (`int`): The input and output dimension.
 
 #### Methods
 
@@ -25,8 +26,10 @@ Source: [`src/olm/nn/feedforward/base.py:25`](https://github.com/openlanguagemod
 
 Forward pass of the feedforward network.
 
-Args:
-    x (torch.Tensor): Input tensor of shape (batch, seq_len, embed_dim).
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor of shape (batch, seq_len, embed_dim).
+- `x` (`torch.Tensor`): Input tensor of shape (batch, seq_len, embed_dim).
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape (batch, seq_len, embed_dim).

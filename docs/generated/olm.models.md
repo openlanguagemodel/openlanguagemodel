@@ -20,11 +20,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Large()`
 
@@ -42,11 +44,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Medium()`
 
@@ -64,11 +68,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True)`
 
@@ -78,13 +84,15 @@ Source: [`src/olm/models/openai/gpt2.py:34`](https://github.com/openlanguagemode
 
 Base class for GPT-2 models.
 
-Structure:
-    Token embedding + learned positional embedding -> GPT2Block x N ->
-    tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Token embedding + learned positional embedding -> GPT2Block x N ->
+tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -94,11 +102,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2XL()`
 
@@ -116,11 +126,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, head_dim: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0, sliding_window: int | None = 4096, attn_logit_softcap: float | None = 50.0, final_logit_softcap: float | None = 30.0, query_pre_attn_scalar: float | None = 256.0, tie_weights: bool = True)`
 
@@ -130,13 +142,15 @@ Source: [`src/olm/models/google/gemma2.py:108`](https://github.com/openlanguagem
 
 Base class for Gemma 2 models.
 
-Structure:
-    Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
-    tied OutputHead -> optional final logit softcap.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
+tied OutputHead -> optional final logit softcap.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -146,11 +160,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_27B()`
 
@@ -168,11 +184,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_2B()`
 
@@ -190,11 +208,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Gemma2_9B()`
 
@@ -212,11 +232,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -226,12 +248,14 @@ Source: [`src/olm/models/meta/llama2.py:80`](https://github.com/openlanguagemode
 
 Base class for Llama 2 models.
 
-Structure:
-    Embedding -> [Llama2Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Llama2Block] x N -> RMSNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -241,11 +265,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama2_13B()`
 
@@ -263,11 +289,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama2_70B()`
 
@@ -285,11 +313,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama2_7B()`
 
@@ -307,11 +337,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 500000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -323,18 +355,21 @@ Base class for Llama 3, 3.1, and 3.2 models.
 
 Inherits from Block for pure sequential composition.
 
-Implementation note:
-    This implementation uses standard Rotary Positional Embeddings (RoPE)
-    parameterized via `rope_theta`. Llama 3.1/3.2 official checkpoints use
-    specialized scaled RoPE behavior for long contexts, so exact long-context
-    behavior may differ from the released Meta checkpoints.
+**Implementation Note**
 
-Structure:
-    Embedding -> [Llama3Block] x N -> RMSNorm -> tied OutputHead.
+This implementation uses standard Rotary Positional Embeddings (RoPE)
+parameterized via `rope_theta`. Llama 3.1/3.2 official checkpoints use
+specialized scaled RoPE behavior for long contexts, so exact long-context
+behavior may differ from the released Meta checkpoints.
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+**Structure**
+
+Embedding -> [Llama3Block] x N -> RMSNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -344,11 +379,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3_1_405B()`
 
@@ -366,11 +403,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3_1_70B()`
 
@@ -388,11 +427,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3_1_8B()`
 
@@ -410,11 +451,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3_2_1B()`
 
@@ -432,11 +475,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Llama3_2_3B()`
 
@@ -454,11 +499,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OLMoModel(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, max_seq_len: int = 2048, dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -468,12 +515,14 @@ Source: [`src/olm/models/allenai/olmo.py:68`](https://github.com/openlanguagemod
 
 Base class for the OLMo (Open Language Model) architecture.
 
-Structure:
-    Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -483,11 +532,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OLMo_7B()`
 
@@ -505,11 +556,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OPT125M()`
 
@@ -527,11 +580,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1, tie_weights=True)`
 
@@ -547,17 +602,19 @@ Implements a decoder-only Transformer with specific OPT optimizations:
 - ReLU activation in Feed-Forward Networks
 - Tied output projection through ``OutputHead`` by default
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+**Forward**
 
-Args:
-    vocab_size (int): Vocabulary size.
-    embed_dim (int): Embedding dimension.
-    intermediate_size (int): FFN dimension.
-    num_layers (int): Number of layers.
-    num_heads (int): Number of heads.
-    dropout (float, optional): Dropout probability. Defaults to 0.1.
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Parameters**
+
+- `vocab_size` (`int`): Vocabulary size.
+- `embed_dim` (`int`): Embedding dimension.
+- `intermediate_size` (`int`): FFN dimension.
+- `num_layers` (`int`): Number of layers.
+- `num_heads` (`int`): Number of heads.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.1.
 
 #### Methods
 
@@ -567,11 +624,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi3Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 10000.0, activation: str = 'swiglu', dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -581,18 +640,21 @@ Source: [`src/olm/models/microsoft/phi3.py:83`](https://github.com/openlanguagem
 
 Base class for Phi 3 models.
 
-Structure:
-    Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
 
-Implementation note:
-    This implementation uses standard Rotary Positional Embeddings (RoPE)
-    parameterized via `rope_theta`. Phi-3/Phi-3.5 official checkpoints use
-    specialized LongRoPE/scaled RoPE behavior for long contexts, so exact
-    long-context behavior may differ from the released Microsoft checkpoints.
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Implementation Note**
+
+This implementation uses standard Rotary Positional Embeddings (RoPE)
+parameterized via `rope_theta`. Phi-3/Phi-3.5 official checkpoints use
+specialized LongRoPE/scaled RoPE behavior for long contexts, so exact
+long-context behavior may differ from the released Microsoft checkpoints.
 
 #### Methods
 
@@ -602,11 +664,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi3_5_Mini()`
 
@@ -627,11 +691,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi3_Small()`
 
@@ -653,11 +719,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi4Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 250000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -667,16 +735,19 @@ Source: [`src/olm/models/microsoft/phi4.py:73`](https://github.com/openlanguagem
 
 Base class for Phi 4 models.
 
-Structure:
-    Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
 
-Implementation note:
-    This implementation uses standard Rotary Positional Embeddings (RoPE)
-    parameterized via `rope_theta`.
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Implementation Note**
+
+This implementation uses standard Rotary Positional Embeddings (RoPE)
+parameterized via `rope_theta`.
 
 #### Methods
 
@@ -686,11 +757,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi4_14B()`
 
@@ -708,11 +781,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = True, dropout: float = 0.0, rms_norm_eps: float = 1e-06)`
 
@@ -722,12 +797,14 @@ Source: [`src/olm/models/alibaba/qwen2.py:44`](https://github.com/openlanguagemo
 
 Base class for Qwen 2 / 2.5 models.
 
-Structure:
-    Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -737,11 +814,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_0_5B()`
 
@@ -759,11 +838,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_14B()`
 
@@ -781,11 +862,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_1_5B()`
 
@@ -803,11 +886,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_32B()`
 
@@ -825,11 +910,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_3B()`
 
@@ -847,11 +934,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_72B()`
 
@@ -869,11 +958,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_7B()`
 
@@ -891,8 +982,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

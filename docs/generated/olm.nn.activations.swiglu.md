@@ -21,9 +21,10 @@ Equation:
     Here, we assume the input `x` is already projected/concatenated such that we chunk it.
     So: SwiGLU(x) = (x_1 * SiLU(x_2)) where x = [x_1, x_2]
 
-Args:
-    device (torch.device, optional): Target device.
-    dtype (torch.dtype, optional): Target data type.
+**Parameters**
+
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
 #### Methods
 
@@ -33,8 +34,10 @@ Source: [`src/olm/nn/activations/swiglu.py:26`](https://github.com/openlanguagem
 
 Forward pass of SwiGLU.
 
-Args:
-    x (torch.Tensor): Input tensor. Expected to have an even last dimension size.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor with half the last dimension of the input.
+- `x` (`torch.Tensor`): Input tensor. Expected to have an even last dimension size.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor with half the last dimension of the input.

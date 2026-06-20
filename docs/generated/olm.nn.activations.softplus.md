@@ -17,5 +17,3 @@ Softplus activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/softplus.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/softplus.py#L14)
-
-Apply activation to ``x``.

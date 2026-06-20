@@ -16,13 +16,15 @@ Dataset that streams text from local .txt files in a directory.
 non-empty line, tokenizes through ``BaseTextDataset``, and yields causal
 language-model samples.
 
-Iteration:
-    Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
+**Iteration**
 
-Args:
-    location: Directory containing ``.txt`` files.
-    tokenizer: Tokenizer with an ``encode`` method.
-    context_length (int): Number of input tokens per sample.
-    skip_batches (int): Number of samples to skip before yielding.
-    shuffle (bool): Whether to shuffle file order deterministically.
-    seed (int): Shuffle seed.
+Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
+
+**Parameters**
+
+- `location`: Directory containing ``.txt`` files.
+- `tokenizer`: Tokenizer with an ``encode`` method.
+- `context_length` (`int`): Number of input tokens per sample.
+- `skip_batches` (`int`): Number of samples to skip before yielding.
+- `shuffle` (`bool`): Whether to shuffle file order deterministically.
+- `seed` (`int`): Shuffle seed.

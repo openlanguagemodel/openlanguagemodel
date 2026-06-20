@@ -14,11 +14,12 @@ Source: [`src/olm/train/callbacks/checkpoint_cb.py:12`](https://github.com/openl
 
 Callback to save model checkpoints at specified intervals.
 
-Args:
-    checkpoint_dir: Directory to save checkpoints.
-    save_every: Save checkpoint every N steps.
-    keep_last_n: Keep only the last N checkpoints.
-    save_best: Whether to save the best model based on validation loss.
+**Parameters**
+
+- `checkpoint_dir`: Directory to save checkpoints.
+- `save_every`: Save checkpoint every N steps.
+- `keep_last_n`: Keep only the last N checkpoints.
+- `save_best`: Whether to save the best model based on validation loss.
 
 #### Methods
 
@@ -36,9 +37,10 @@ Source: [`src/olm/train/callbacks/early_stopping_cb.py:8`](https://github.com/op
 
 Callback to stop training early if validation loss doesn't improve.
 
-Args:
-    patience: Number of validation checks to wait for improvement.
-    min_delta: Minimum change in validation loss to qualify as improvement.
+**Parameters**
+
+- `patience`: Number of validation checks to wait for improvement.
+- `min_delta`: Minimum change in validation loss to qualify as improvement.
 
 #### Methods
 
@@ -56,8 +58,9 @@ Source: [`src/olm/train/callbacks/lr_monitor_cb.py:8`](https://github.com/openla
 
 Callback to monitor and log learning rate.
 
-Args:
-    log_every: Log learning rate every N steps.
+**Parameters**
+
+- `log_every`: Log learning rate every N steps.
 
 #### Methods
 
@@ -75,9 +78,10 @@ Source: [`src/olm/train/callbacks/metrics_logger_cb.py:10`](https://github.com/o
 
 Callback to log metrics to a JSONL file.
 
-Args:
-    log_dir: Directory to save logs.
-    log_every: Log metrics every N steps.
+**Parameters**
+
+- `log_dir`: Directory to save logs.
+- `log_every`: Log metrics every N steps.
 
 #### Methods
 
@@ -95,10 +99,11 @@ Source: [`src/olm/train/callbacks/throughput_cb.py:9`](https://github.com/openla
 
 Callback to monitor training throughput (tokens/sec, samples/sec).
 
-Args:
-    log_every: Log throughput every N steps.
-    context_length: Length of each sequence.
-    batch_size: Total batch size (including gradient accumulation).
+**Parameters**
+
+- `log_every`: Log throughput every N steps.
+- `context_length`: Length of each sequence.
+- `batch_size`: Total batch size (including gradient accumulation).
 
 #### Methods
 
@@ -122,11 +127,12 @@ Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openl
 
 Callback to perform validation at specified intervals.
 
-Args:
-    val_dataloader: Validation dataloader.
-    eval_every: Validate every N steps.
-    device: Device to run validation on.
-    use_amp: Whether to use automatic mixed precision.
+**Parameters**
+
+- `val_dataloader`: Validation dataloader.
+- `eval_every`: Validate every N steps.
+- `device`: Device to run validation on.
+- `use_amp`: Whether to use automatic mixed precision.
 
 #### Methods
 

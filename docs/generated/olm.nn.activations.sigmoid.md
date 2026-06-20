@@ -17,5 +17,3 @@ Sigmoid activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/sigmoid.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/sigmoid.py#L14)
-
-Apply activation to ``x``.

@@ -12,18 +12,20 @@ Source: [`src/olm/models/alibaba/qwen2.py:9`](https://github.com/openlanguagemod
 
 A single Transformer block for Qwen 2.
 
-Structure:
-    x = x + GQA(RMSNorm(x))
-    x = x + SwiGLU(RMSNorm(x))
+**Structure**
 
-Args:
-    embed_dim (int): Model dimension.
-    intermediate_size (int): FFN hidden dimension.
-    num_heads (int): Number of attention heads.
-    num_kv_heads (int): Number of KV heads.
-    max_seq_len (int): Max sequence length.
-    dropout (float): Dropout probability.
-    rope_theta (float): RoPE base.
+x = x + GQA(RMSNorm(x))
+x = x + SwiGLU(RMSNorm(x))
+
+**Parameters**
+
+- `embed_dim` (`int`): Model dimension.
+- `intermediate_size` (`int`): FFN hidden dimension.
+- `num_heads` (`int`): Number of attention heads.
+- `num_kv_heads` (`int`): Number of KV heads.
+- `max_seq_len` (`int`): Max sequence length.
+- `dropout` (`float`): Dropout probability.
+- `rope_theta` (`float`): RoPE base.
 
 #### Methods
 
@@ -33,11 +35,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float, tie_weights: bool = True, dropout: float = 0.0, rms_norm_eps: float = 1e-06)`
 
@@ -47,12 +51,14 @@ Source: [`src/olm/models/alibaba/qwen2.py:44`](https://github.com/openlanguagemo
 
 Base class for Qwen 2 / 2.5 models.
 
-Structure:
-    Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -62,11 +68,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_0_5B()`
 
@@ -84,11 +92,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_14B()`
 
@@ -106,11 +116,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_1_5B()`
 
@@ -128,11 +140,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_32B()`
 
@@ -150,11 +164,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_3B()`
 
@@ -172,11 +188,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_72B()`
 
@@ -194,11 +212,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Qwen2_5_7B()`
 
@@ -216,8 +236,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

@@ -14,11 +14,12 @@ Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openl
 
 Callback to perform validation at specified intervals.
 
-Args:
-    val_dataloader: Validation dataloader.
-    eval_every: Validate every N steps.
-    device: Device to run validation on.
-    use_amp: Whether to use automatic mixed precision.
+**Parameters**
+
+- `val_dataloader`: Validation dataloader.
+- `eval_every`: Validate every N steps.
+- `device`: Device to run validation on.
+- `use_amp`: Whether to use automatic mixed precision.
 
 #### Methods
 

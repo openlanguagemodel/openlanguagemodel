@@ -14,8 +14,9 @@ Source: [`src/olm/train/callbacks/lr_monitor_cb.py:8`](https://github.com/openla
 
 Callback to monitor and log learning rate.
 
-Args:
-    log_every: Log learning rate every N steps.
+**Parameters**
+
+- `log_every`: Log learning rate every N steps.
 
 #### Methods
 

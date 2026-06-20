@@ -12,12 +12,14 @@ Source: [`src/olm/models/allenai/olmo.py:68`](https://github.com/openlanguagemod
 
 Base class for the OLMo (Open Language Model) architecture.
 
-Structure:
-    Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -27,11 +29,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OLMo_7B()`
 
@@ -49,8 +53,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

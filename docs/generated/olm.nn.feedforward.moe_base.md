@@ -25,11 +25,13 @@ Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlangua
 
 Forward pass with MoE routing.
 
-Args:
-    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+**Parameters**
 
-Returns:
-    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+**Returns**
+
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
 ### `MoERouter(embed_dim: int, num_experts: int, top_k: int = 2)`
 
@@ -49,9 +51,11 @@ Source: [`src/olm/nn/feedforward/moe_base.py:22`](https://github.com/openlanguag
 
 Route each token to its top-k experts.
 
-Args:
-    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+**Parameters**
 
-Returns:
-    tuple[torch.Tensor, torch.Tensor]: Expert indices and normalized
-    routing weights, both shaped ``[batch, seq_len, top_k]``.
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+**Returns**
+
+tuple[torch.Tensor, torch.Tensor]: Expert indices and normalized
+routing weights, both shaped ``[batch, seq_len, top_k]``.

@@ -14,11 +14,12 @@ Source: [`src/olm/train/callbacks/checkpoint_cb.py:12`](https://github.com/openl
 
 Callback to save model checkpoints at specified intervals.
 
-Args:
-    checkpoint_dir: Directory to save checkpoints.
-    save_every: Save checkpoint every N steps.
-    keep_last_n: Keep only the last N checkpoints.
-    save_best: Whether to save the best model based on validation loss.
+**Parameters**
+
+- `checkpoint_dir`: Directory to save checkpoints.
+- `save_every`: Save checkpoint every N steps.
+- `keep_last_n`: Keep only the last N checkpoints.
+- `save_best`: Whether to save the best model based on validation loss.
 
 #### Methods
 

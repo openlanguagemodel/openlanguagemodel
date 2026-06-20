@@ -29,11 +29,13 @@ Lightweight sequential container for composable submodules.
 Similar to ``nn.Sequential``, but exposes the underlying list for
 inspection or dynamic manipulation by higher-level builders.
 
-Args:
-    blocks: Ordered list of modules applied to the input in sequence.
+**Parameters**
 
-Attributes:
-    blocks: ModuleList storing the ordered blocks.
+- `blocks`: Ordered list of modules applied to the input in sequence.
+
+**Attributes**
+
+- `blocks`: ModuleList storing the ordered blocks.
 
 #### Methods
 
@@ -43,11 +45,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ##### `save(self, path: str, tokenizer: olm.data.tokenization.base.TokenizerBase = None) -> None`
 

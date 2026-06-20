@@ -12,18 +12,21 @@ Source: [`src/olm/models/microsoft/phi3.py:83`](https://github.com/openlanguagem
 
 Base class for Phi 3 models.
 
-Structure:
-    Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
 
-Implementation note:
-    This implementation uses standard Rotary Positional Embeddings (RoPE)
-    parameterized via `rope_theta`. Phi-3/Phi-3.5 official checkpoints use
-    specialized LongRoPE/scaled RoPE behavior for long contexts, so exact
-    long-context behavior may differ from the released Microsoft checkpoints.
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Implementation Note**
+
+This implementation uses standard Rotary Positional Embeddings (RoPE)
+parameterized via `rope_theta`. Phi-3/Phi-3.5 official checkpoints use
+specialized LongRoPE/scaled RoPE behavior for long contexts, so exact
+long-context behavior may differ from the released Microsoft checkpoints.
 
 #### Methods
 
@@ -33,11 +36,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi3_5_Mini()`
 
@@ -58,11 +63,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi3_Small()`
 
@@ -84,11 +91,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi4Model(vocab_size: int, embed_dim: int, intermediate_size: int, num_layers: int, num_heads: int, num_kv_heads: int, max_seq_len: int, rope_theta: float = 250000.0, dropout: float = 0.0, tie_weights: bool = True)`
 
@@ -98,16 +107,19 @@ Source: [`src/olm/models/microsoft/phi4.py:73`](https://github.com/openlanguagem
 
 Base class for Phi 4 models.
 
-Structure:
-    Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
 
-Implementation note:
-    This implementation uses standard Rotary Positional Embeddings (RoPE)
-    parameterized via `rope_theta`.
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Implementation Note**
+
+This implementation uses standard Rotary Positional Embeddings (RoPE)
+parameterized via `rope_theta`.
 
 #### Methods
 
@@ -117,11 +129,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `Phi4_14B()`
 
@@ -139,8 +153,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

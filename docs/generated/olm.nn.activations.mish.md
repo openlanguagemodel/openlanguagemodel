@@ -17,5 +17,3 @@ Mish activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/mish.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/mish.py#L14)
-
-Apply activation to ``x``.

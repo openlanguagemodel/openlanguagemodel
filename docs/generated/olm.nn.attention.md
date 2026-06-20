@@ -16,16 +16,17 @@ Provides the common structure for attention layers, including QKV projections
 and output projection. Subclasses must implement the specific attention logic
 in `compute_attention`.
 
-Attributes:
-    embed_dim (int): Total dimension of the model.
-    num_heads (int): Number of parallel attention heads.
-    head_dim (int): Dimension of each attention head.
-    scale (float): Scaling factor for dot products (1 / sqrt(head_dim)).
-    dropout (nn.Dropout): Dropout layer applied to attention weights.
-    q_proj (Linear): Linear projection for Query.
-    k_proj (Linear): Linear projection for Key.
-    v_proj (Linear): Linear projection for Value.
-    out_proj (Linear): Linear projection for Output.
+**Attributes**
+
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `head_dim` (`int`): Dimension of each attention head.
+- `scale` (`float`): Scaling factor for dot products (1 / sqrt(head_dim)).
+- `dropout` (`nn.Dropout`): Dropout layer applied to attention weights.
+- `q_proj` (`Linear`): Linear projection for Query.
+- `k_proj` (`Linear`): Linear projection for Key.
+- `v_proj` (`Linear`): Linear projection for Value.
+- `out_proj` (`Linear`): Linear projection for Output.
 
 #### Methods
 
@@ -35,14 +36,16 @@ Source: [`src/olm/nn/attention/base.py:57`](https://github.com/openlanguagemodel
 
 Computes the attention scores and output.
 
-Args:
-    q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
-    k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
-    v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: The attention output [batch, heads, seq, head_dim].
+- `q` (`torch.Tensor`): Query tensor [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The attention output [batch, heads, seq, head_dim].
 
 ##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
@@ -52,12 +55,14 @@ Standard forward pass for attention layers.
 
 Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-Args:
-    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor [batch, seq, embed_dim].
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
 
 ### `AttentionwithRoPEBase(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True, rope_theta: float = 10000.0)`
 
@@ -71,16 +76,17 @@ Provides the common structure for attention layers, including QKV projections
 and output projection. Subclasses must implement the specific attention logic
 in `compute_attention`.
 
-Attributes:
-    embed_dim (int): Total dimension of the model.
-    num_heads (int): Number of parallel attention heads.
-    head_dim (int): Dimension of each attention head.
-    scale (float): Scaling factor for dot products (1 / sqrt(head_dim)).
-    dropout (nn.Dropout): Dropout layer applied to attention weights.
-    q_proj (Linear): Linear projection for Query.
-    k_proj (Linear): Linear projection for Key.
-    v_proj (Linear): Linear projection for Value.
-    out_proj (Linear): Linear projection for Output.
+**Attributes**
+
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `head_dim` (`int`): Dimension of each attention head.
+- `scale` (`float`): Scaling factor for dot products (1 / sqrt(head_dim)).
+- `dropout` (`nn.Dropout`): Dropout layer applied to attention weights.
+- `q_proj` (`Linear`): Linear projection for Query.
+- `k_proj` (`Linear`): Linear projection for Key.
+- `v_proj` (`Linear`): Linear projection for Value.
+- `out_proj` (`Linear`): Linear projection for Output.
 
 #### Methods
 
@@ -90,14 +96,16 @@ Source: [`src/olm/nn/attention/base.py:148`](https://github.com/openlanguagemode
 
 Computes the attention scores and output.
 
-Args:
-    q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
-    k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
-    v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: The attention output [batch, heads, seq, head_dim].
+- `q` (`torch.Tensor`): Query tensor [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The attention output [batch, heads, seq, head_dim].
 
 ##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
@@ -107,12 +115,14 @@ Standard forward pass for attention layers.
 
 Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-Args:
-    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor [batch, seq, embed_dim].
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
 
 ### `FlashAttention(embed_dim: int, num_heads: int, dropout: float = 0.0, causal: bool = False, use_flash_attn: bool | None = None)`
 
@@ -135,19 +145,23 @@ Reference: "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Aw
 (Dao et al., 2022) and "FlashAttention-2: Faster Attention with Better Parallelism
 and Work Partitioning" (Dao, 2023)
 
-Args:
-    embed_dim: Total dimension of the model
-    num_heads: Number of parallel attention heads
-    dropout: Dropout probability on attention weights (default: 0.0)
-    causal: If True, applies causal masking for autoregressive models (default: False)
-    use_flash_attn: Force enable/disable flash attention. If None, auto-detect (default: None)
+**Parameters**
 
-Example:
-    >>> attn = FlashAttention(embed_dim=512, num_heads=8, causal=True)
-    >>> x = torch.randn(2, 128, 512)  # (batch, seq_len, embed_dim)
-    >>> output = attn(x)
-    >>> output.shape
-    torch.Size([2, 128, 512])
+- `embed_dim`: Total dimension of the model
+- `num_heads`: Number of parallel attention heads
+- `dropout`: Dropout probability on attention weights (default: 0.0)
+- `causal`: If True, applies causal masking for autoregressive models (default: False)
+- `use_flash_attn`: Force enable/disable flash attention. If None, auto-detect (default: None)
+
+**Example**
+
+```python
+attn = FlashAttention(embed_dim=512, num_heads=8, causal=True)
+x = torch.randn(2, 128, 512)  # (batch, seq_len, embed_dim)
+output = attn(x)
+output.shape
+torch.Size([2, 128, 512])
+```
 
 #### Methods
 
@@ -157,14 +171,16 @@ Source: [`src/olm/nn/attention/flash.py:73`](https://github.com/openlanguagemode
 
 Computes attention using Flash Attention when available.
 
-Args:
-    q: Query tensor [batch, heads, seq, head_dim]
-    k: Key tensor [batch, heads, seq, head_dim]
-    v: Value tensor [batch, heads, seq, head_dim]
-    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+**Parameters**
 
-Returns:
-    Attention output [batch, heads, seq, head_dim]
+- `q`: Query tensor [batch, heads, seq, head_dim]
+- `k`: Key tensor [batch, heads, seq, head_dim]
+- `v`: Value tensor [batch, heads, seq, head_dim]
+- `mask`: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+**Returns**
+
+Attention output [batch, heads, seq, head_dim]
 
 ##### `extra_repr(self) -> str`
 
@@ -178,12 +194,14 @@ Source: [`src/olm/nn/attention/flash.py:177`](https://github.com/openlanguagemod
 
 Forward pass with Flash Attention.
 
-Args:
-    x: Input tensor [batch, seq_len, embed_dim]
-    mask: Optional attention mask
+**Parameters**
 
-Returns:
-    Output tensor [batch, seq_len, embed_dim]
+- `x`: Input tensor [batch, seq_len, embed_dim]
+- `mask`: Optional attention mask
+
+**Returns**
+
+Output tensor [batch, seq_len, embed_dim]
 
 ### `FlashAttentionwithRoPE(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, causal: bool = False, bias: bool = True, rope_theta: float = 10000.0, use_flash_attn: bool | None = None)`
 
@@ -206,19 +224,23 @@ Reference: "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Aw
 (Dao et al., 2022) and "FlashAttention-2: Faster Attention with Better Parallelism
 and Work Partitioning" (Dao, 2023)
 
-Args:
-    embed_dim: Total dimension of the model
-    num_heads: Number of parallel attention heads
-    dropout: Dropout probability on attention weights (default: 0.0)
-    causal: If True, applies causal masking for autoregressive models (default: False)
-    use_flash_attn: Force enable/disable flash attention. If None, auto-detect (default: None)
+**Parameters**
 
-Example:
-    >>> attn = FlashAttention(embed_dim=512, num_heads=8, causal=True)
-    >>> x = torch.randn(2, 128, 512)  # (batch, seq_len, embed_dim)
-    >>> output = attn(x)
-    >>> output.shape
-    torch.Size([2, 128, 512])
+- `embed_dim`: Total dimension of the model
+- `num_heads`: Number of parallel attention heads
+- `dropout`: Dropout probability on attention weights (default: 0.0)
+- `causal`: If True, applies causal masking for autoregressive models (default: False)
+- `use_flash_attn`: Force enable/disable flash attention. If None, auto-detect (default: None)
+
+**Example**
+
+```python
+attn = FlashAttention(embed_dim=512, num_heads=8, causal=True)
+x = torch.randn(2, 128, 512)  # (batch, seq_len, embed_dim)
+output = attn(x)
+output.shape
+torch.Size([2, 128, 512])
+```
 
 #### Methods
 
@@ -228,14 +250,16 @@ Source: [`src/olm/nn/attention/flash.py:286`](https://github.com/openlanguagemod
 
 Computes attention using Flash Attention when available.
 
-Args:
-    q: Query tensor [batch, heads, seq, head_dim]
-    k: Key tensor [batch, heads, seq, head_dim]
-    v: Value tensor [batch, heads, seq, head_dim]
-    mask: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+**Parameters**
 
-Returns:
-    Attention output [batch, heads, seq, head_dim]
+- `q`: Query tensor [batch, heads, seq, head_dim]
+- `k`: Key tensor [batch, heads, seq, head_dim]
+- `v`: Value tensor [batch, heads, seq, head_dim]
+- `mask`: Optional attention mask [batch, heads, seq, seq] or [batch, 1, seq, seq]
+
+**Returns**
+
+Attention output [batch, heads, seq, head_dim]
 
 ##### `extra_repr(self) -> str`
 
@@ -249,12 +273,14 @@ Source: [`src/olm/nn/attention/flash.py:390`](https://github.com/openlanguagemod
 
 Forward pass with Flash Attention and RoPE.
 
-Args:
-    x: Input tensor [batch, seq_len, embed_dim]
-    mask: Optional attention mask
+**Parameters**
 
-Returns:
-    Output tensor [batch, seq_len, embed_dim]
+- `x`: Input tensor [batch, seq_len, embed_dim]
+- `mask`: Optional attention mask
+
+**Returns**
+
+Output tensor [batch, seq_len, embed_dim]
 
 ### `GroupedQueryAttention(embed_dim: int, num_heads: int, num_kv_heads: int, max_seq_len: int, head_dim: int | None = None, dropout: float = 0.0, rope_theta: float = 10000.0, use_bias: bool = False, qkv_bias: bool = False, use_qk_norm: bool = False, rms_norm_eps: float = 1e-06, attention_scale: float | None = None, attn_logit_softcap: float | None = None)`
 
@@ -271,14 +297,15 @@ than the number of Query heads. This reduces memory bandwidth usage during infer
 If num_kv_heads == num_heads, this is equivalent to MHA.
 If num_kv_heads == 1, this is equivalent to Multi-Query Attention (MQA).
 
-Args:
-    embed_dim (int): Total dimension of the model.
-    num_heads (int): Number of Query heads.
-    num_kv_heads (int): Number of Key/Value heads. Must divide num_heads.
-    max_seq_len (int): Maximum sequence length for RoPE.
-    dropout (float, optional): Dropout probability. Defaults to 0.0.
-    rope_theta (float, optional): Base frequency for RoPE. Defaults to 10000.0.
-    use_bias (bool, optional): Whether to use bias in linear projections. Defaults to False.
+**Parameters**
+
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of Query heads.
+- `num_kv_heads` (`int`): Number of Key/Value heads. Must divide num_heads.
+- `max_seq_len` (`int`): Maximum sequence length for RoPE.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `rope_theta` (`float, optional`): Base frequency for RoPE. Defaults to 10000.0.
+- `use_bias` (`bool, optional`): Whether to use bias in linear projections. Defaults to False.
 
 #### Methods
 
@@ -288,13 +315,14 @@ Source: [`src/olm/nn/attention/gqa.py:104`](https://github.com/openlanguagemodel
 
 Forward pass of Grouped Query Attention.
 
-Args:
-    x (torch.Tensor): Input tensor of shape [batch, seq_len, embed_dim].
-    mask (torch.Tensor, optional): Attention mask of shape [batch, 1, seq_len, seq_len]
-        or [batch, seq_len, seq_len]. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor of shape [batch, seq_len, embed_dim].
+- `x` (`torch.Tensor`): Input tensor of shape [batch, seq_len, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask of shape [batch, 1, seq_len, seq_len] or [batch, seq_len, seq_len]. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape [batch, seq_len, embed_dim].
 
 ### `MultiHeadAttention(embed_dims: int, num_heads: int, dropout: float = 0.0, causal: bool = False)`
 
@@ -307,15 +335,17 @@ Implements Multi-Head Attention (MHA) as described in "Attention Is All You Need
 Splits the input into multiple heads, computes scaled dot-product attention for each,
 and concatenates the results. Supports causal masking for autoregressive models.
 
-Args:
-    embed_dims (int): Total dimension of the model.
-    num_heads (int): Number of parallel attention heads.
-    dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
-    causal (bool, optional): If True, applies a causal mask. Defaults to False.
+**Parameters**
 
-Attributes:
-    scale (float): Scaling factor (1 / sqrt(head_dim)).
-    causal (bool): Whether to apply a causal mask.
+- `embed_dims` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `dropout` (`float, optional`): Dropout probability on attention weights. Defaults to 0.0.
+- `causal` (`bool, optional`): If True, applies a causal mask. Defaults to False.
+
+**Attributes**
+
+- `scale` (`float`): Scaling factor (1 / sqrt(head_dim)).
+- `causal` (`bool`): Whether to apply a causal mask.
 
 #### Methods
 
@@ -327,12 +357,14 @@ Standard forward pass for attention layers.
 
 Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-Args:
-    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor [batch, seq, embed_dim].
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
 
 ##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
@@ -340,14 +372,16 @@ Source: [`src/olm/nn/attention/mha.py:29`](https://github.com/openlanguagemodel/
 
 Computes the scaled dot-product attention.
 
-Args:
-    q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
-    k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
-    v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: The result of the attention mechanism applied to v.
+- `q` (`torch.Tensor`): Query tensor of shape [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor of shape [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor of shape [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The result of the attention mechanism applied to v.
 
 ### `MultiHeadAttentionwithALiBi(embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = False, causal: bool = True, max_seq_len: int = 2048)`
 
@@ -361,13 +395,14 @@ ALiBi adds a static, non-learned bias to attention scores based on the distance 
 query and key positions. This allows the model to extrapolate to longer sequence lengths
 than seen during training.
 
-Args:
-    embed_dim (int): Total dimension of the model.
-    num_heads (int): Number of parallel attention heads.
-    dropout (float, optional): Dropout probability. Defaults to 0.0.
-    bias (bool, optional): Whether to use bias in linear projections. Defaults to False.
-    causal (bool, optional): Whether to apply causal masking logic. Defaults to True.
-    max_seq_len (int, optional): Max sequence length for precomputing ALiBi bias. Defaults to 2048.
+**Parameters**
+
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `bias` (`bool, optional`): Whether to use bias in linear projections. Defaults to False.
+- `causal` (`bool, optional`): Whether to apply causal masking logic. Defaults to True.
+- `max_seq_len` (`int, optional`): Max sequence length for precomputing ALiBi bias. Defaults to 2048.
 
 #### Methods
 
@@ -379,12 +414,14 @@ Standard forward pass for attention layers.
 
 Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-Args:
-    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor [batch, seq, embed_dim].
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
 
 ##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
@@ -403,16 +440,18 @@ Implements Multi-Head Attention (MHA) with Rotary Positional Embedding (RoPE).
 Splits the input into multiple heads, computes scaled dot-product attention for each,
 and concatenates the results. Uses RoPE for positional information.
 
-Args:
-    embed_dims (int): Total dimension of the model.
-    num_heads (int): Number of parallel attention heads.
-    max_seq_len (int): Maximum sequence length.
-    dropout (float, optional): Dropout probability on attention weights. Defaults to 0.0.
-    causal (bool, optional): If True, applies a causal mask. Defaults to False.
+**Parameters**
 
-Attributes:
-    scale (float): Scaling factor (1 / sqrt(head_dim)).
-    causal (bool): Whether to apply a causal mask.
+- `embed_dims` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `max_seq_len` (`int`): Maximum sequence length.
+- `dropout` (`float, optional`): Dropout probability on attention weights. Defaults to 0.0.
+- `causal` (`bool, optional`): If True, applies a causal mask. Defaults to False.
+
+**Attributes**
+
+- `scale` (`float`): Scaling factor (1 / sqrt(head_dim)).
+- `causal` (`bool`): Whether to apply a causal mask.
 
 #### Methods
 
@@ -424,12 +463,14 @@ Standard forward pass for attention layers.
 
 Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-Args:
-    x (torch.Tensor): Input tensor [batch, seq, embed_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor [batch, seq, embed_dim].
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
 
 ##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
@@ -437,11 +478,13 @@ Source: [`src/olm/nn/attention/mha.py:80`](https://github.com/openlanguagemodel/
 
 Computes the scaled dot-product attention suited for RoPE.
 
-Args:
-    q (torch.Tensor): Query tensor of shape [batch, heads, seq, head_dim].
-    k (torch.Tensor): Key tensor of shape [batch, heads, seq, head_dim].
-    v (torch.Tensor): Value tensor of shape [batch, heads, seq, head_dim].
-    mask (torch.Tensor, optional): Attention mask. Defaults to None.
+**Parameters**
 
-Returns:
-    torch.Tensor: The result of the attention mechanism applied to v.
+- `q` (`torch.Tensor`): Query tensor of shape [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor of shape [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor of shape [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The result of the attention mechanism applied to v.

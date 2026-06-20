@@ -18,25 +18,24 @@ default. In the tied path, logits are computed as
 ``F.linear(hidden, embedding.weight)`` so the output head and token
 embedding share one parameter matrix.
 
-Forward:
-    Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
-    returns logits with shape ``[batch, seq_len, vocab_size]``.
+**Forward**
 
-Args:
-    embed_dim (int): The dimension of the embedding space.
-    vocab_size (int): The size of the vocabulary.
-    bias (bool, optional): Whether to include bias in the linear layer. Defaults to False.
-    tied_embedding (nn.Module | nn.Parameter, optional): Embedding module or
-        weight parameter to reuse for the output projection.
-    tie_weights (bool, optional): Whether to reuse ``tied_embedding`` as
-        the output projection matrix. Defaults to True.
-    norm (nn.Module, optional): Normalization module before projection.
-        Defaults to ``LayerNorm(embed_dim)``.
-    use_norm (bool, optional): If False and ``norm`` is not provided, use
-        an identity layer instead of LayerNorm. Defaults to True.
+Accepts hidden states with shape ``[batch, seq_len, embed_dim]`` and
+returns logits with shape ``[batch, seq_len, vocab_size]``.
 
-Attributes:
-    blocks (nn.ModuleList): ``[norm, projection]``.
+**Parameters**
+
+- `embed_dim` (`int`): The dimension of the embedding space.
+- `vocab_size` (`int`): The size of the vocabulary.
+- `bias` (`bool, optional`): Whether to include bias in the linear layer. Defaults to False.
+- `tied_embedding` (`nn.Module | nn.Parameter, optional`): Embedding module or weight parameter to reuse for the output projection.
+- `tie_weights` (`bool, optional`): Whether to reuse ``tied_embedding`` as the output projection matrix. Defaults to True.
+- `norm` (`nn.Module, optional`): Normalization module before projection. Defaults to ``LayerNorm(embed_dim)``.
+- `use_norm` (`bool, optional`): If False and ``norm`` is not provided, use an identity layer instead of LayerNorm. Defaults to True.
+
+**Attributes**
+
+- `blocks` (`nn.ModuleList`): ``[norm, projection]``.
 
 #### Properties
 
@@ -53,8 +52,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

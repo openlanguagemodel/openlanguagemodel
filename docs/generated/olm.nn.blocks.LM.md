@@ -18,29 +18,32 @@ examples. It consists of a token embedding, ``num_layers`` repeated
 states back to vocabulary logits. The output projection reuses the input
 embedding matrix by default.
 
-Structure:
-    ``input_ids`` -> ``Embedding`` -> ``TransformerBlock`` x N ->
-    ``OutputHead`` -> logits.
+**Structure**
 
-Forward:
-    Accepts integer token IDs with shape ``[batch, seq_len]`` and returns
-    logits with shape ``[batch, seq_len, vocab_size]``. The inherited
-    ``Block.forward`` applies each submodule sequentially.
+``input_ids`` -> ``Embedding`` -> ``TransformerBlock`` x N ->
+``OutputHead`` -> logits.
 
-Args:
-    vocab_size (int): Size of the vocabulary.
-    embed_dim (int): Dimension of the embeddings and hidden states.
-    num_heads (int): Number of attention heads in Transformer blocks.
-    num_layers (int): Number of Transformer blocks.
-    max_seq_len (int): Maximum sequence length for the model.
-    dropout (float, optional): Dropout probability. Defaults to 0.0.
-    causal (bool, optional): Whether to use causal masking. Defaults to True.
-    ff_multiplier (float, optional): Multiplier for FFN hidden dimension. Defaults to 2.5.
-    tie_embeddings (bool, optional): Whether the output head should reuse
-        the input embedding matrix. Defaults to True.
+**Forward**
 
-Attributes:
-    blocks (nn.ModuleList): ``[embedding, transformer_stack, output_head]``.
+Accepts integer token IDs with shape ``[batch, seq_len]`` and returns
+logits with shape ``[batch, seq_len, vocab_size]``. The inherited
+``Block.forward`` applies each submodule sequentially.
+
+**Parameters**
+
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embed_dim` (`int`): Dimension of the embeddings and hidden states.
+- `num_heads` (`int`): Number of attention heads in Transformer blocks.
+- `num_layers` (`int`): Number of Transformer blocks.
+- `max_seq_len` (`int`): Maximum sequence length for the model.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `causal` (`bool, optional`): Whether to use causal masking. Defaults to True.
+- `ff_multiplier` (`float, optional`): Multiplier for FFN hidden dimension. Defaults to 2.5.
+- `tie_embeddings` (`bool, optional`): Whether the output head should reuse the input embedding matrix. Defaults to True.
+
+**Attributes**
+
+- `blocks` (`nn.ModuleList`): ``[embedding, transformer_stack, output_head]``.
 
 #### Methods
 
@@ -50,8 +53,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

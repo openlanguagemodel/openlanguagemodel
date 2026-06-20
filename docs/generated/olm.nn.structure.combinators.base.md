@@ -22,8 +22,10 @@ Source: [`src/olm/nn/structure/combinators/base.py:15`](https://github.com/openl
 
 Compute the combinator output from an input tensor.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor produced by the combinator.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor produced by the combinator.

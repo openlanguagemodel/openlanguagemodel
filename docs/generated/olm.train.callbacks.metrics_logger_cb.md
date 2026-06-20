@@ -14,9 +14,10 @@ Source: [`src/olm/train/callbacks/metrics_logger_cb.py:10`](https://github.com/o
 
 Callback to log metrics to a JSONL file.
 
-Args:
-    log_dir: Directory to save logs.
-    log_every: Log metrics every N steps.
+**Parameters**
+
+- `log_dir`: Directory to save logs.
+- `log_every`: Log metrics every N steps.
 
 #### Methods
 

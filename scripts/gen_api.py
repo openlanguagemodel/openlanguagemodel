@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import inspect
 import pkgutil
+import re
 import shutil
 import sys
 from collections import defaultdict
@@ -30,6 +31,43 @@ GROUPS = {
     "train": ("Training", "Trainers, callbacks, optimizers, schedules, and device selection."),
 }
 
+DOC_SECTIONS = {
+    "args": "Parameters",
+    "arguments": "Parameters",
+    "parameters": "Parameters",
+    "returns": "Returns",
+    "yields": "Yields",
+    "raises": "Raises",
+    "attributes": "Attributes",
+    "forward": "Forward",
+    "forward/training contract": "Forward / Training Contract",
+    "implementation note": "Implementation Note",
+    "iteration": "Iteration",
+    "structure": "Structure",
+    "example": "Example",
+    "examples": "Examples",
+}
+
+SECTION_RE = re.compile(r"^([A-Za-z][A-Za-z /-]+):{1,2}\s*$")
+FIELD_RE = re.compile(
+    r"^(?P<name>\*\*?\w+|[\w.][\w.]*)(?:\s*\((?P<type>[^)]+)\))?:\s*(?P<desc>.*)$"
+)
+PYTHON_BLOCK_PREFIXES = (
+    "if ",
+    "elif ",
+    "else:",
+    "for ",
+    "while ",
+    "try:",
+    "except",
+    "finally:",
+    "with ",
+    "def ",
+    "class ",
+    "match ",
+    "case ",
+)
+
 
 def public_name(name: str) -> bool:
     return not name.startswith("_")
@@ -43,8 +81,122 @@ def signature(obj: Any) -> str:
 
 
 def clean_doc(obj: Any) -> str:
-    doc = inspect.getdoc(obj) or ""
-    return doc.strip()
+    doc = getattr(obj, "__doc__", None) or ""
+    return inspect.cleandoc(doc).strip()
+
+
+def dedent_lines(lines: list[str]) -> list[str]:
+    non_empty = [line for line in lines if line.strip()]
+    if not non_empty:
+        return ["" for _ in lines]
+    indent = min(len(line) - len(line.lstrip()) for line in non_empty)
+    return [line[indent:] if len(line) >= indent else line for line in lines]
+
+
+def doctest_to_python(lines: list[str]) -> str:
+    out: list[str] = []
+    for line in dedent_lines(lines):
+        stripped = line.rstrip()
+        if stripped.startswith(">>> "):
+            out.append(stripped[4:])
+        elif stripped == ">>>":
+            out.append("")
+        elif stripped.startswith("... "):
+            out.append(stripped[4:])
+        elif stripped == "...":
+            out.append("")
+        elif (
+            stripped.endswith(":")
+            and not stripped.startswith("#")
+            and not stripped.startswith(PYTHON_BLOCK_PREFIXES)
+        ):
+            out.append(f"# {stripped}")
+        else:
+            out.append(stripped)
+    while out and not out[0].strip():
+        out.pop(0)
+    while out and not out[-1].strip():
+        out.pop()
+    return "\n".join(out)
+
+
+def format_field_section(lines: list[str]) -> list[str]:
+    body = dedent_lines(lines)
+    items: list[dict[str, str]] = []
+    freeform: list[str] = []
+
+    for line in body:
+        if not line.strip():
+            continue
+        match = FIELD_RE.match(line.strip())
+        if match:
+            items.append(
+                {
+                    "name": match.group("name"),
+                    "type": match.group("type") or "",
+                    "desc": match.group("desc").strip(),
+                }
+            )
+        elif items:
+            items[-1]["desc"] = f"{items[-1]['desc']} {line.strip()}".strip()
+        else:
+            freeform.append(line.strip())
+
+    if not items:
+        return freeform
+
+    out: list[str] = []
+    for item in items:
+        label = f"`{item['name']}`"
+        if item["type"]:
+            label += f" (`{item['type']}`)"
+        suffix = f": {item['desc']}" if item["desc"] else ""
+        out.append(f"- {label}{suffix}")
+    if freeform:
+        out.extend(["", *freeform])
+    return out
+
+
+def format_doc(doc: str) -> str:
+    if not doc:
+        return ""
+
+    lines = doc.splitlines()
+    out: list[str] = []
+    i = 0
+
+    while i < len(lines):
+        match = SECTION_RE.match(lines[i].strip())
+        key = match.group(1).lower() if match else ""
+        if not match or key not in DOC_SECTIONS:
+            out.append(lines[i])
+            i += 1
+            continue
+
+        title = DOC_SECTIONS[key]
+        i += 1
+        body: list[str] = []
+        while i < len(lines):
+            next_match = SECTION_RE.match(lines[i].strip())
+            next_key = next_match.group(1).lower() if next_match else ""
+            if next_match and next_key in DOC_SECTIONS:
+                break
+            body.append(lines[i])
+            i += 1
+
+        while out and not out[-1].strip():
+            out.pop()
+        out.extend(["", f"**{title}**", ""])
+
+        if key in {"example", "examples"}:
+            code = doctest_to_python(body)
+            if code:
+                out.extend(["```python", code, "```"])
+        else:
+            out.extend(format_field_section(body))
+        out.append("")
+
+    return "\n".join(out).strip()
 
 
 def first_sentence(obj: Any) -> str:
@@ -54,7 +206,7 @@ def first_sentence(obj: Any) -> str:
     return doc.split("\n\n", 1)[0].replace("\n", " ")
 
 
-def source_link(obj: Any) -> str:
+def source_location(obj: Any) -> tuple[Path, int] | None:
     try:
         file = inspect.getsourcefile(obj)
         if inspect.ismodule(obj):
@@ -62,10 +214,33 @@ def source_link(obj: Any) -> str:
         else:
             _, line = inspect.getsourcelines(obj)
     except (OSError, TypeError):
-        return ""
+        return None
     if not file:
+        return None
+    return Path(file).resolve(), line
+
+
+def is_olm_source(obj: Any) -> bool:
+    location = source_location(obj)
+    if location is None:
+        return False
+    path, _ = location
+    try:
+        path.relative_to(SRC)
+    except ValueError:
+        return False
+    return True
+
+
+def source_link(obj: Any) -> str:
+    location = source_location(obj)
+    if location is None:
         return ""
-    path = Path(file).resolve()
+    path, line = location
+    try:
+        path.relative_to(SRC)
+    except ValueError:
+        return ""
     try:
         rel = path.relative_to(ROOT).as_posix()
     except ValueError:
@@ -121,13 +296,15 @@ def class_methods(cls: type) -> list[tuple[str, Any, str]]:
     for name, obj in inspect.getmembers(cls, inspect.isfunction):
         if not public_name(name):
             continue
+        if not is_olm_source(obj):
+            continue
         if getattr(obj, "__qualname__", "").startswith(f"{cls.__name__}."):
             methods.append((name, obj, ""))
 
     if not any(name == "forward" for name, _, _ in methods) and hasattr(cls, "forward"):
         forward = getattr(cls, "forward")
         owner = getattr(forward, "__qualname__", "").split(".", 1)[0]
-        if owner and owner != cls.__name__:
+        if owner and owner != cls.__name__ and is_olm_source(forward):
             methods.insert(0, ("forward", forward, f"inherited from `{owner}`"))
 
     return methods
@@ -136,7 +313,12 @@ def class_methods(cls: type) -> list[tuple[str, Any, str]]:
 def class_properties(cls: type) -> list[tuple[str, property]]:
     props: list[tuple[str, property]] = []
     for name, obj in inspect.getmembers(cls):
-        if public_name(name) and isinstance(obj, property):
+        if (
+            public_name(name)
+            and isinstance(obj, property)
+            and obj.fget is not None
+            and is_olm_source(obj.fget)
+        ):
             props.append((name, obj))
     return props
 
@@ -152,7 +334,7 @@ def module_markdown(module: ModuleType) -> str:
     if link:
         lines.extend([f"Source: {link}", ""])
 
-    module_doc = clean_doc(module)
+    module_doc = format_doc(clean_doc(module))
     if module_doc:
         lines.extend([module_doc, ""])
 
@@ -165,7 +347,7 @@ def module_markdown(module: ModuleType) -> str:
             link = source_link(func)
             if link:
                 lines.extend([f"Source: {link}", ""])
-            doc = clean_doc(func)
+            doc = format_doc(clean_doc(func))
             if doc:
                 lines.extend([doc, ""])
 
@@ -179,7 +361,7 @@ def module_markdown(module: ModuleType) -> str:
             link = source_link(cls)
             if link:
                 lines.extend([f"Source: {link}", ""])
-            doc = clean_doc(cls)
+            doc = format_doc(clean_doc(cls))
             if doc:
                 lines.extend([doc, ""])
 
@@ -192,7 +374,7 @@ def module_markdown(module: ModuleType) -> str:
                     if return_type:
                         label += f" -> `{return_type}`"
                     lines.append(f"- {label}")
-                    prop_doc = clean_doc(prop.fget) if prop.fget is not None else ""
+                    prop_doc = format_doc(clean_doc(prop.fget)) if prop.fget is not None else ""
                     if prop_doc:
                         lines.append(f"  {prop_doc}")
                 lines.append("")
@@ -208,7 +390,7 @@ def module_markdown(module: ModuleType) -> str:
                     link = source_link(method)
                     if link:
                         lines.extend([f"Source: {link}", ""])
-                    method_doc = clean_doc(method)
+                    method_doc = format_doc(clean_doc(method))
                     if method_doc:
                         lines.extend([method_doc, ""])
 

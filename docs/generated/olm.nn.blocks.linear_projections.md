@@ -15,15 +15,17 @@ Computes Query, Key, and Value projections for attention mechanisms.
 Applies three separate linear transformations to the input to generate Q, K, and V tensors.
 Supports various weight initialization schemes.
 
-Forward:
-    Accepts ``x`` with shape ``[batch, seq_len, dim_in]`` and returns
-    ``(q, k, v)`` with shapes ``[batch, seq_len, dim_q]``,
-    ``[batch, seq_len, dim_k]``, and ``[batch, seq_len, dim_v]``.
+**Forward**
 
-Attributes:
-    W_q (Linear): Linear layer for Query projection.
-    W_k (Linear): Linear layer for Key projection.
-    W_v (Linear): Linear layer for Value projection.
+Accepts ``x`` with shape ``[batch, seq_len, dim_in]`` and returns
+``(q, k, v)`` with shapes ``[batch, seq_len, dim_q]``,
+``[batch, seq_len, dim_k]``, and ``[batch, seq_len, dim_v]``.
+
+**Attributes**
+
+- `W_q` (`Linear`): Linear layer for Query projection.
+- `W_k` (`Linear`): Linear layer for Key projection.
+- `W_v` (`Linear`): Linear layer for Value projection.
 
 #### Methods
 
@@ -33,8 +35,10 @@ Source: [`src/olm/nn/blocks/linear_projections.py:61`](https://github.com/openla
 
 Performs the Q, K, V projections.
 
-Args:
-    x (torch.Tensor): Input tensor of shape (batch, seq_len, dim_in).
+**Parameters**
 
-Returns:
-    tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing (Q, K, V) tensors.
+- `x` (`torch.Tensor`): Input tensor of shape (batch, seq_len, dim_in).
+
+**Returns**
+
+tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing (Q, K, V) tensors.

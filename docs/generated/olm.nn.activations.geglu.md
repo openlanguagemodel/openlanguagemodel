@@ -16,9 +16,10 @@ Implements the GeGLU variant from "GLU Variants Improve Transformer".
 GeGLU(x, W, V) = GELU(xW) * (xV)
 Here: GeGLU(x) = GELU(gate) * value
 
-Args:
-    device (torch.device, optional): Target device.
-    dtype (torch.dtype, optional): Target data type.
+**Parameters**
+
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
 #### Methods
 
@@ -28,8 +29,10 @@ Source: [`src/olm/nn/activations/geglu.py:20`](https://github.com/openlanguagemo
 
 Forward pass of GeGLU.
 
-Args:
-    x (torch.Tensor): Input tensor.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor with half the last dimension.
+- `x` (`torch.Tensor`): Input tensor.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor with half the last dimension.

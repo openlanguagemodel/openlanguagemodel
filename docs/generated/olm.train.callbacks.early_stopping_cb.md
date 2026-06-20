@@ -14,9 +14,10 @@ Source: [`src/olm/train/callbacks/early_stopping_cb.py:8`](https://github.com/op
 
 Callback to stop training early if validation loss doesn't improve.
 
-Args:
-    patience: Number of validation checks to wait for improvement.
-    min_delta: Minimum change in validation loss to qualify as improvement.
+**Parameters**
+
+- `patience`: Number of validation checks to wait for improvement.
+- `min_delta`: Minimum change in validation loss to qualify as improvement.
 
 #### Methods
 

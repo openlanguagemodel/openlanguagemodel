@@ -27,13 +27,14 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:183`](https://github.com/open
 
 Apply partial rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with partial RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with partial RoPE applied.
 
 ### `PartialScaledRotaryPositionalEmbedding(head_dim: int, rotary_percentage: float = 0.5, max_seq_len: int = 2048, base: int = 10000, scaling_type: Literal['linear', 'ntk', 'dynamic_ntk', 'yarn', 'xpos'] = 'linear', scaling_factor: float = 1.0, original_max_seq_len: int | None = None, yarn_alpha: float = 1.0, yarn_beta: float = 32.0, xpos_scale_base: int | None = None)`
 
@@ -54,12 +55,14 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:624`](https://github.com/open
 
 Apply partial scaled rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with partial scaled RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices.
+
+**Returns**
+
+Tensor of same shape as x, with partial scaled RoPE applied.
 
 ### `RotaryPositionalEmbedding(head_dim: int, max_seq_len: int, base: int = 10000)`
 
@@ -81,13 +84,14 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:54`](https://github.com/openl
 
 Apply rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with RoPE applied.
 
 ### `ScaledRotaryPositionalEmbedding(head_dim: int, max_seq_len: int = 2048, base: int = 10000, scaling_type: Literal['linear', 'ntk', 'dynamic_ntk', 'yarn', 'xpos'] = 'linear', scaling_factor: float = 1.0, original_max_seq_len: int | None = None, yarn_alpha: float = 1.0, yarn_beta: float = 32.0, xpos_scale_base: int | None = None)`
 
@@ -112,10 +116,11 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:398`](https://github.com/open
 
 Apply scaled rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with scaled RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with scaled RoPE applied.

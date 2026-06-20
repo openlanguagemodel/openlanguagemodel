@@ -14,10 +14,11 @@ Source: [`src/olm/train/callbacks/throughput_cb.py:9`](https://github.com/openla
 
 Callback to monitor training throughput (tokens/sec, samples/sec).
 
-Args:
-    log_every: Log throughput every N steps.
-    context_length: Length of each sequence.
-    batch_size: Total batch size (including gradient accumulation).
+**Parameters**
+
+- `log_every`: Log throughput every N steps.
+- `context_length`: Length of each sequence.
+- `batch_size`: Total batch size (including gradient accumulation).
 
 #### Methods
 

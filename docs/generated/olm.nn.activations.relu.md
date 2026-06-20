@@ -17,5 +17,3 @@ ReLU activation wrapper.
 ##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
 Source: [`src/olm/nn/activations/relu.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/relu.py#L14)
-
-Apply activation to ``x``.

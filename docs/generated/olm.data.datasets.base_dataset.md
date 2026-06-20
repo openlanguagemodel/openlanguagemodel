@@ -16,16 +16,16 @@ Abstract base class for text-based streaming datasets.
 construction, worker sharding, and distributed-rank sharding. Subclasses
 only need to implement ``_get_text_iterator`` and yield raw text strings.
 
-Iteration:
-    Yields ``(input_ids, labels)`` tuples. Both tensors have shape
-    ``[context_length]`` and dtype ``torch.long``. ``labels`` is the
-    one-token-shifted target sequence for causal language modeling.
+**Iteration**
 
-Args:
-    tokenizer: Tokenizer with an ``encode`` method.
-    context_length (int): Number of input tokens per sample.
-    skip_batches (int): Number of yielded samples to skip, useful for
-        coarse resume behavior.
-    shuffle (bool): Whether the concrete dataset should shuffle its source
-        stream when supported.
-    seed (int): Shuffle seed.
+Yields ``(input_ids, labels)`` tuples. Both tensors have shape
+``[context_length]`` and dtype ``torch.long``. ``labels`` is the
+one-token-shifted target sequence for causal language modeling.
+
+**Parameters**
+
+- `tokenizer`: Tokenizer with an ``encode`` method.
+- `context_length` (`int`): Number of input tokens per sample.
+- `skip_batches` (`int`): Number of yielded samples to skip, useful for coarse resume behavior.
+- `shuffle` (`bool`): Whether the concrete dataset should shuffle its source stream when supported.
+- `seed` (`int`): Shuffle seed.

@@ -12,17 +12,19 @@ Source: [`src/olm/data/datasets/hf_dataset.py:83`](https://github.com/openlangua
 
 Convenience wrapper for ``HuggingFaceFW/fineweb-edu``.
 
-Iteration:
-    Yields ``(input_ids, labels)`` tensors shaped ``[context_length]`` for
-    causal language-model training.
+**Iteration**
 
-Args:
-    tokenizer: Tokenizer with an ``encode`` method.
-    split: Dataset split ('train' or 'validation')
-    context_length: Sequence length for training (default: 1024)
-    subset: Dataset subset to use (default: 'sample-10BT')
-    streaming: Whether to use streaming mode (default: True)
-    shuffle: Whether to shuffle the dataset (default: False)
-    seed: Random seed for shuffling (default: 42)
-    cache_dir: Directory to cache downloaded data (default: None)
-    skip_batches: Number of batches to skip
+Yields ``(input_ids, labels)`` tensors shaped ``[context_length]`` for
+causal language-model training.
+
+**Parameters**
+
+- `tokenizer`: Tokenizer with an ``encode`` method.
+- `split`: Dataset split ('train' or 'validation')
+- `context_length`: Sequence length for training (default: 1024)
+- `subset`: Dataset subset to use (default: 'sample-10BT')
+- `streaming`: Whether to use streaming mode (default: True)
+- `shuffle`: Whether to shuffle the dataset (default: False)
+- `seed`: Random seed for shuffling (default: 42)
+- `cache_dir`: Directory to cache downloaded data (default: None)
+- `skip_batches`: Number of batches to skip

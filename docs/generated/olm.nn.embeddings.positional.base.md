@@ -45,5 +45,6 @@ The signature and behavior of this method varies by implementation:
 - Some rotate representations (RoPE)
 - Some return bias to add to attention scores (ALiBi)
 
-Returns:
-    Transformed tensor(s) with positional information applied
+**Returns**
+
+Transformed tensor(s) with positional information applied

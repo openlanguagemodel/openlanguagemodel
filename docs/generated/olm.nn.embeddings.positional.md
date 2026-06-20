@@ -29,14 +29,16 @@ Source: [`src/olm/nn/embeddings/positional/alibi.py:85`](https://github.com/open
 
 Get ALiBi bias for the given query and key sequence lengths.
 
-Args:
-    seq_len_q: length of query sequence
-    seq_len_k: length of key sequence (usually same as seq_len_q)
-    device: device to place the bias tensor on
+**Parameters**
 
-Returns:
-    Bias tensor of shape (1, num_heads, seq_len_q, seq_len_k)
-    This should be added to attention scores before softmax.
+- `seq_len_q`: length of query sequence
+- `seq_len_k`: length of key sequence (usually same as seq_len_q)
+- `device`: device to place the bias tensor on
+
+**Returns**
+
+Bias tensor of shape (1, num_heads, seq_len_q, seq_len_k)
+This should be added to attention scores before softmax.
 
 ### `AbsolutePositionalEmbedding(max_seq_len: int, embed_dim: int, dropout: float = 0.0)`
 
@@ -61,13 +63,14 @@ Source: [`src/olm/nn/embeddings/positional/absolute.py:34`](https://github.com/o
 
 Apply absolute positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, embed_dim) - token embeddings
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with positional embeddings added.
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.
 
 ### `PartialRotaryPositionalEmbedding(head_dim: int, rotary_percentage: float = 0.5, base: int = 10000, max_seq_len: int = 2048)`
 
@@ -92,13 +95,14 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:183`](https://github.com/open
 
 Apply partial rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with partial RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with partial RoPE applied.
 
 ### `PositionalEmbeddingBase(*args: Any, **kwargs: Any) -> None`
 
@@ -141,8 +145,9 @@ The signature and behavior of this method varies by implementation:
 - Some rotate representations (RoPE)
 - Some return bias to add to attention scores (ALiBi)
 
-Returns:
-    Transformed tensor(s) with positional information applied
+**Returns**
+
+Transformed tensor(s) with positional information applied
 
 ### `RotaryPositionalEmbedding(head_dim: int, max_seq_len: int, base: int = 10000)`
 
@@ -164,13 +169,14 @@ Source: [`src/olm/nn/embeddings/positional/rope.py:54`](https://github.com/openl
 
 Apply rotary positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, num_heads, head_dim)
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with RoPE applied.
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with RoPE applied.
 
 ### `SinusoidalPositionalEmbedding(embed_dim: int, max_seq_len: int = 5000, base: int = 10000, dropout: float = 0.0)`
 
@@ -196,10 +202,11 @@ Source: [`src/olm/nn/embeddings/positional/sinusoidal.py:80`](https://github.com
 
 Apply sinusoidal positional embedding to input tensor x.
 
-Args:
-    x: shape (batch_size, seq_len, embed_dim) - token embeddings
-    seq_positions: optional tensor of shape (batch_size, seq_len) with position indices.
-        If None, assumes positions are 0..seq_len-1 for each batch.
+**Parameters**
 
-Returns:
-    Tensor of same shape as x, with positional embeddings added.
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.

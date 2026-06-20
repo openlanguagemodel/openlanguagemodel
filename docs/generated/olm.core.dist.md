@@ -22,14 +22,18 @@ Source: [`src/olm/core/dist.py:107`](https://github.com/openlanguagemodel/openla
 
 Reduce tensor across all processes.
 
-Args:
-    tensor: Tensor to reduce (modified in-place).
-    op: Reduction operation (SUM, AVG, PRODUCT, MIN, MAX).
-    async_op: If True, returns Work handle for async operation.
+**Parameters**
 
-Example:
-    >>> loss = torch.tensor([2.5])
-    >>> all_reduce(loss, op=dist.ReduceOp.AVG)
+- `tensor`: Tensor to reduce (modified in-place).
+- `op`: Reduction operation (SUM, AVG, PRODUCT, MIN, MAX).
+- `async_op`: If True, returns Work handle for async operation.
+
+**Example**
+
+```python
+loss = torch.tensor([2.5])
+all_reduce(loss, op=dist.ReduceOp.AVG)
+```
 
 ### `barrier() -> None`
 
@@ -103,14 +107,15 @@ Source: [`src/olm/core/dist.py:42`](https://github.com/openlanguagemodel/openlan
 
 Initialize distributed process group from environment variables.
 
-Args:
-    backend: 'nccl', 'gloo', or None (auto-detect).
-    init_method: Initialization method. Defaults to 'env://'.
-    timeout_minutes: Timeout for operations.
+**Parameters**
 
-Environment variables (set by torchrun):
-    RANK, WORLD_SIZE, LOCAL_RANK, MASTER_ADDR, MASTER_PORT
+- `backend`: 'nccl', 'gloo', or None (auto-detect).
+- `init_method`: Initialization method. Defaults to 'env://'.
+- `timeout_minutes`: Timeout for operations. Environment variables (set by torchrun): RANK, WORLD_SIZE, LOCAL_RANK, MASTER_ADDR, MASTER_PORT
 
-Example:
-    >>> # Run with: torchrun --nproc_per_node=4 train.py
-    >>> setup_distributed()
+**Example**
+
+```python
+# Run with: torchrun --nproc_per_node=4 train.py
+setup_distributed()
+```

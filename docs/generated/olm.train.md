@@ -17,93 +17,90 @@ and FSDPTrainer based on available GPUs and model size. It handles the
 single-node multi-GPU setup, device selection, and
 parameter configuration.
 
-Forward/training contract:
-    The model is expected to accept ``input_ids`` shaped
-    ``[batch, context_length]`` and return logits shaped
-    ``[batch, context_length, vocab_size]``. The dataloader should yield
-    ``(input_ids, labels)`` where both tensors are shaped
-    ``[batch, context_length]``.
+**Forward / Training Contract**
 
-Args:
-    model: Model to train.
-    optimizer: Optimizer instance or class.
-    dataloader: DataLoader for training data.
-    device: Device configuration. Options:
-        - "auto": Full auto-detection (recommended)
-        - "cuda:auto": Force CUDA with auto-configuration
-        - "cpu:auto": Force CPU with auto-configuration
-        - "cuda", "cuda:0", "cpu": Legacy device strings
-        - DeviceConfig object: Custom configuration
-    context_length: Maximum sequence length.
-    grad_accum_steps: Gradient accumulation steps.
-    use_amp: Use automatic mixed precision.
-    loss: Loss function class.
-    callbacks: Training callbacks.
-    scheduler: Learning rate scheduler.
-    grad_clip_norm: Gradient clipping threshold.
-    warmup_steps: Warmup steps for scheduler.
-    total_steps: Total training steps.
-    min_lr: Minimum learning rate.
-    learning_rate: Learning rate (if optimizer is a class).
-    weight_decay: Weight decay (if optimizer is a class).
-    use_warmup_cosine: Use warmup+cosine scheduler by default.
-    preset: Configuration preset:
-        - "balanced": Intelligent selection (default)
-        - "memory_efficient": Prioritize FSDP, CPU offload
-        - "speed": Prioritize DDP, no offload
-        - "conservative": Use safest options
-    force_strategy: Force specific strategy (overrides auto-selection).
-    verbose: Print configuration information.
-    ddp_find_unused_parameters: DDP parameter for models with unused params.
-    ddp_broadcast_buffers: DDP parameter for broadcasting buffers.
-    ddp_bucket_cap_mb: DDP bucket size in MB.
-    fsdp_min_num_params: FSDP minimum parameters for auto-wrapping.
-    fsdp_transformer_layer_cls: FSDP transformer layer class for wrapping.
-    fsdp_backward_prefetch: FSDP backward prefetch strategy.
-    fsdp_limit_all_gathers: FSDP parameter for memory efficiency.
-    fsdp_use_orig_params: FSDP parameter for using original parameters.
+The model is expected to accept ``input_ids`` shaped
+``[batch, context_length]`` and return logits shaped
+``[batch, context_length, vocab_size]``. The dataloader should yield
+``(input_ids, labels)`` where both tensors are shaped
+``[batch, context_length]``.
 
-Returns:
-    Configured trainer instance (Trainer, DDPTrainer, or FSDPTrainer).
+**Parameters**
 
-Example:
-    Basic usage with auto-detection:
-    >>> trainer = AutoTrainer(
-    ...     model=model,
-    ...     optimizer=torch.optim.AdamW,
-    ...     dataloader=dataloader,
-    ...     device="auto",
-    ...     context_length=2048,
-    ...     learning_rate=3e-4
-    ... )
-    >>> trainer.train(epochs=10)
+- `model`: Model to train.
+- `optimizer`: Optimizer instance or class.
+- `dataloader`: DataLoader for training data.
+- `device`: Device configuration. Options: - "auto": Full auto-detection (recommended) - "cuda:auto": Force CUDA with auto-configuration - "cpu:auto": Force CPU with auto-configuration - "cuda", "cuda:0", "cpu": Legacy device strings - DeviceConfig object: Custom configuration
+- `context_length`: Maximum sequence length.
+- `grad_accum_steps`: Gradient accumulation steps.
+- `use_amp`: Use automatic mixed precision.
+- `loss`: Loss function class.
+- `callbacks`: Training callbacks.
+- `scheduler`: Learning rate scheduler.
+- `grad_clip_norm`: Gradient clipping threshold.
+- `warmup_steps`: Warmup steps for scheduler.
+- `total_steps`: Total training steps.
+- `min_lr`: Minimum learning rate.
+- `learning_rate`: Learning rate (if optimizer is a class).
+- `weight_decay`: Weight decay (if optimizer is a class).
+- `use_warmup_cosine`: Use warmup+cosine scheduler by default.
+- `preset`: Configuration preset: - "balanced": Intelligent selection (default) - "memory_efficient": Prioritize FSDP, CPU offload - "speed": Prioritize DDP, no offload - "conservative": Use safest options
+- `force_strategy`: Force specific strategy (overrides auto-selection).
+- `verbose`: Print configuration information.
+- `ddp_find_unused_parameters`: DDP parameter for models with unused params.
+- `ddp_broadcast_buffers`: DDP parameter for broadcasting buffers.
+- `ddp_bucket_cap_mb`: DDP bucket size in MB.
+- `fsdp_min_num_params`: FSDP minimum parameters for auto-wrapping.
+- `fsdp_transformer_layer_cls`: FSDP transformer layer class for wrapping.
+- `fsdp_backward_prefetch`: FSDP backward prefetch strategy.
+- `fsdp_limit_all_gathers`: FSDP parameter for memory efficiency.
+- `fsdp_use_orig_params`: FSDP parameter for using original parameters.
 
-    Memory-efficient configuration:
-    >>> trainer = AutoTrainer(
-    ...     model=large_model,
-    ...     optimizer=AdamW,
-    ...     dataloader=dataloader,
-    ...     device="auto",
-    ...     preset="memory_efficient",  # Prioritize FSDP + CPU offload
-    ...     context_length=2048
-    ... )
+**Returns**
 
-    Custom device configuration:
-    >>> from olm.train.device import DeviceConfig, TrainerStrategy
-    >>> config = DeviceConfig(
-    ...     num_gpus=4,
-    ...     strategy=TrainerStrategy.MULTI_GPU_FSDP_FULL,
-    ...     cuda_available=True
-    ... )
-    >>> trainer = AutoTrainer(model=model, device=config, ...)
+Configured trainer instance (Trainer, DDPTrainer, or FSDPTrainer).
 
-    Force specific strategy:
-    >>> trainer = AutoTrainer(
-    ...     model=model,
-    ...     device="auto",
-    ...     force_strategy=TrainerStrategy.MULTI_GPU_DDP,
-    ...     ...
-    ... )
+**Example**
+
+```python
+# Basic usage with auto-detection:
+trainer = AutoTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=dataloader,
+    device="auto",
+    context_length=2048,
+    learning_rate=3e-4
+)
+trainer.train(epochs=10)
+
+# Memory-efficient configuration:
+trainer = AutoTrainer(
+    model=large_model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    preset="memory_efficient",  # Prioritize FSDP + CPU offload
+    context_length=2048
+)
+
+# Custom device configuration:
+from olm.train.device import DeviceConfig, TrainerStrategy
+config = DeviceConfig(
+    num_gpus=4,
+    strategy=TrainerStrategy.MULTI_GPU_FSDP_FULL,
+    cuda_available=True
+)
+trainer = AutoTrainer(model=model, device=config, ...)
+
+# Force specific strategy:
+trainer = AutoTrainer(
+    model=model,
+    device="auto",
+    force_strategy=TrainerStrategy.MULTI_GPU_DDP,
+    ...
+)
+```
 
 ### `auto_trainer(model: torch.nn.modules.module.Module, optimizer: torch.optim.optimizer.Optimizer | Type[torch.optim.optimizer.Optimizer], dataloader: olm.data.datasets.data_loader.DataLoader, device: str | olm.train.device.DeviceConfig = 'auto', context_length: int = 1024, grad_accum_steps: int = 1, use_amp: bool = True, loss: Type[olm.train.losses.base.LossBase] = <class 'olm.train.losses.cross_entropy.CrossEntropyLoss'>, callbacks: List[olm.train.trainer.trainer.TrainerCallback] | None = None, scheduler: Any | None = None, grad_clip_norm: float | None = None, warmup_steps: int | None = None, total_steps: int | None = None, min_lr: float = 0.0, learning_rate: float = 0.0003, weight_decay: float = 0.0, use_warmup_cosine: bool = True, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None, verbose: bool = True, ddp_find_unused_parameters: bool = False, ddp_broadcast_buffers: bool = True, ddp_bucket_cap_mb: int = 25, fsdp_min_num_params: int = 100000000, fsdp_transformer_layer_cls: Type[torch.nn.modules.module.Module] | None = None, fsdp_backward_prefetch: str = 'BACKWARD_PRE', fsdp_limit_all_gathers: bool = True, fsdp_use_orig_params: bool = True) -> olm.train.trainer.trainer.Trainer | olm.train.trainer.ddp_trainer.DDPTrainer | olm.train.trainer.fsdp_trainer.FSDPTrainer`
 
@@ -116,93 +113,90 @@ and FSDPTrainer based on available GPUs and model size. It handles the
 single-node multi-GPU setup, device selection, and
 parameter configuration.
 
-Forward/training contract:
-    The model is expected to accept ``input_ids`` shaped
-    ``[batch, context_length]`` and return logits shaped
-    ``[batch, context_length, vocab_size]``. The dataloader should yield
-    ``(input_ids, labels)`` where both tensors are shaped
-    ``[batch, context_length]``.
+**Forward / Training Contract**
 
-Args:
-    model: Model to train.
-    optimizer: Optimizer instance or class.
-    dataloader: DataLoader for training data.
-    device: Device configuration. Options:
-        - "auto": Full auto-detection (recommended)
-        - "cuda:auto": Force CUDA with auto-configuration
-        - "cpu:auto": Force CPU with auto-configuration
-        - "cuda", "cuda:0", "cpu": Legacy device strings
-        - DeviceConfig object: Custom configuration
-    context_length: Maximum sequence length.
-    grad_accum_steps: Gradient accumulation steps.
-    use_amp: Use automatic mixed precision.
-    loss: Loss function class.
-    callbacks: Training callbacks.
-    scheduler: Learning rate scheduler.
-    grad_clip_norm: Gradient clipping threshold.
-    warmup_steps: Warmup steps for scheduler.
-    total_steps: Total training steps.
-    min_lr: Minimum learning rate.
-    learning_rate: Learning rate (if optimizer is a class).
-    weight_decay: Weight decay (if optimizer is a class).
-    use_warmup_cosine: Use warmup+cosine scheduler by default.
-    preset: Configuration preset:
-        - "balanced": Intelligent selection (default)
-        - "memory_efficient": Prioritize FSDP, CPU offload
-        - "speed": Prioritize DDP, no offload
-        - "conservative": Use safest options
-    force_strategy: Force specific strategy (overrides auto-selection).
-    verbose: Print configuration information.
-    ddp_find_unused_parameters: DDP parameter for models with unused params.
-    ddp_broadcast_buffers: DDP parameter for broadcasting buffers.
-    ddp_bucket_cap_mb: DDP bucket size in MB.
-    fsdp_min_num_params: FSDP minimum parameters for auto-wrapping.
-    fsdp_transformer_layer_cls: FSDP transformer layer class for wrapping.
-    fsdp_backward_prefetch: FSDP backward prefetch strategy.
-    fsdp_limit_all_gathers: FSDP parameter for memory efficiency.
-    fsdp_use_orig_params: FSDP parameter for using original parameters.
+The model is expected to accept ``input_ids`` shaped
+``[batch, context_length]`` and return logits shaped
+``[batch, context_length, vocab_size]``. The dataloader should yield
+``(input_ids, labels)`` where both tensors are shaped
+``[batch, context_length]``.
 
-Returns:
-    Configured trainer instance (Trainer, DDPTrainer, or FSDPTrainer).
+**Parameters**
 
-Example:
-    Basic usage with auto-detection:
-    >>> trainer = AutoTrainer(
-    ...     model=model,
-    ...     optimizer=torch.optim.AdamW,
-    ...     dataloader=dataloader,
-    ...     device="auto",
-    ...     context_length=2048,
-    ...     learning_rate=3e-4
-    ... )
-    >>> trainer.train(epochs=10)
+- `model`: Model to train.
+- `optimizer`: Optimizer instance or class.
+- `dataloader`: DataLoader for training data.
+- `device`: Device configuration. Options: - "auto": Full auto-detection (recommended) - "cuda:auto": Force CUDA with auto-configuration - "cpu:auto": Force CPU with auto-configuration - "cuda", "cuda:0", "cpu": Legacy device strings - DeviceConfig object: Custom configuration
+- `context_length`: Maximum sequence length.
+- `grad_accum_steps`: Gradient accumulation steps.
+- `use_amp`: Use automatic mixed precision.
+- `loss`: Loss function class.
+- `callbacks`: Training callbacks.
+- `scheduler`: Learning rate scheduler.
+- `grad_clip_norm`: Gradient clipping threshold.
+- `warmup_steps`: Warmup steps for scheduler.
+- `total_steps`: Total training steps.
+- `min_lr`: Minimum learning rate.
+- `learning_rate`: Learning rate (if optimizer is a class).
+- `weight_decay`: Weight decay (if optimizer is a class).
+- `use_warmup_cosine`: Use warmup+cosine scheduler by default.
+- `preset`: Configuration preset: - "balanced": Intelligent selection (default) - "memory_efficient": Prioritize FSDP, CPU offload - "speed": Prioritize DDP, no offload - "conservative": Use safest options
+- `force_strategy`: Force specific strategy (overrides auto-selection).
+- `verbose`: Print configuration information.
+- `ddp_find_unused_parameters`: DDP parameter for models with unused params.
+- `ddp_broadcast_buffers`: DDP parameter for broadcasting buffers.
+- `ddp_bucket_cap_mb`: DDP bucket size in MB.
+- `fsdp_min_num_params`: FSDP minimum parameters for auto-wrapping.
+- `fsdp_transformer_layer_cls`: FSDP transformer layer class for wrapping.
+- `fsdp_backward_prefetch`: FSDP backward prefetch strategy.
+- `fsdp_limit_all_gathers`: FSDP parameter for memory efficiency.
+- `fsdp_use_orig_params`: FSDP parameter for using original parameters.
 
-    Memory-efficient configuration:
-    >>> trainer = AutoTrainer(
-    ...     model=large_model,
-    ...     optimizer=AdamW,
-    ...     dataloader=dataloader,
-    ...     device="auto",
-    ...     preset="memory_efficient",  # Prioritize FSDP + CPU offload
-    ...     context_length=2048
-    ... )
+**Returns**
 
-    Custom device configuration:
-    >>> from olm.train.device import DeviceConfig, TrainerStrategy
-    >>> config = DeviceConfig(
-    ...     num_gpus=4,
-    ...     strategy=TrainerStrategy.MULTI_GPU_FSDP_FULL,
-    ...     cuda_available=True
-    ... )
-    >>> trainer = AutoTrainer(model=model, device=config, ...)
+Configured trainer instance (Trainer, DDPTrainer, or FSDPTrainer).
 
-    Force specific strategy:
-    >>> trainer = AutoTrainer(
-    ...     model=model,
-    ...     device="auto",
-    ...     force_strategy=TrainerStrategy.MULTI_GPU_DDP,
-    ...     ...
-    ... )
+**Example**
+
+```python
+# Basic usage with auto-detection:
+trainer = AutoTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=dataloader,
+    device="auto",
+    context_length=2048,
+    learning_rate=3e-4
+)
+trainer.train(epochs=10)
+
+# Memory-efficient configuration:
+trainer = AutoTrainer(
+    model=large_model,
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",
+    preset="memory_efficient",  # Prioritize FSDP + CPU offload
+    context_length=2048
+)
+
+# Custom device configuration:
+from olm.train.device import DeviceConfig, TrainerStrategy
+config = DeviceConfig(
+    num_gpus=4,
+    strategy=TrainerStrategy.MULTI_GPU_FSDP_FULL,
+    cuda_available=True
+)
+trainer = AutoTrainer(model=model, device=config, ...)
+
+# Force specific strategy:
+trainer = AutoTrainer(
+    model=model,
+    device="auto",
+    force_strategy=TrainerStrategy.MULTI_GPU_DDP,
+    ...
+)
+```
 
 ### `detect_devices(verbose: bool = True) -> olm.train.device.DeviceConfig`
 
@@ -210,15 +204,20 @@ Source: [`src/olm/train/device.py:84`](https://github.com/openlanguagemodel/open
 
 Detect available hardware and create device configuration.
 
-Args:
-    verbose: Print detection results
+**Parameters**
 
-Returns:
-    DeviceConfig with hardware information
+- `verbose`: Print detection results
 
-Example:
-    >>> config = detect_devices()
-    >>> print(f"Found {config.num_gpus} GPUs")
+**Returns**
+
+DeviceConfig with hardware information
+
+**Example**
+
+```python
+config = detect_devices()
+print(f"Found {config.num_gpus} GPUs")
+```
 
 ### `determine_strategy(device_config: olm.train.device.DeviceConfig, model: torch.nn.modules.module.Module | None = None, preset: str = 'balanced', force_strategy: olm.train.device.TrainerStrategy | None = None) -> olm.train.device.DeviceConfig`
 
@@ -226,23 +225,24 @@ Source: [`src/olm/train/device.py:217`](https://github.com/openlanguagemodel/ope
 
 Determine optimal training strategy based on hardware and model.
 
-Args:
-    device_config: Device configuration from detect_devices()
-    model: PyTorch model (optional, for memory estimation)
-    preset: Configuration preset:
-        - "balanced": Intelligent selection (default)
-        - "memory_efficient": Prioritize FSDP, CPU offload
-        - "speed": Prioritize DDP, no offload
-        - "conservative": Use safest options
-    force_strategy: Force specific strategy (overrides auto-selection)
+**Parameters**
 
-Returns:
-    Updated DeviceConfig with strategy and configuration
+- `device_config`: Device configuration from detect_devices()
+- `model`: PyTorch model (optional, for memory estimation)
+- `preset`: Configuration preset: - "balanced": Intelligent selection (default) - "memory_efficient": Prioritize FSDP, CPU offload - "speed": Prioritize DDP, no offload - "conservative": Use safest options
+- `force_strategy`: Force specific strategy (overrides auto-selection)
 
-Example:
-    >>> config = detect_devices()
-    >>> config = determine_strategy(config, model=my_model)
-    >>> print(f"Selected strategy: {config.strategy.value}")
+**Returns**
+
+Updated DeviceConfig with strategy and configuration
+
+**Example**
+
+```python
+config = detect_devices()
+config = determine_strategy(config, model=my_model)
+print(f"Selected strategy: {config.strategy.value}")
+```
 
 ### `estimate_model_size(model: torch.nn.modules.module.Module, verbose: bool = False) -> Dict[str, float]`
 
@@ -250,21 +250,26 @@ Source: [`src/olm/train/device.py:147`](https://github.com/openlanguagemodel/ope
 
 Estimate memory footprint of a model.
 
-Args:
-    model: PyTorch model
-    verbose: Print estimation details
+**Parameters**
 
-Returns:
-    Dictionary with memory estimates in GB:
-        - params_gb: Parameter memory
-        - gradients_gb: Gradient memory
-        - optimizer_gb: Optimizer state memory (assumes AdamW)
-        - total_gb: Total estimated memory
-        - num_params: Total number of parameters
+- `model`: PyTorch model
+- `verbose`: Print estimation details
 
-Example:
-    >>> memory = estimate_model_size(model)
-    >>> print(f"Model requires ~{memory['total_gb']:.2f} GB")
+**Returns**
+
+Dictionary with memory estimates in GB:
+- params_gb: Parameter memory
+- gradients_gb: Gradient memory
+- optimizer_gb: Optimizer state memory (assumes AdamW)
+- total_gb: Total estimated memory
+- num_params: Total number of parameters
+
+**Example**
+
+```python
+memory = estimate_model_size(model)
+print(f"Model requires ~{memory['total_gb']:.2f} GB")
+```
 
 ### `parse_device_string(device: str, model: torch.nn.modules.module.Module | None = None) -> olm.train.device.DeviceConfig`
 
@@ -280,16 +285,21 @@ Supported formats:
     - "cuda:0": Specific CUDA device
     - "cpu": CPU device
 
-Args:
-    device: Device string
-    model: Optional model for memory estimation
+**Parameters**
 
-Returns:
-    DeviceConfig
+- `device`: Device string
+- `model`: Optional model for memory estimation
 
-Example:
-    >>> config = parse_device_string("auto", model=my_model)
-    >>> config = parse_device_string("cuda:auto")
+**Returns**
+
+DeviceConfig
+
+**Example**
+
+```python
+config = parse_device_string("auto", model=my_model)
+config = parse_device_string("cuda:auto")
+```
 
 ### `print_strategy_summary(config: olm.train.device.DeviceConfig) -> None`
 
@@ -297,8 +307,9 @@ Source: [`src/olm/train/device.py:416`](https://github.com/openlanguagemodel/ope
 
 Print a summary of the selected training strategy.
 
-Args:
-    config: Device configuration
+**Parameters**
+
+- `config`: Device configuration
 
 ## Classes
 
@@ -321,24 +332,27 @@ transformers, offering better generalization than standard Adam.
 Note: This class inherits from PyTorch's AdamW which ultimately inherits from
 torch.optim.Optimizer, maintaining compatibility with our OptimizerBase interface.
 
-Args:
-    params: iterable of parameters to optimize or dicts defining parameter groups
-    lr: learning rate (default: 1e-3)
-    betas: coefficients used for computing running averages of gradient and its square
-        (default: (0.9, 0.999))
-    eps: term added to the denominator to improve numerical stability (default: 1e-8)
-    weight_decay: weight decay coefficient (default: 0.01)
-    amsgrad: whether to use the AMSGrad variant (default: False)
-    maximize: maximize the params based on the objective, instead of minimizing (default: False)
-    fused: whether to use the fused implementation (default: None, auto-detect)
+**Parameters**
 
-Example:
-    >>> model = nn.Linear(10, 5)
-    >>> optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
-    >>> optimizer.zero_grad()
-    >>> loss = model(input).sum()
-    >>> loss.backward()
-    >>> optimizer.step()
+- `params`: iterable of parameters to optimize or dicts defining parameter groups
+- `lr`: learning rate (default: 1e-3)
+- `betas`: coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999))
+- `eps`: term added to the denominator to improve numerical stability (default: 1e-8)
+- `weight_decay`: weight decay coefficient (default: 0.01)
+- `amsgrad`: whether to use the AMSGrad variant (default: False)
+- `maximize`: maximize the params based on the objective, instead of minimizing (default: False)
+- `fused`: whether to use the fused implementation (default: None, auto-detect)
+
+**Example**
+
+```python
+model = nn.Linear(10, 5)
+optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+optimizer.zero_grad()
+loss = model(input).sum()
+loss.backward()
+optimizer.step()
+```
 
 ### `CheckpointCallback(checkpoint_dir: str = 'checkpoints', save_every: int = 1000, keep_last_n: int = 5, save_best: bool = True)`
 
@@ -348,11 +362,12 @@ Source: [`src/olm/train/callbacks/checkpoint_cb.py:12`](https://github.com/openl
 
 Callback to save model checkpoints at specified intervals.
 
-Args:
-    checkpoint_dir: Directory to save checkpoints.
-    save_every: Save checkpoint every N steps.
-    keep_last_n: Keep only the last N checkpoints.
-    save_best: Whether to save the best model based on validation loss.
+**Parameters**
+
+- `checkpoint_dir`: Directory to save checkpoints.
+- `save_every`: Save checkpoint every N steps.
+- `keep_last_n`: Keep only the last N checkpoints.
+- `save_best`: Whether to save the best model based on validation loss.
 
 #### Methods
 
@@ -373,18 +388,22 @@ Cosine annealing learning rate scheduler.
 Decreases the learning rate following a cosine curve from the initial
 learning rate to eta_min over T_max steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    T_max: Maximum number of iterations (steps).
-    eta_min: Minimum learning rate (default: 0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import CosineAnnealingLR
-    >>> scheduler = CosineAnnealingLR(optimizer, T_max=1000, eta_min=1e-6)
-    >>> for epoch in range(epochs):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `T_max`: Maximum number of iterations (steps).
+- `eta_min`: Minimum learning rate (default: 0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import CosineAnnealingLR
+scheduler = CosineAnnealingLR(optimizer, T_max=1000, eta_min=1e-6)
+for epoch in range(epochs):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 
@@ -408,45 +427,49 @@ Wraps the model with torch.nn.parallel.DistributedDataParallel and handles:
 - Metrics aggregation across ranks
 - Checkpoint saving on rank 0
 
-Args:
-    model: Model to train.
-    optimizer: Optimizer instance or class.
-    dataloader: DataLoader (will add DistributedSampler if needed).
-    device: Device for training.
-    context_length: Max sequence length.
-    grad_accum_steps: Gradient accumulation steps.
-    use_amp: Use automatic mixed precision.
-    loss: Loss function class.
-    callbacks: Training callbacks.
-    scheduler: Learning rate scheduler.
-    grad_clip_norm: Gradient clipping threshold.
-    warmup_steps: Warmup steps for scheduler.
-    total_steps: Total training steps.
-    min_lr: Minimum learning rate.
-    learning_rate: Learning rate (if optimizer is a class).
-    weight_decay: Weight decay (if optimizer is a class).
-    use_warmup_cosine: Use warmup+cosine scheduler by default.
-    ddp_backend: DDP backend ('nccl' for GPU, 'gloo' for CPU, None for auto).
-    find_unused_parameters: DDP parameter for models with unused params.
-    broadcast_buffers: Broadcast model buffers at beginning of forward.
-    bucket_cap_mb: DDP bucket size in MB for gradient communication.
-    gradient_as_bucket_view: Use gradient views to reduce memory (recommended).
-    static_graph: Set to True if model graph doesn't change (optimization).
+**Parameters**
 
-Example:
-    >>> # Launch with: torchrun --nproc_per_node=4 train.py
-    >>> from olm.core.dist import setup_distributed
-    >>> setup_distributed()
-    >>>
-    >>> trainer = DDPTrainer(
-    ...     model=model,
-    ...     optimizer=torch.optim.AdamW,
-    ...     dataloader=dataloader,
-    ...     device=f"cuda:{get_local_rank()}",
-    ...     context_length=512,
-    ...     learning_rate=3e-4
-    ... )
-    >>> trainer.train(epochs=10)
+- `model`: Model to train.
+- `optimizer`: Optimizer instance or class.
+- `dataloader`: DataLoader (will add DistributedSampler if needed).
+- `device`: Device for training.
+- `context_length`: Max sequence length.
+- `grad_accum_steps`: Gradient accumulation steps.
+- `use_amp`: Use automatic mixed precision.
+- `loss`: Loss function class.
+- `callbacks`: Training callbacks.
+- `scheduler`: Learning rate scheduler.
+- `grad_clip_norm`: Gradient clipping threshold.
+- `warmup_steps`: Warmup steps for scheduler.
+- `total_steps`: Total training steps.
+- `min_lr`: Minimum learning rate.
+- `learning_rate`: Learning rate (if optimizer is a class).
+- `weight_decay`: Weight decay (if optimizer is a class).
+- `use_warmup_cosine`: Use warmup+cosine scheduler by default.
+- `ddp_backend`: DDP backend ('nccl' for GPU, 'gloo' for CPU, None for auto).
+- `find_unused_parameters`: DDP parameter for models with unused params.
+- `broadcast_buffers`: Broadcast model buffers at beginning of forward.
+- `bucket_cap_mb`: DDP bucket size in MB for gradient communication.
+- `gradient_as_bucket_view`: Use gradient views to reduce memory (recommended).
+- `static_graph`: Set to True if model graph doesn't change (optimization).
+
+**Example**
+
+```python
+# Launch with: torchrun --nproc_per_node=4 train.py
+from olm.core.dist import setup_distributed
+setup_distributed()
+
+trainer = DDPTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=dataloader,
+    device=f"cuda:{get_local_rank()}",
+    context_length=512,
+    learning_rate=3e-4
+)
+trainer.train(epochs=10)
+```
 
 #### Methods
 
@@ -456,14 +479,16 @@ Source: [`src/olm/train/trainer/ddp_trainer.py:150`](https://github.com/openlang
 
 Training loop with DDP support.
 
-Args:
-    epochs: Number of epochs.
-    log_interval: Log every N steps.
-    max_steps: Maximum steps to train.
-    steps_per_epoch: Max steps per epoch.
+**Parameters**
 
-Returns:
-    List of loss values (only on rank 0).
+- `epochs`: Number of epochs.
+- `log_interval`: Log every N steps.
+- `max_steps`: Maximum steps to train.
+- `steps_per_epoch`: Max steps per epoch.
+
+**Returns**
+
+List of loss values (only on rank 0).
 
 ### `DeviceConfig(num_gpus: int, num_cpus: int, cuda_available: bool, gpu_memory_per_device: float | None = None, total_gpu_memory: float | None = None, strategy: olm.train.device.TrainerStrategy | None = None, device_type: str = 'cuda', local_rank: int = 0, world_size: int = 1, backend: str | None = None, mixed_precision: str | None = None, sharding_strategy: str | None = None, auto_wrap_policy: str | None = None, cpu_offload: bool = False) -> None`
 
@@ -471,21 +496,22 @@ Source: [`src/olm/train/device.py:27`](https://github.com/openlanguagemodel/open
 
 Configuration for device and training strategy.
 
-Attributes:
-    num_gpus: Number of available GPUs
-    num_cpus: Number of CPU cores
-    cuda_available: Whether CUDA is available
-    gpu_memory_per_device: GPU memory in GB per device
-    total_gpu_memory: Total GPU memory in GB
-    strategy: Selected training strategy
-    device_type: Device type ('cuda' or 'cpu')
-    local_rank: Local rank for distributed training
-    world_size: World size for distributed training
-    backend: Distributed backend ('nccl', 'gloo', or None)
-    mixed_precision: Mixed precision dtype ('bf16', 'fp16', or None)
-    sharding_strategy: FSDP sharding strategy (if applicable)
-    auto_wrap_policy: FSDP auto wrap policy (if applicable)
-    cpu_offload: Whether to offload parameters to CPU
+**Attributes**
+
+- `num_gpus`: Number of available GPUs
+- `num_cpus`: Number of CPU cores
+- `cuda_available`: Whether CUDA is available
+- `gpu_memory_per_device`: GPU memory in GB per device
+- `total_gpu_memory`: Total GPU memory in GB
+- `strategy`: Selected training strategy
+- `device_type`: Device type ('cuda' or 'cpu')
+- `local_rank`: Local rank for distributed training
+- `world_size`: World size for distributed training
+- `backend`: Distributed backend ('nccl', 'gloo', or None)
+- `mixed_precision`: Mixed precision dtype ('bf16', 'fp16', or None)
+- `sharding_strategy`: FSDP sharding strategy (if applicable)
+- `auto_wrap_policy`: FSDP auto wrap policy (if applicable)
+- `cpu_offload`: Whether to offload parameters to CPU
 
 #### Methods
 
@@ -503,9 +529,10 @@ Source: [`src/olm/train/callbacks/early_stopping_cb.py:8`](https://github.com/op
 
 Callback to stop training early if validation loss doesn't improve.
 
-Args:
-    patience: Number of validation checks to wait for improvement.
-    min_delta: Minimum change in validation loss to qualify as improvement.
+**Parameters**
+
+- `patience`: Number of validation checks to wait for improvement.
+- `min_delta`: Minimum change in validation loss to qualify as improvement.
 
 #### Methods
 
@@ -526,59 +553,56 @@ Trainer with PyTorch Fully Sharded Data Parallel (FSDP) support.
 FSDP shards model parameters, gradients, and optimizer states across GPUs,
 enabling training of larger models than DDP. Uses PyTorch's native FSDP.
 
-Args:
-    model: Model to train.
-    optimizer: Optimizer instance or class.
-    dataloader: DataLoader (will add DistributedSampler if needed).
-    device: Device for training.
-    context_length: Max sequence length.
-    grad_accum_steps: Gradient accumulation steps.
-    use_amp: Use automatic mixed precision.
-    loss: Loss function class.
-    callbacks: Training callbacks.
-    scheduler: Learning rate scheduler.
-    grad_clip_norm: Gradient clipping threshold.
-    warmup_steps: Warmup steps for scheduler.
-    total_steps: Total training steps.
-    min_lr: Minimum learning rate.
-    learning_rate: Learning rate (if optimizer is a class).
-    weight_decay: Weight decay (if optimizer is a class).
-    use_warmup_cosine: Use warmup+cosine scheduler by default.
-    sharding_strategy: FSDP sharding strategy:
-        - FULL_SHARD: Shard parameters, gradients, optimizer states (most memory efficient)
-        - SHARD_GRAD_OP: Shard gradients and optimizer states only
-        - NO_SHARD: Equivalent to DDP
-        - HYBRID_SHARD: Full shard within node, replicate across nodes
-    auto_wrap_policy: Policy for automatic module wrapping:
-        - "size": Wrap based on parameter count (default, uses min_num_params)
-        - "transformer": Wrap transformer layers (provide transformer_layer_cls)
-        - None: Manual wrapping (model must already be wrapped)
-    min_num_params: Minimum parameters for size-based wrapping (default: 1e8 = 100M).
-    transformer_layer_cls: Transformer layer class for transformer wrapping policy.
-    cpu_offload: Offload parameters to CPU when not in use.
-    backward_prefetch: Prefetch parameters for backward pass (recommended).
-    mixed_precision_policy: Mixed precision configuration (BF16, FP16, or None).
-    limit_all_gathers: Limit all-gather operations for memory efficiency.
-    use_orig_params: Use original parameters instead of flattened (better for optimizers).
+**Parameters**
 
-Example:
-    >>> # Launch with: torchrun --nproc_per_node=8 train.py
-    >>> from olm.core.dist import setup_distributed
-    >>> setup_distributed()
-    >>>
-    >>> trainer = FSDPTrainer(
-    ...     model=model,
-    ...     optimizer=torch.optim.AdamW,
-    ...     dataloader=dataloader,
-    ...     device=f"cuda:{get_local_rank()}",
-    ...     context_length=2048,
-    ...     learning_rate=3e-4,
-    ...     sharding_strategy="FULL_SHARD",
-    ...     auto_wrap_policy="size",
-    ...     min_num_params=1e8,  # Wrap layers with 100M+ params
-    ...     mixed_precision_policy="bf16"
-    ... )
-    >>> trainer.train(epochs=10)
+- `model`: Model to train.
+- `optimizer`: Optimizer instance or class.
+- `dataloader`: DataLoader (will add DistributedSampler if needed).
+- `device`: Device for training.
+- `context_length`: Max sequence length.
+- `grad_accum_steps`: Gradient accumulation steps.
+- `use_amp`: Use automatic mixed precision.
+- `loss`: Loss function class.
+- `callbacks`: Training callbacks.
+- `scheduler`: Learning rate scheduler.
+- `grad_clip_norm`: Gradient clipping threshold.
+- `warmup_steps`: Warmup steps for scheduler.
+- `total_steps`: Total training steps.
+- `min_lr`: Minimum learning rate.
+- `learning_rate`: Learning rate (if optimizer is a class).
+- `weight_decay`: Weight decay (if optimizer is a class).
+- `use_warmup_cosine`: Use warmup+cosine scheduler by default.
+- `sharding_strategy`: FSDP sharding strategy: - FULL_SHARD: Shard parameters, gradients, optimizer states (most memory efficient) - SHARD_GRAD_OP: Shard gradients and optimizer states only - NO_SHARD: Equivalent to DDP - HYBRID_SHARD: Full shard within node, replicate across nodes
+- `auto_wrap_policy`: Policy for automatic module wrapping: - "size": Wrap based on parameter count (default, uses min_num_params) - "transformer": Wrap transformer layers (provide transformer_layer_cls) - None: Manual wrapping (model must already be wrapped)
+- `min_num_params`: Minimum parameters for size-based wrapping (default: 1e8 = 100M).
+- `transformer_layer_cls`: Transformer layer class for transformer wrapping policy.
+- `cpu_offload`: Offload parameters to CPU when not in use.
+- `backward_prefetch`: Prefetch parameters for backward pass (recommended).
+- `mixed_precision_policy`: Mixed precision configuration (BF16, FP16, or None).
+- `limit_all_gathers`: Limit all-gather operations for memory efficiency.
+- `use_orig_params`: Use original parameters instead of flattened (better for optimizers).
+
+**Example**
+
+```python
+# Launch with: torchrun --nproc_per_node=8 train.py
+from olm.core.dist import setup_distributed
+setup_distributed()
+
+trainer = FSDPTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=dataloader,
+    device=f"cuda:{get_local_rank()}",
+    context_length=2048,
+    learning_rate=3e-4,
+    sharding_strategy="FULL_SHARD",
+    auto_wrap_policy="size",
+    min_num_params=1e8,  # Wrap layers with 100M+ params
+    mixed_precision_policy="bf16"
+)
+trainer.train(epochs=10)
+```
 
 #### Methods
 
@@ -588,12 +612,10 @@ Source: [`src/olm/train/trainer/fsdp_trainer.py:497`](https://github.com/openlan
 
 Save FSDP checkpoint.
 
-Args:
-    path: Path to save checkpoint.
-    state_dict_type: Type of state dict to save:
-        - "FULL_STATE_DICT": Gather full model on rank 0 (recommended)
-        - "LOCAL_STATE_DICT": Save local shards on each rank
-        - "SHARDED_STATE_DICT": Save sharded checkpoint
+**Parameters**
+
+- `path`: Path to save checkpoint.
+- `state_dict_type`: Type of state dict to save: - "FULL_STATE_DICT": Gather full model on rank 0 (recommended) - "LOCAL_STATE_DICT": Save local shards on each rank - "SHARDED_STATE_DICT": Save sharded checkpoint
 
 ##### `train(self, epochs: int, log_interval: int = 10, max_steps: int = None, steps_per_epoch: int = None) -> list[float]`
 
@@ -601,14 +623,16 @@ Source: [`src/olm/train/trainer/fsdp_trainer.py:236`](https://github.com/openlan
 
 Training loop with FSDP support.
 
-Args:
-    epochs: Number of epochs.
-    log_interval: Log every N steps.
-    max_steps: Maximum steps to train.
-    steps_per_epoch: Max steps per epoch.
+**Parameters**
 
-Returns:
-    List of loss values (only on rank 0).
+- `epochs`: Number of epochs.
+- `log_interval`: Log every N steps.
+- `max_steps`: Maximum steps to train.
+- `steps_per_epoch`: Max steps per epoch.
+
+**Returns**
+
+List of loss values (only on rank 0).
 
 ### `LRMonitorCallback(log_every: int = 100)`
 
@@ -618,8 +642,9 @@ Source: [`src/olm/train/callbacks/lr_monitor_cb.py:8`](https://github.com/openla
 
 Callback to monitor and log learning rate.
 
-Args:
-    log_every: Log learning rate every N steps.
+**Parameters**
+
+- `log_every`: Log learning rate every N steps.
 
 #### Methods
 
@@ -639,17 +664,21 @@ Simple linear decay scheduler that decays to zero.
 
 This is a simplified version that always decays to 0 from the initial LR.
 
-Args:
-    optimizer: Wrapped optimizer.
-    total_steps: Total number of steps to decay over.
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import LinearDecayLR
-    >>> scheduler = LinearDecayLR(optimizer, total_steps=1000)
-    >>> for step in range(total_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `total_steps`: Total number of steps to decay over.
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import LinearDecayLR
+scheduler = LinearDecayLR(optimizer, total_steps=1000)
+for step in range(total_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 
@@ -670,20 +699,24 @@ Linear learning rate scheduler.
 Linearly decreases (or increases) the learning rate from the initial
 learning rate to end_lr over total_steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    total_steps: Total number of steps for the schedule.
-    end_lr: Target learning rate at the end (default: 0).
-    start_factor: Initial learning rate multiplier (default: 1.0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import LinearLR
-    >>> # Decay from initial LR to 0
-    >>> scheduler = LinearLR(optimizer, total_steps=1000, end_lr=0)
-    >>> for step in range(total_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `total_steps`: Total number of steps for the schedule.
+- `end_lr`: Target learning rate at the end (default: 0).
+- `start_factor`: Initial learning rate multiplier (default: 1.0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import LinearLR
+# Decay from initial LR to 0
+scheduler = LinearLR(optimizer, total_steps=1000, end_lr=0)
+for step in range(total_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 
@@ -711,34 +744,26 @@ Key differences from Adam:
 - Typically requires smaller learning rates (1/3 to 1/10 of AdamW)
 - Larger weight decay (3-10x that of AdamW)
 
-Args:
-    params: iterable of parameters to optimize or dicts defining parameter groups
-    lr: learning rate (default: 1e-4, typically 3-10x smaller than AdamW)
-    betas: coefficients used for computing running averages (default: (0.9, 0.99))
-    weight_decay: weight decay coefficient (default: 0.0)
-    use_triton: whether to use Triton kernel for faster computation (default: False)
+**Parameters**
 
-Example:
-    >>> model = nn.Linear(10, 5)
-    >>> optimizer = Lion(model.parameters(), lr=1e-4, weight_decay=0.1)
-    >>> optimizer.zero_grad()
-    >>> loss = model(input).sum()
-    >>> loss.backward()
-    >>> optimizer.step()
+- `params`: iterable of parameters to optimize or dicts defining parameter groups
+- `lr`: learning rate (default: 1e-4, typically 3-10x smaller than AdamW)
+- `betas`: coefficients used for computing running averages (default: (0.9, 0.99))
+- `weight_decay`: weight decay coefficient (default: 0.0)
+- `use_triton`: whether to use Triton kernel for faster computation (default: False)
+
+**Example**
+
+```python
+model = nn.Linear(10, 5)
+optimizer = Lion(model.parameters(), lr=1e-4, weight_decay=0.1)
+optimizer.zero_grad()
+loss = model(input).sum()
+loss.backward()
+optimizer.step()
+```
 
 #### Methods
-
-##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
-
-Source: [`.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py:67`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/.venv/lib/python3.14/site-packages/torch/utils/_contextlib.py#L67)
-
-Performs a single optimization step.
-
-Args:
-    closure: A closure that reevaluates the model and returns the loss.
-
-Returns:
-    Optional loss value if closure is provided.
 
 ##### `zero_grad(self, set_to_none: bool = True)`
 
@@ -746,9 +771,9 @@ Source: [`src/olm/train/optim/lion.py:126`](https://github.com/openlanguagemodel
 
 Sets gradients of all optimized tensors to zero.
 
-Args:
-    set_to_none: instead of setting to zero, set the grads to None.
-        This is more memory efficient and can slightly improve performance.
+**Parameters**
+
+- `set_to_none`: instead of setting to zero, set the grads to None. This is more memory efficient and can slightly improve performance.
 
 ### `MetricsLoggerCallback(log_dir: str = 'logs', log_every: int = 10)`
 
@@ -758,9 +783,10 @@ Source: [`src/olm/train/callbacks/metrics_logger_cb.py:10`](https://github.com/o
 
 Callback to log metrics to a JSONL file.
 
-Args:
-    log_dir: Directory to save logs.
-    log_every: Log metrics every N steps.
+**Parameters**
+
+- `log_dir`: Directory to save logs.
+- `log_every`: Log metrics every N steps.
 
 #### Methods
 
@@ -803,9 +829,9 @@ Source: [`src/olm/train/optim/base.py:64`](https://github.com/openlanguagemodel/
 
 Loads the optimizer state.
 
-Args:
-    state_dict: optimizer state. Should be an object returned
-        from a call to state_dict().
+**Parameters**
+
+- `state_dict`: optimizer state. Should be an object returned from a call to state_dict().
 
 ##### `state_dict(self) -> Dict[str, Any]`
 
@@ -820,8 +846,9 @@ It contains two entries:
 - ``param_groups``: list containing all parameter groups where each
   parameter group is a dict.
 
-Returns:
-    Dictionary containing optimizer state
+**Returns**
+
+Dictionary containing optimizer state
 
 ##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
 
@@ -829,13 +856,13 @@ Source: [`src/olm/train/optim/base.py:22`](https://github.com/openlanguagemodel/
 
 Performs a single optimization step.
 
-Args:
-    closure: A closure that reevaluates the model and returns the loss.
-        Some optimization algorithms (e.g., L-BFGS) require multiple
-        evaluations of the loss function.
+**Parameters**
 
-Returns:
-    Optional loss value if closure is provided.
+- `closure`: A closure that reevaluates the model and returns the loss. Some optimization algorithms (e.g., L-BFGS) require multiple evaluations of the loss function.
+
+**Returns**
+
+Optional loss value if closure is provided.
 
 ##### `zero_grad(self, set_to_none: bool = True)`
 
@@ -843,10 +870,10 @@ Source: [`src/olm/train/optim/base.py:37`](https://github.com/openlanguagemodel/
 
 Sets gradients of all optimized tensors to zero or None.
 
-Args:
-    set_to_none: Instead of setting to zero, set the grads to None.
-        This is more memory efficient and can slightly improve performance.
-        Default: True
+**Parameters**
+
+- `set_to_none`: Instead of setting to zero, set the grads to None. This is more memory efficient and can slightly improve performance.
+- `Default`: True
 
 ### `SchedulerBase(optimizer, last_epoch: int = -1, verbose: bool = False)`
 
@@ -864,20 +891,24 @@ Subclasses must implement:
     - get_lr(): Compute the learning rate for the current step
     - _get_closed_form_lr() (optional): Closed-form solution for efficiency
 
-Args:
-    optimizer: Wrapped PyTorch optimizer.
-    last_epoch: The index of the last epoch (default: -1).
-    verbose: If True, prints a message to stdout for each update (default: False).
+**Parameters**
 
-Example:
-    >>> class MyScheduler(SchedulerBase):
-    ...     def __init__(self, optimizer, param, last_epoch=-1):
-    ...         self.param = param
-    ...         super().__init__(optimizer, last_epoch)
-    ...
-    ...     def get_lr(self):
-    ...         # Custom logic here
-    ...         return [base_lr * self.param for base_lr in self.base_lrs]
+- `optimizer`: Wrapped PyTorch optimizer.
+- `last_epoch`: The index of the last epoch (default: -1).
+- `verbose`: If True, prints a message to stdout for each update (default: False).
+
+**Example**
+
+```python
+class MyScheduler(SchedulerBase):
+    def __init__(self, optimizer, param, last_epoch=-1):
+        self.param = param
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        # Custom logic here
+        return [base_lr * self.param for base_lr in self.base_lrs]
+```
 
 #### Methods
 
@@ -887,8 +918,9 @@ Source: [`src/olm/train/schedulers/base.py:64`](https://github.com/openlanguagem
 
 Return last computed learning rate by current scheduler.
 
-Returns:
-    List of last computed learning rates.
+**Returns**
+
+List of last computed learning rates.
 
 ##### `get_lr(self) -> List[float]`
 
@@ -899,8 +931,9 @@ Compute learning rate for each parameter group.
 This method must be implemented by subclasses to define the
 learning rate schedule logic.
 
-Returns:
-    List of learning rates, one per parameter group.
+**Returns**
+
+List of learning rates, one per parameter group.
 
 ##### `load_state_dict(self, state_dict)`
 
@@ -908,8 +941,9 @@ Source: [`src/olm/train/schedulers/base.py:86`](https://github.com/openlanguagem
 
 Load the scheduler state from a checkpoint.
 
-Args:
-    state_dict: Scheduler state returned by state_dict().
+**Parameters**
+
+- `state_dict`: Scheduler state returned by state_dict().
 
 ##### `state_dict(self)`
 
@@ -928,10 +962,11 @@ Source: [`src/olm/train/callbacks/throughput_cb.py:9`](https://github.com/openla
 
 Callback to monitor training throughput (tokens/sec, samples/sec).
 
-Args:
-    log_every: Log throughput every N steps.
-    context_length: Length of each sequence.
-    batch_size: Total batch size (including gradient accumulation).
+**Parameters**
+
+- `log_every`: Log throughput every N steps.
+- `context_length`: Length of each sequence.
+- `batch_size`: Total batch size (including gradient accumulation).
 
 #### Methods
 
@@ -968,23 +1003,24 @@ Training contract:
     return logits shaped ``[batch, seq_len, vocab_size]`` so the configured
     loss can compare logits against ``labels`` shaped ``[batch, seq_len]``.
 
-Attributes:
-    model (Pipeline): The model to train.
-    optimizer (torch.optim.Optimizer): The optimizer to use.
-    dataloader (olm.data.datasets.data_loader.DataLoader): The data provider.
-    device (str): The device to train on (e.g., 'cuda', 'cpu').
-    context_length (int): The maximum sequence length for training.
-    grad_accum_steps (int): Number of steps to accumulate gradients before updating.
-    use_amp (bool): Whether to use Automatic Mixed Precision.
-    scaler (GradScaler): Gradient scaler for AMP.
-    loss (LossBase): The loss function instance.
-    callbacks (List[TrainerCallback]): List of callbacks to execute during training.
-    scheduler (Optional): Learning rate scheduler to step after each optimization step.
-    global_step (int): Current global step count.
-    current_epoch (int): Current epoch number.
-    total_tokens_processed (int): Total number of tokens processed during training.
-    step_start_time (float): Timestamp of the current step start.
-    training_start_time (float): Timestamp when training began.
+**Attributes**
+
+- `model` (`Pipeline`): The model to train.
+- `optimizer` (`torch.optim.Optimizer`): The optimizer to use.
+- `dataloader` (`olm.data.datasets.data_loader.DataLoader`): The data provider.
+- `device` (`str`): The device to train on (e.g., 'cuda', 'cpu').
+- `context_length` (`int`): The maximum sequence length for training.
+- `grad_accum_steps` (`int`): Number of steps to accumulate gradients before updating.
+- `use_amp` (`bool`): Whether to use Automatic Mixed Precision.
+- `scaler` (`GradScaler`): Gradient scaler for AMP.
+- `loss` (`LossBase`): The loss function instance.
+- `callbacks` (`List[TrainerCallback]`): List of callbacks to execute during training.
+- `scheduler` (`Optional`): Learning rate scheduler to step after each optimization step.
+- `global_step` (`int`): Current global step count.
+- `current_epoch` (`int`): Current epoch number.
+- `total_tokens_processed` (`int`): Total number of tokens processed during training.
+- `step_start_time` (`float`): Timestamp of the current step start.
+- `training_start_time` (`float`): Timestamp when training began.
 
 #### Methods
 
@@ -1006,14 +1042,16 @@ Source: [`src/olm/train/trainer/trainer.py:267`](https://github.com/openlanguage
 
 Executes the training loop for a specified number of epochs.
 
-Args:
-    epochs (int): The number of complete passes through the dataset.
-    log_interval (int): How often to print the loss. Defaults to 10.
-    max_steps (int, optional): Maximum number of steps to train for.
-    steps_per_epoch (int, optional): Maximum number of steps per epoch. Defaults to None (unlimited).
+**Parameters**
 
-Returns:
-    list[float]: A list of recorded loss values.
+- `epochs` (`int`): The number of complete passes through the dataset.
+- `log_interval` (`int`): How often to print the loss. Defaults to 10.
+- `max_steps` (`int, optional`): Maximum number of steps to train for.
+- `steps_per_epoch` (`int, optional`): Maximum number of steps per epoch. Defaults to None (unlimited).
+
+**Returns**
+
+list[float]: A list of recorded loss values.
 
 ### `TrainerCallback()`
 
@@ -1087,11 +1125,12 @@ Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openl
 
 Callback to perform validation at specified intervals.
 
-Args:
-    val_dataloader: Validation dataloader.
-    eval_every: Validate every N steps.
-    device: Device to run validation on.
-    use_amp: Whether to use automatic mixed precision.
+**Parameters**
+
+- `val_dataloader`: Validation dataloader.
+- `eval_every`: Validate every N steps.
+- `device`: Device to run validation on.
+- `use_amp`: Whether to use automatic mixed precision.
 
 #### Methods
 
@@ -1112,24 +1151,28 @@ Combined warmup and cosine annealing scheduler.
 Linearly warms up the learning rate from 0 to base_lr over warmup_steps,
 then applies cosine annealing decay to min_lr over the remaining steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    warmup_steps: Number of warmup steps.
-    total_steps: Total number of training steps.
-    min_lr: Minimum learning rate after decay (default: 0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import WarmupCosineScheduler
-    >>> scheduler = WarmupCosineScheduler(
-    ...     optimizer,
-    ...     warmup_steps=1000,
-    ...     total_steps=10000,
-    ...     min_lr=1e-6
-    ... )
-    >>> for step in range(total_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `warmup_steps`: Number of warmup steps.
+- `total_steps`: Total number of training steps.
+- `min_lr`: Minimum learning rate after decay (default: 0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import WarmupCosineScheduler
+scheduler = WarmupCosineScheduler(
+    optimizer,
+    warmup_steps=1000,
+    total_steps=10000,
+    min_lr=1e-6
+)
+for step in range(total_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 
@@ -1150,18 +1193,22 @@ Learning rate warmup scheduler.
 Linearly increases the learning rate from 0 to the base learning rate
 over warmup_steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    warmup_steps: Number of warmup steps.
-    start_lr: Initial learning rate (default: 0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import WarmupLR
-    >>> scheduler = WarmupLR(optimizer, warmup_steps=1000)
-    >>> for step in range(warmup_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `warmup_steps`: Number of warmup steps.
+- `start_lr`: Initial learning rate (default: 0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import WarmupLR
+scheduler = WarmupLR(optimizer, warmup_steps=1000)
+for step in range(warmup_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 

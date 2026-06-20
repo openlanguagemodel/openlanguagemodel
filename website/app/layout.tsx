@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { SITE } from "../site.config";
+import { BASE_PATH, SITE } from "../site.config";
 import MascotLayer from "./components/MascotLayer";
 
 const inter = Inter({
@@ -22,6 +22,8 @@ const playfairDisplay = Playfair_Display({
   weight: ["400", "600", "700"],
   style: ["normal", "italic"],
 });
+
+const assetPath = (path: string) => `${BASE_PATH}${path}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(`${SITE.url}/`),
@@ -61,6 +63,13 @@ export const metadata: Metadata = {
     title: "OpenLanguageModel: PyTorch LLM Library",
     description: SITE.description,
     images: [SITE.ogImage],
+  },
+  icons: {
+    icon: [
+      { url: assetPath("/favicon.ico") },
+      { url: assetPath("/favicon.png"), type: "image/png", sizes: "256x256" },
+    ],
+    apple: [{ url: assetPath("/apple-touch-icon.png"), sizes: "180x180" }],
   },
 };
 

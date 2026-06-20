@@ -12,15 +12,16 @@ Source: [`src/olm/nn/feedforward/classic_moe.py:4`](https://github.com/openlangu
 
 Mixture of Experts version of ClassicFFN.
 
-Args:
-    embed_dim (int): Input and output dimension.
-    num_experts (int): Number of experts.
-    num_shared_experts (int): Number of shared experts.
-    top_k (int): Number of experts to route to.
-    hidden_dim (int, optional): Hidden dimension of each expert.
-    activation_fn (nn.Module, optional): Activation function for experts.
-    dropout (float, optional): Dropout probability.
-    bias (bool, optional): Whether to use bias in linear layers.
+**Parameters**
+
+- `embed_dim` (`int`): Input and output dimension.
+- `num_experts` (`int`): Number of experts.
+- `num_shared_experts` (`int`): Number of shared experts.
+- `top_k` (`int`): Number of experts to route to.
+- `hidden_dim` (`int, optional`): Hidden dimension of each expert.
+- `activation_fn` (`nn.Module, optional`): Activation function for experts.
+- `dropout` (`float, optional`): Dropout probability.
+- `bias` (`bool, optional`): Whether to use bias in linear layers.
 
 #### Methods
 
@@ -30,8 +31,10 @@ Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlangua
 
 Forward pass with MoE routing.
 
-Args:
-    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+**Parameters**
 
-Returns:
-    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+**Returns**
+
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.

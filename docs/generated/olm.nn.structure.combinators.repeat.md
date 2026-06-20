@@ -16,13 +16,15 @@ The module function should return a new module instance each call. It is
 used to build ``stack`` during initialization and is not needed for forward
 passes after the modules have been created.
 
-Args:
-    module_func: Callable returning a new module instance.
-    num_repeat: Number of times to repeat the module.
+**Parameters**
 
-Attributes:
-    num_repeat: Number of repeats.
-    stack: ModuleList containing the repeated modules.
+- `module_func`: Callable returning a new module instance.
+- `num_repeat`: Number of times to repeat the module.
+
+**Attributes**
+
+- `num_repeat`: Number of repeats.
+- `stack`: ModuleList containing the repeated modules.
 
 #### Methods
 
@@ -32,8 +34,10 @@ Source: [`src/olm/nn/structure/combinators/repeat.py:42`](https://github.com/ope
 
 Apply the repeated modules in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all repeats.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all repeats.

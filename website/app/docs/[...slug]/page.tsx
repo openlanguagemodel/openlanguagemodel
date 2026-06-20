@@ -46,6 +46,7 @@ export default async function DocPage({
 
   const { title, html, description } = await renderDoc(resolved.file, resolved.dir);
   const activeTrack = trackForPath(docPath);
+  const isApiReference = docPath.startsWith("api") || docPath.startsWith("generated");
   const trackLabel = NAV.find((t) => t.id === activeTrack)?.label ?? "OLM Docs";
   const url = `${SITE.url}/docs/${docPath}/`;
   const articleStructuredData = {
@@ -109,7 +110,7 @@ export default async function DocPage({
         </header>
 
         <article
-          className="doc-body prose"
+          className={`doc-body prose${isApiReference ? " api-prose" : ""}`}
           dangerouslySetInnerHTML={{ __html: html }}
         />
 

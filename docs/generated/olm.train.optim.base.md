@@ -37,9 +37,9 @@ Source: [`src/olm/train/optim/base.py:64`](https://github.com/openlanguagemodel/
 
 Loads the optimizer state.
 
-Args:
-    state_dict: optimizer state. Should be an object returned
-        from a call to state_dict().
+**Parameters**
+
+- `state_dict`: optimizer state. Should be an object returned from a call to state_dict().
 
 ##### `state_dict(self) -> Dict[str, Any]`
 
@@ -54,8 +54,9 @@ It contains two entries:
 - ``param_groups``: list containing all parameter groups where each
   parameter group is a dict.
 
-Returns:
-    Dictionary containing optimizer state
+**Returns**
+
+Dictionary containing optimizer state
 
 ##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
 
@@ -63,13 +64,13 @@ Source: [`src/olm/train/optim/base.py:22`](https://github.com/openlanguagemodel/
 
 Performs a single optimization step.
 
-Args:
-    closure: A closure that reevaluates the model and returns the loss.
-        Some optimization algorithms (e.g., L-BFGS) require multiple
-        evaluations of the loss function.
+**Parameters**
 
-Returns:
-    Optional loss value if closure is provided.
+- `closure`: A closure that reevaluates the model and returns the loss. Some optimization algorithms (e.g., L-BFGS) require multiple evaluations of the loss function.
+
+**Returns**
+
+Optional loss value if closure is provided.
 
 ##### `zero_grad(self, set_to_none: bool = True)`
 
@@ -77,7 +78,7 @@ Source: [`src/olm/train/optim/base.py:37`](https://github.com/openlanguagemodel/
 
 Sets gradients of all optimized tensors to zero or None.
 
-Args:
-    set_to_none: Instead of setting to zero, set the grads to None.
-        This is more memory efficient and can slightly improve performance.
-        Default: True
+**Parameters**
+
+- `set_to_none`: Instead of setting to zero, set the grads to None. This is more memory efficient and can slightly improve performance.
+- `Default`: True

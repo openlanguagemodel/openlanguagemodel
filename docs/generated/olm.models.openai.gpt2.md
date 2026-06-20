@@ -20,11 +20,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Block(embed_dim: int, num_heads: int, dropout: float = 0.1)`
 
@@ -34,14 +36,16 @@ Source: [`src/olm/models/openai/gpt2.py:9`](https://github.com/openlanguagemodel
 
 A single Transformer block for GPT-2.
 
-Structure:
-    x = x + Attn(LN(x))
-    x = x + FFN(LN(x))
+**Structure**
 
-Args:
-    embed_dim (int): Model dimension.
-    num_heads (int): Number of attention heads.
-    dropout (float): Dropout probability.
+x = x + Attn(LN(x))
+x = x + FFN(LN(x))
+
+**Parameters**
+
+- `embed_dim` (`int`): Model dimension.
+- `num_heads` (`int`): Number of attention heads.
+- `dropout` (`float`): Dropout probability.
 
 #### Methods
 
@@ -51,11 +55,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Large()`
 
@@ -73,11 +79,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Medium()`
 
@@ -95,11 +103,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2Model(vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True)`
 
@@ -109,13 +119,15 @@ Source: [`src/olm/models/openai/gpt2.py:34`](https://github.com/openlanguagemode
 
 Base class for GPT-2 models.
 
-Structure:
-    Token embedding + learned positional embedding -> GPT2Block x N ->
-    tied OutputHead.
+**Structure**
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+Token embedding + learned positional embedding -> GPT2Block x N ->
+tied OutputHead.
+
+**Forward**
+
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
 
 #### Methods
 
@@ -125,11 +137,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `GPT2XL()`
 
@@ -147,8 +161,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

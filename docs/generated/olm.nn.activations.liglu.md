@@ -16,9 +16,10 @@ Implements the LiGLU variant (Linear GLU).
 LiGLU(x, W, V) = (xW) * (xV)
 Here: LiGLU(x) = gate * value (No activation on gate)
 
-Args:
-    device (torch.device, optional): Target device.
-    dtype (torch.dtype, optional): Target data type.
+**Parameters**
+
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
 #### Methods
 
@@ -28,8 +29,10 @@ Source: [`src/olm/nn/activations/liglu.py:19`](https://github.com/openlanguagemo
 
 Forward pass of LiGLU.
 
-Args:
-    x (torch.Tensor): Input tensor.
+**Parameters**
 
-Returns:
-    torch.Tensor: Output tensor with half the last dimension.
+- `x` (`torch.Tensor`): Input tensor.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor with half the last dimension.

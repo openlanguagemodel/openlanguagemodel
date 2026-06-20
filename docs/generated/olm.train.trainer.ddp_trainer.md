@@ -20,45 +20,49 @@ Wraps the model with torch.nn.parallel.DistributedDataParallel and handles:
 - Metrics aggregation across ranks
 - Checkpoint saving on rank 0
 
-Args:
-    model: Model to train.
-    optimizer: Optimizer instance or class.
-    dataloader: DataLoader (will add DistributedSampler if needed).
-    device: Device for training.
-    context_length: Max sequence length.
-    grad_accum_steps: Gradient accumulation steps.
-    use_amp: Use automatic mixed precision.
-    loss: Loss function class.
-    callbacks: Training callbacks.
-    scheduler: Learning rate scheduler.
-    grad_clip_norm: Gradient clipping threshold.
-    warmup_steps: Warmup steps for scheduler.
-    total_steps: Total training steps.
-    min_lr: Minimum learning rate.
-    learning_rate: Learning rate (if optimizer is a class).
-    weight_decay: Weight decay (if optimizer is a class).
-    use_warmup_cosine: Use warmup+cosine scheduler by default.
-    ddp_backend: DDP backend ('nccl' for GPU, 'gloo' for CPU, None for auto).
-    find_unused_parameters: DDP parameter for models with unused params.
-    broadcast_buffers: Broadcast model buffers at beginning of forward.
-    bucket_cap_mb: DDP bucket size in MB for gradient communication.
-    gradient_as_bucket_view: Use gradient views to reduce memory (recommended).
-    static_graph: Set to True if model graph doesn't change (optimization).
+**Parameters**
 
-Example:
-    >>> # Launch with: torchrun --nproc_per_node=4 train.py
-    >>> from olm.core.dist import setup_distributed
-    >>> setup_distributed()
-    >>>
-    >>> trainer = DDPTrainer(
-    ...     model=model,
-    ...     optimizer=torch.optim.AdamW,
-    ...     dataloader=dataloader,
-    ...     device=f"cuda:{get_local_rank()}",
-    ...     context_length=512,
-    ...     learning_rate=3e-4
-    ... )
-    >>> trainer.train(epochs=10)
+- `model`: Model to train.
+- `optimizer`: Optimizer instance or class.
+- `dataloader`: DataLoader (will add DistributedSampler if needed).
+- `device`: Device for training.
+- `context_length`: Max sequence length.
+- `grad_accum_steps`: Gradient accumulation steps.
+- `use_amp`: Use automatic mixed precision.
+- `loss`: Loss function class.
+- `callbacks`: Training callbacks.
+- `scheduler`: Learning rate scheduler.
+- `grad_clip_norm`: Gradient clipping threshold.
+- `warmup_steps`: Warmup steps for scheduler.
+- `total_steps`: Total training steps.
+- `min_lr`: Minimum learning rate.
+- `learning_rate`: Learning rate (if optimizer is a class).
+- `weight_decay`: Weight decay (if optimizer is a class).
+- `use_warmup_cosine`: Use warmup+cosine scheduler by default.
+- `ddp_backend`: DDP backend ('nccl' for GPU, 'gloo' for CPU, None for auto).
+- `find_unused_parameters`: DDP parameter for models with unused params.
+- `broadcast_buffers`: Broadcast model buffers at beginning of forward.
+- `bucket_cap_mb`: DDP bucket size in MB for gradient communication.
+- `gradient_as_bucket_view`: Use gradient views to reduce memory (recommended).
+- `static_graph`: Set to True if model graph doesn't change (optimization).
+
+**Example**
+
+```python
+# Launch with: torchrun --nproc_per_node=4 train.py
+from olm.core.dist import setup_distributed
+setup_distributed()
+
+trainer = DDPTrainer(
+    model=model,
+    optimizer=torch.optim.AdamW,
+    dataloader=dataloader,
+    device=f"cuda:{get_local_rank()}",
+    context_length=512,
+    learning_rate=3e-4
+)
+trainer.train(epochs=10)
+```
 
 #### Methods
 
@@ -68,11 +72,13 @@ Source: [`src/olm/train/trainer/ddp_trainer.py:150`](https://github.com/openlang
 
 Training loop with DDP support.
 
-Args:
-    epochs: Number of epochs.
-    log_interval: Log every N steps.
-    max_steps: Maximum steps to train.
-    steps_per_epoch: Max steps per epoch.
+**Parameters**
 
-Returns:
-    List of loss values (only on rank 0).
+- `epochs`: Number of epochs.
+- `log_interval`: Log every N steps.
+- `max_steps`: Maximum steps to train.
+- `steps_per_epoch`: Max steps per epoch.
+
+**Returns**
+
+List of loss values (only on rank 0).

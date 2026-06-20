@@ -20,11 +20,13 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.
 
 ### `OPTModel(vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1, tie_weights=True)`
 
@@ -40,17 +42,19 @@ Implements a decoder-only Transformer with specific OPT optimizations:
 - ReLU activation in Feed-Forward Networks
 - Tied output projection through ``OutputHead`` by default
 
-Forward:
-    Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-    ``[batch, seq_len, vocab_size]``.
+**Forward**
 
-Args:
-    vocab_size (int): Vocabulary size.
-    embed_dim (int): Embedding dimension.
-    intermediate_size (int): FFN dimension.
-    num_layers (int): Number of layers.
-    num_heads (int): Number of heads.
-    dropout (float, optional): Dropout probability. Defaults to 0.1.
+Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+``[batch, seq_len, vocab_size]``.
+
+**Parameters**
+
+- `vocab_size` (`int`): Vocabulary size.
+- `embed_dim` (`int`): Embedding dimension.
+- `intermediate_size` (`int`): FFN dimension.
+- `num_layers` (`int`): Number of layers.
+- `num_heads` (`int`): Number of heads.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.1.
 
 #### Methods
 
@@ -60,8 +64,10 @@ Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemode
 
 Apply each block to the input in sequence.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Output tensor after all blocks have been applied.
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

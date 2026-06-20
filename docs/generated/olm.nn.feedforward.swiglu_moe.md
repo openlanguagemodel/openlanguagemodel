@@ -20,8 +20,10 @@ Source: [`src/olm/nn/feedforward/moe_base.py:100`](https://github.com/openlangua
 
 Forward pass with MoE routing.
 
-Args:
-    x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+**Parameters**
 
-Returns:
-    torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+**Returns**
+
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.

@@ -23,21 +23,24 @@ transformers, offering better generalization than standard Adam.
 Note: This class inherits from PyTorch's AdamW which ultimately inherits from
 torch.optim.Optimizer, maintaining compatibility with our OptimizerBase interface.
 
-Args:
-    params: iterable of parameters to optimize or dicts defining parameter groups
-    lr: learning rate (default: 1e-3)
-    betas: coefficients used for computing running averages of gradient and its square
-        (default: (0.9, 0.999))
-    eps: term added to the denominator to improve numerical stability (default: 1e-8)
-    weight_decay: weight decay coefficient (default: 0.01)
-    amsgrad: whether to use the AMSGrad variant (default: False)
-    maximize: maximize the params based on the objective, instead of minimizing (default: False)
-    fused: whether to use the fused implementation (default: None, auto-detect)
+**Parameters**
 
-Example:
-    >>> model = nn.Linear(10, 5)
-    >>> optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
-    >>> optimizer.zero_grad()
-    >>> loss = model(input).sum()
-    >>> loss.backward()
-    >>> optimizer.step()
+- `params`: iterable of parameters to optimize or dicts defining parameter groups
+- `lr`: learning rate (default: 1e-3)
+- `betas`: coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999))
+- `eps`: term added to the denominator to improve numerical stability (default: 1e-8)
+- `weight_decay`: weight decay coefficient (default: 0.01)
+- `amsgrad`: whether to use the AMSGrad variant (default: False)
+- `maximize`: maximize the params based on the objective, instead of minimizing (default: False)
+- `fused`: whether to use the fused implementation (default: None, auto-detect)
+
+**Example**
+
+```python
+model = nn.Linear(10, 5)
+optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+optimizer.zero_grad()
+loss = model(input).sum()
+loss.backward()
+optimizer.step()
+```

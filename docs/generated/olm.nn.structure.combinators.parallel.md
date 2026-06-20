@@ -14,15 +14,17 @@ Apply multiple blocks to the same input and merge their outputs.
 
 The merge function takes a list of tensors and a dimension argument.
 
-Args:
-    blocks: Modules applied in parallel to the same input.
-    merge: Function that combines the list of outputs and a dimension.
-    dim: Dimension used by the merge function when applicable.
+**Parameters**
 
-Attributes:
-    blocks: ModuleList storing the parallel blocks.
-    merge: Merge function used to combine outputs.
-    dim: Dimension passed to the merge function.
+- `blocks`: Modules applied in parallel to the same input.
+- `merge`: Function that combines the list of outputs and a dimension.
+- `dim`: Dimension used by the merge function when applicable.
+
+**Attributes**
+
+- `blocks`: ModuleList storing the parallel blocks.
+- `merge`: Merge function used to combine outputs.
+- `dim`: Dimension passed to the merge function.
 
 #### Methods
 
@@ -32,8 +34,10 @@ Source: [`src/olm/nn/structure/combinators/parallel.py:37`](https://github.com/o
 
 Apply all blocks in parallel and merge their outputs.
 
-Args:
-    x: Input tensor.
+**Parameters**
 
-Returns:
-    Merged output tensor.
+- `x`: Input tensor.
+
+**Returns**
+
+Merged output tensor.

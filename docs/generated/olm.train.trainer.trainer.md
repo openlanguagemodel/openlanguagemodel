@@ -25,23 +25,24 @@ Training contract:
     return logits shaped ``[batch, seq_len, vocab_size]`` so the configured
     loss can compare logits against ``labels`` shaped ``[batch, seq_len]``.
 
-Attributes:
-    model (Pipeline): The model to train.
-    optimizer (torch.optim.Optimizer): The optimizer to use.
-    dataloader (olm.data.datasets.data_loader.DataLoader): The data provider.
-    device (str): The device to train on (e.g., 'cuda', 'cpu').
-    context_length (int): The maximum sequence length for training.
-    grad_accum_steps (int): Number of steps to accumulate gradients before updating.
-    use_amp (bool): Whether to use Automatic Mixed Precision.
-    scaler (GradScaler): Gradient scaler for AMP.
-    loss (LossBase): The loss function instance.
-    callbacks (List[TrainerCallback]): List of callbacks to execute during training.
-    scheduler (Optional): Learning rate scheduler to step after each optimization step.
-    global_step (int): Current global step count.
-    current_epoch (int): Current epoch number.
-    total_tokens_processed (int): Total number of tokens processed during training.
-    step_start_time (float): Timestamp of the current step start.
-    training_start_time (float): Timestamp when training began.
+**Attributes**
+
+- `model` (`Pipeline`): The model to train.
+- `optimizer` (`torch.optim.Optimizer`): The optimizer to use.
+- `dataloader` (`olm.data.datasets.data_loader.DataLoader`): The data provider.
+- `device` (`str`): The device to train on (e.g., 'cuda', 'cpu').
+- `context_length` (`int`): The maximum sequence length for training.
+- `grad_accum_steps` (`int`): Number of steps to accumulate gradients before updating.
+- `use_amp` (`bool`): Whether to use Automatic Mixed Precision.
+- `scaler` (`GradScaler`): Gradient scaler for AMP.
+- `loss` (`LossBase`): The loss function instance.
+- `callbacks` (`List[TrainerCallback]`): List of callbacks to execute during training.
+- `scheduler` (`Optional`): Learning rate scheduler to step after each optimization step.
+- `global_step` (`int`): Current global step count.
+- `current_epoch` (`int`): Current epoch number.
+- `total_tokens_processed` (`int`): Total number of tokens processed during training.
+- `step_start_time` (`float`): Timestamp of the current step start.
+- `training_start_time` (`float`): Timestamp when training began.
 
 #### Methods
 
@@ -63,14 +64,16 @@ Source: [`src/olm/train/trainer/trainer.py:267`](https://github.com/openlanguage
 
 Executes the training loop for a specified number of epochs.
 
-Args:
-    epochs (int): The number of complete passes through the dataset.
-    log_interval (int): How often to print the loss. Defaults to 10.
-    max_steps (int, optional): Maximum number of steps to train for.
-    steps_per_epoch (int, optional): Maximum number of steps per epoch. Defaults to None (unlimited).
+**Parameters**
 
-Returns:
-    list[float]: A list of recorded loss values.
+- `epochs` (`int`): The number of complete passes through the dataset.
+- `log_interval` (`int`): How often to print the loss. Defaults to 10.
+- `max_steps` (`int, optional`): Maximum number of steps to train for.
+- `steps_per_epoch` (`int, optional`): Maximum number of steps per epoch. Defaults to None (unlimited).
+
+**Returns**
+
+list[float]: A list of recorded loss values.
 
 ### `TrainerCallback()`
 

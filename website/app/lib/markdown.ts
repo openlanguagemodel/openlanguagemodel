@@ -146,7 +146,13 @@ function markdownDescription(markdown: string): string {
     .split(/\n\s*\n/)
     .find((block) => {
       const trimmed = block.trim();
-      return trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("```");
+      return (
+        trimmed &&
+        !trimmed.startsWith("#") &&
+        !trimmed.startsWith("```") &&
+        !trimmed.startsWith("Source:") &&
+        !trimmed.startsWith("**Bases:**")
+      );
     });
   if (!paragraph) return "";
   return paragraph

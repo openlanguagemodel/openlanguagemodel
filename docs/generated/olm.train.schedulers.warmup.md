@@ -17,24 +17,28 @@ Combined warmup and cosine annealing scheduler.
 Linearly warms up the learning rate from 0 to base_lr over warmup_steps,
 then applies cosine annealing decay to min_lr over the remaining steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    warmup_steps: Number of warmup steps.
-    total_steps: Total number of training steps.
-    min_lr: Minimum learning rate after decay (default: 0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import WarmupCosineScheduler
-    >>> scheduler = WarmupCosineScheduler(
-    ...     optimizer,
-    ...     warmup_steps=1000,
-    ...     total_steps=10000,
-    ...     min_lr=1e-6
-    ... )
-    >>> for step in range(total_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `warmup_steps`: Number of warmup steps.
+- `total_steps`: Total number of training steps.
+- `min_lr`: Minimum learning rate after decay (default: 0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import WarmupCosineScheduler
+scheduler = WarmupCosineScheduler(
+    optimizer,
+    warmup_steps=1000,
+    total_steps=10000,
+    min_lr=1e-6
+)
+for step in range(total_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 
@@ -55,18 +59,22 @@ Learning rate warmup scheduler.
 Linearly increases the learning rate from 0 to the base learning rate
 over warmup_steps.
 
-Args:
-    optimizer: Wrapped optimizer.
-    warmup_steps: Number of warmup steps.
-    start_lr: Initial learning rate (default: 0).
-    last_epoch: The index of last epoch (default: -1).
+**Parameters**
 
-Example:
-    >>> from olm.train.schedulers import WarmupLR
-    >>> scheduler = WarmupLR(optimizer, warmup_steps=1000)
-    >>> for step in range(warmup_steps):
-    ...     train(...)
-    ...     scheduler.step()
+- `optimizer`: Wrapped optimizer.
+- `warmup_steps`: Number of warmup steps.
+- `start_lr`: Initial learning rate (default: 0).
+- `last_epoch`: The index of last epoch (default: -1).
+
+**Example**
+
+```python
+from olm.train.schedulers import WarmupLR
+scheduler = WarmupLR(optimizer, warmup_steps=1000)
+for step in range(warmup_steps):
+    train(...)
+    scheduler.step()
+```
 
 #### Methods
 

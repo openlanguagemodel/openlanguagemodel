@@ -10,11 +10,6 @@ Source: [`src/olm/data/tokenization/hf_tokenizer.py:1`](https://github.com/openl
 
 Source: [`src/olm/data/tokenization/hf_tokenizer.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L8)
 
-Abstract base class for all tokenizers in OLM.
-
-Defines the interface for converting between text strings and integer token IDs.
-Subclasses must implement `encode` and `decode` methods.
-
 #### Methods
 
 ##### `decode(self, tokens: torch.Tensor) -> str`

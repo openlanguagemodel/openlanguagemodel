@@ -23,11 +23,13 @@ Source: [`src/olm/data/tokenization/base.py:27`](https://github.com/openlanguage
 
 Converts a sequence of token IDs back into a text string.
 
-Args:
-    tokens (torch.Tensor): A 1D tensor or list of token IDs.
+**Parameters**
 
-Returns:
-    str: The decoded text string.
+- `tokens` (`torch.Tensor`): A 1D tensor or list of token IDs.
+
+**Returns**
+
+- `str`: The decoded text string.
 
 ##### `encode(self, text: str) -> torch.Tensor`
 
@@ -35,11 +37,13 @@ Source: [`src/olm/data/tokenization/base.py:14`](https://github.com/openlanguage
 
 Converts a text string into a sequence of token IDs.
 
-Args:
-    text (str): The input text to tokenize.
+**Parameters**
 
-Returns:
-    torch.Tensor: A 1D tensor containing the token IDs.
+- `text` (`str`): The input text to tokenize.
+
+**Returns**
+
+- `torch.Tensor`: A 1D tensor containing the token IDs.
 
 ##### `save(self, path: str) -> None`
 
@@ -47,8 +51,10 @@ Source: [`src/olm/data/tokenization/base.py:40`](https://github.com/openlanguage
 
 Saves the tokenizer to a file.
 
-Args:
-    path (str): Path to save the tokenizer to.
+**Parameters**
 
-Returns:
-    None
+- `path` (`str`): Path to save the tokenizer to.
+
+**Returns**
+
+None
