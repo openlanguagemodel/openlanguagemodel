@@ -220,7 +220,7 @@ const roadmap = [
   { version: "v2.1", desc: "AutoTrainer, hardware-aware training setup, and distributed/attention stability fixes.", done: true },
   { version: "v2.2", desc: "Current release: website, SEO, mascot, API reference polish, and documentation refinement.", done: false, current: true },
   { version: "v3.0", desc: "Further training: SFT, LoRA, DPO, PPO/RLHF, GRPO-style RLVR, and evaluation recipes.", done: false },
-  { version: "v4.0", desc: "Multi-node training, cluster support, pipeline parallelism, and tensor parallelism.", done: false },
+  { version: "v4.0", desc: "Multi-node training and cluster support.", done: false },
 ];
 
 export default function Home() {
