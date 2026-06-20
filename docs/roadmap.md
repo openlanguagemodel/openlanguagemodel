@@ -17,7 +17,7 @@ v2.2 is the stabilization release. The focus is a polished library and documenta
 - [x] Track website source and GitHub Pages deployment workflow
 - [x] Add website SEO metadata, sitemap, robots, social preview, and structured data
 - [ ] Finish mascot integration after the mascot direction is chosen
-- [ ] Add approved Colab notebooks and link them from OLM Learning
+- [x] Add approved Colab notebooks and link them from OLM Learning
 - [ ] Prepare the public v2.2 release notes, PyPI release, and GitHub release
 
 ## v3.0: Further Training and Alignment

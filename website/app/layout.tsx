@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(`${SITE.url}/`),
   applicationName: SITE.name,
   title: {
-    default: "OpenLanguageModel (OLM) — PyTorch LLM Library",
+    default: "OpenLanguageModel: PyTorch LLM Library for Training Language Models",
     template: "%s — OpenLanguageModel",
   },
   description: SITE.description,
@@ -37,56 +37,31 @@ export const metadata: Metadata = {
     { name: "Vardhaman Kalloli" },
     { name: "Keshava Prasad" },
   ],
+  creator: "OpenLanguageModel",
   alternates: {
     canonical: SITE.url,
   },
   openGraph: {
-    title: "OpenLanguageModel (OLM)",
+    title: "OpenLanguageModel: PyTorch LLM Library for Training Language Models",
     description: SITE.description,
     url: SITE.url,
     siteName: SITE.name,
     type: "website",
     images: [
       {
-        url: "/og-image.svg",
+        url: SITE.ogImage,
         width: 1200,
         height: 630,
-        alt: "OpenLanguageModel",
+        alt: "OpenLanguageModel: PyTorch LLM library for learning and ablations",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "OpenLanguageModel (OLM)",
+    title: "OpenLanguageModel: PyTorch LLM Library",
     description: SITE.description,
-    images: ["/og-image.svg"],
+    images: [SITE.ogImage],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
-
-const websiteJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: SITE.name,
-  alternateName: SITE.shortName,
-  url: SITE.url,
-  description: SITE.description,
-};
-
-const softwareJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareSourceCode",
-  name: SITE.name,
-  alternateName: SITE.shortName,
-  codeRepository: SITE.repo,
-  programmingLanguage: "Python",
-  runtimePlatform: "PyTorch",
-  license: "https://github.com/openlanguagemodel/openlanguagemodel/blob/main/LICENSE",
-  version: SITE.version,
-  description: SITE.description,
 };
 
 export default function RootLayout({
@@ -98,14 +73,6 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} ${playfairDisplay.variable}`}
     >
       <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
-        />
         <div className="site-wrapper">{children}</div>
         <MascotLayer />
       </body>

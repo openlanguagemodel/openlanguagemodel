@@ -97,6 +97,13 @@ function rehypeRewriteLinks(currentDir: string) {
       if (typeof href !== "string") return;
       if (/^(https?:|mailto:|#)/.test(href)) return;
 
+      if (href.startsWith("/")) {
+        if (BASE_PATH && !href.startsWith(`${BASE_PATH}/`)) {
+          node.properties.href = `${BASE_PATH}${href}`.replace(/([^:])\/{2,}/g, "$1/");
+        }
+        return;
+      }
+
       const [p, hash] = href.split("#");
       if (!p || !p.endsWith(".md")) return;
 
@@ -134,11 +141,29 @@ function rehypeRewriteImages(currentDir: string) {
   };
 }
 
-export type RenderedDoc = { title: string; html: string };
+function markdownDescription(markdown: string): string {
+  const paragraph = markdown
+    .split(/\n\s*\n/)
+    .find((block) => {
+      const trimmed = block.trim();
+      return trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("```");
+    });
+  if (!paragraph) return "";
+  return paragraph
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/[`*_>#-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 156);
+}
+
+export type RenderedDoc = { title: string; html: string; description: string };
 
 export async function renderDoc(file: string, dir: string): Promise<RenderedDoc> {
   const raw = fs.readFileSync(file, "utf-8");
-  const { content } = matter(raw);
+  const { content, data } = matter(raw);
 
   // Extract the first H1 as the page title and remove it from the body.
   let title = "";
@@ -149,6 +174,10 @@ export async function renderDoc(file: string, dir: string): Promise<RenderedDoc>
     lines.splice(idx, 1);
   }
   const body = lines.join("\n").replace(/^\n+/, "");
+  const description =
+    typeof data.description === "string" && data.description.trim()
+      ? data.description.trim()
+      : markdownDescription(body);
 
   const out = await unified()
     .use(remarkParse)
@@ -164,5 +193,5 @@ export async function renderDoc(file: string, dir: string): Promise<RenderedDoc>
     .use(rehypeStringify)
     .process(body);
 
-  return { title, html: String(out) };
+  return { title, html: String(out), description };
 }

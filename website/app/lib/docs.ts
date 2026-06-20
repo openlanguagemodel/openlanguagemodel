@@ -29,12 +29,25 @@ export const NAV: NavTrack[] = [
       {
         label: "Start Building",
         items: [
-          { title: "Installation", path: "installation" },
           { title: "Getting Started", path: "getting-started" },
-          { title: "Datasets & Training", path: "datasets-and-training" },
-          { title: "Architecture", path: "architecture" },
-          { title: "Roadmap", path: "roadmap" },
+          { title: "Glossary & Concepts", path: "concepts" },
+          { title: "Your First Language Model", path: "tutorials/first-model" },
+          { title: "Modern Language Modelling", path: "tutorials/modern-language-modelling" },
+          { title: "Custom Architectures", path: "tutorials/custom-architecture" },
           { title: "Colab Notebooks", path: "colab-notebooks" },
+        ],
+      },
+      {
+        label: "Learn From Scratch",
+        items: [
+          { title: "Course Overview", path: "learn" },
+          { title: "0 · Set Up Your Lab", path: "learn/setup" },
+          { title: "1 · What Is a Language Model?", path: "learn/what-is-a-language-model" },
+          { title: "2 · Words as Vectors", path: "learn/words-as-vectors" },
+          { title: "3 · Paying Attention", path: "learn/paying-attention" },
+          { title: "4 · A Whole Transformer Block", path: "learn/a-transformer-block" },
+          { title: "5 · How a Model Learns", path: "learn/how-a-model-learns" },
+          { title: "Deep Dive · How Attention Works", path: "learn/attention-in-detail" },
         ],
       },
     ],
@@ -45,8 +58,11 @@ export const NAV: NavTrack[] = [
     groups: [
       {
         items: [
-          { title: "The Block System", path: "architecture" },
-          { title: "Datasets & Training", path: "datasets-and-training" },
+          { title: "The Block System", path: "guides/architecture" },
+          { title: "Building Blocks", path: "guides/components" },
+          { title: "Datasets & Training", path: "guides/datasets-and-training" },
+          { title: "Distributed Training", path: "tutorials/distributed-training" },
+          { title: "Experiment Tracking", path: "tutorials/experiment-tracking" },
           { title: "Roadmap", path: "roadmap" },
         ],
       },

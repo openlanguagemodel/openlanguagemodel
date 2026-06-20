@@ -1,62 +1,84 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DocsSidebar from "../components/DocsSidebar";
-import Mermaid from "../components/Mermaid";
 import { NAV } from "../lib/docs";
-import { renderDoc } from "../lib/markdown";
 import { SITE } from "../../site.config";
+import { jsonLd, pageMetadata } from "../lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Documentation",
-  description: "OpenLanguageModel documentation for installation, training, architecture, models, and API reference.",
-  alternates: { canonical: `${SITE.url}/docs/` },
-  openGraph: {
-    title: "OpenLanguageModel Documentation",
-    description: "OpenLanguageModel documentation for installation, training, architecture, models, and API reference.",
-    url: `${SITE.url}/docs/`,
-    type: "article",
-  },
-};
+  description:
+    "OpenLanguageModel documentation for learning language models, training PyTorch LLMs, building custom transformer architectures, and using the OLM API.",
+  path: "/docs/",
+});
 
-export default async function DocsIndexPage() {
-  const { title, html } = await renderDoc("../docs/index.md", "");
-  const articleJsonLd = {
+const paths = [
+  {
+    title: "New to language models",
+    body: "Start with the from-scratch course, then hand off into the first train-and-generate tutorial.",
+    href: "/docs/learn/",
+    cta: "Start the course",
+  },
+  {
+    title: "Ready to train",
+    body: "Install OLM, load data, train a GPT-style model, save it, resume it, and generate from it.",
+    href: "/docs/getting-started/",
+    cta: "Get started",
+  },
+  {
+    title: "Researching architectures",
+    body: "Use the Block system, custom modules, raw PyTorch loops, and generated API reference for ablations.",
+    href: "/docs/guides/architecture/",
+    cta: "Read the Block guide",
+  },
+];
+
+export default function DocsIndexPage() {
+  const structuredData = {
     "@context": "https://schema.org",
-    "@type": "TechArticle",
-    headline: title,
+    "@type": "CollectionPage",
+    name: "OpenLanguageModel Documentation",
+    description:
+      "Documentation for learning, training, and researching transformer language models with OpenLanguageModel.",
     url: `${SITE.url}/docs/`,
-    isPartOf: {
-      "@type": "WebSite",
-      name: SITE.name,
-      url: SITE.url,
-    },
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
       />
       <DocsSidebar
         nav={NAV}
-        current="index"
+        current="getting-started"
         activeTrack="learning"
-        meta={["OLM Docs", "LICENSE: MIT", `STATUS: v${SITE.version}`]}
+        meta={["OLM Docs", "LICENSE: MIT", ""]}
       />
 
       <main>
         <header className="doc-header">
           <span className="hero-label">OLM Docs</span>
-          <h1>{title}</h1>
+          <h1>Documentation</h1>
         </header>
 
-        <article
-          className="doc-body prose"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <article className="doc-body prose">
+          <p>
+            Pick the door that matches where you are. The same Markdown powers
+            the website and the repository docs, so examples stay close to the
+            code they describe.
+          </p>
 
-        <Mermaid />
+          <div className="path-grid">
+            {paths.map((path) => (
+              <Link className="path-card" href={path.href} key={path.href}>
+                <span className="eyebrow">{path.cta}</span>
+                <h2>{path.title}</h2>
+                <p>{path.body}</p>
+              </Link>
+            ))}
+          </div>
+        </article>
 
         <footer>
           <div className="footer-brand">
@@ -64,7 +86,7 @@ export default async function DocsIndexPage() {
             <div className="footer-sub">OPEN SOURCE · MIT</div>
           </div>
           <div className="footer-links">
-            <Link href="/">Home</Link>
+            <Link href="/">← Home</Link>
             <Link href="/docs/getting-started/">Getting Started</Link>
             <Link href="/docs/api/">API Reference</Link>
           </div>

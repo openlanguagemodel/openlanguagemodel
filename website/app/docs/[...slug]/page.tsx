@@ -6,6 +6,7 @@ import Mermaid from "../../components/Mermaid";
 import { NAV, allDocPaths, resolveDoc, trackForPath } from "../../lib/docs";
 import { renderDoc } from "../../lib/markdown";
 import { SITE } from "../../../site.config";
+import { jsonLd, pageMetadata } from "../../lib/seo";
 
 type Params = { slug: string[] };
 
@@ -21,20 +22,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const resolved = resolveDoc(slug.join("/"));
   if (!resolved) return {};
-  const { title } = await renderDoc(resolved.file, resolved.dir);
-  const path = slug.join("/");
-  const canonical = `${SITE.url}/docs/${path}/`;
-  return {
+  const docPath = slug.join("/");
+  const { title, description } = await renderDoc(resolved.file, resolved.dir);
+  return pageMetadata({
     title,
-    description: `${title} in the OpenLanguageModel documentation.`,
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description: `${title} in the OpenLanguageModel documentation.`,
-      url: canonical,
-      type: "article",
-    },
-  };
+    description:
+      description ||
+      `OpenLanguageModel documentation for ${title}: PyTorch language model training, transformer architecture, and OLM APIs.`,
+    path: `/docs/${docPath}/`,
+    type: "article",
+  });
 }
 
 export default async function DocPage({
@@ -47,33 +44,62 @@ export default async function DocPage({
   const resolved = resolveDoc(docPath);
   if (!resolved) notFound();
 
-  const { title, html } = await renderDoc(resolved.file, resolved.dir);
+  const { title, html, description } = await renderDoc(resolved.file, resolved.dir);
   const activeTrack = trackForPath(docPath);
   const trackLabel = NAV.find((t) => t.id === activeTrack)?.label ?? "OLM Docs";
-  const articleJsonLd = {
+  const url = `${SITE.url}/docs/${docPath}/`;
+  const articleStructuredData = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     headline: title,
-    url: `${SITE.url}/docs/${docPath}/`,
-    isPartOf: {
-      "@type": "WebSite",
-      name: SITE.name,
+    name: title,
+    description:
+      description ||
+      `OpenLanguageModel documentation for ${title}: PyTorch language model training, transformer architecture, and OLM APIs.`,
+    url,
+    author: {
+      "@type": "Organization",
+      name: "OpenLanguageModel",
       url: SITE.url,
     },
-    about: "OpenLanguageModel documentation",
+    publisher: {
+      "@type": "Organization",
+      name: "OpenLanguageModel",
+      url: SITE.url,
+    },
+    mainEntityOfPage: url,
   };
+  const structuredData =
+    docPath === "learn"
+      ? [
+          articleStructuredData,
+          {
+            "@context": "https://schema.org",
+            "@type": "Course",
+            name: "Learn Language Modelling From Scratch With OpenLanguageModel",
+            description:
+              "A course-style sequence for learning tokens, embeddings, attention, transformer blocks, and language model training in PyTorch.",
+            provider: {
+              "@type": "Organization",
+              name: "OpenLanguageModel",
+              sameAs: SITE.repo,
+            },
+            url,
+          },
+        ]
+      : articleStructuredData;
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
       />
       <DocsSidebar
         nav={NAV}
         current={docPath}
         activeTrack={activeTrack}
-        meta={[trackLabel, "LICENSE: MIT", `STATUS: v${SITE.version}`]}
+        meta={[trackLabel, "LICENSE: MIT", ""]}
       />
 
       <main>

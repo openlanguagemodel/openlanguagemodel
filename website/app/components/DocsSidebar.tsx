@@ -85,7 +85,7 @@ export default function DocsSidebar({ nav, current, activeTrack, meta }: Props) 
         </nav>
       </div>
       <div className="meta-info">
-        {meta.map((line, i) => (
+        {meta.filter(Boolean).map((line, i) => (
           <p key={i}>{line}</p>
         ))}
       </div>
