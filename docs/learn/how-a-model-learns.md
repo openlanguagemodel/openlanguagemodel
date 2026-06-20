@@ -16,6 +16,10 @@ that builds each part:
 
 ![GPT-2's components, and the OLM code that builds each one](gpt2-architecture.png)
 
+The output head is the final prediction layer. It turns each final vector into a
+score for every token in the vocabulary, and **softmax** turns those scores into
+next-word probabilities.
+
 And here it is in code — read it against the picture, piece by piece:
 
 ```python
