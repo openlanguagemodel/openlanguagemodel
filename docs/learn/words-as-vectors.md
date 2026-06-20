@@ -47,6 +47,12 @@ step that turns **man → woman** is the *same* step that turns **king → queen
 is another consistent direction. The model isn't told any of this; the arrangement
 is something it *discovers*.
 
+This is why vector arithmetic can work at all. If `aunt - uncle` captures a
+"female instead of male" direction, then `king + aunt - uncle` should land very
+close to `queen`. Meaning is not stored as a dictionary definition; it is formed
+by where each token's fixed-size vector sits, and by the directions between those
+vectors.
+
 This list-of-numbers-per-token is called an **embedding**, and it's where the
 model stores everything it learns about what each token means.
 
