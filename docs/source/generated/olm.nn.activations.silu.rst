@@ -2,11 +2,6 @@ olm.nn.activations.silu
 =======================
 
 .. automodule:: olm.nn.activations.silu
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      SiLU
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

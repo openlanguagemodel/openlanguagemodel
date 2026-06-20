@@ -1,8 +1,50 @@
-# olm.nn.embeddings
+# `olm.nn.embeddings`
 
-### *class* olm.nn.embeddings.AbsolutePositionalEmbedding(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+Source: [`src/olm/nn/embeddings/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/__init__.py#L1)
 
-Bases: [`PositionalEmbeddingBase`](olm.nn.embeddings.positional.base.md#olm.nn.embeddings.positional.base.PositionalEmbeddingBase)
+## Classes
+
+### `ALiBiPositionalBias(num_heads: int, max_seq_len: int = 2048)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/alibi.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/alibi.py#L9)
+
+Attention with Linear Biases (ALiBi) as described in
+"Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation"
+(arXiv 2108.12409).
+
+Instead of adding positional information to embeddings, ALiBi adds a bias to attention scores
+that is proportional to the distance between query and key positions. This allows the model
+to extrapolate to longer sequences than seen during training.
+
+The bias is computed as: ``bias[i,j] = -m * |i - j|``
+where m is a head-specific slope.
+
+#### Methods
+
+##### `forward(self, seq_len_q: int, seq_len_k: int, device: torch.device | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/alibi.py:85`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/alibi.py#L85)
+
+Get ALiBi bias for the given query and key sequence lengths.
+
+**Parameters**
+
+- `seq_len_q`: length of query sequence
+- `seq_len_k`: length of key sequence (usually same as seq_len_q)
+- `device`: device to place the bias tensor on
+
+**Returns**
+
+Bias tensor of shape (1, num_heads, seq_len_q, seq_len_k)
+This should be added to attention scores before softmax.
+
+### `AbsolutePositionalEmbedding(max_seq_len: int, embed_dim: int, dropout: float = 0.0)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/absolute.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/absolute.py#L8)
 
 Absolute (Learned) Positional Embedding.
 
@@ -13,50 +55,254 @@ in the sequence, up to a maximum sequence length.
 These embeddings are typically added to token embeddings before passing through
 the transformer blocks.
 
-#### forward(x: torch.Tensor, seq_positions: torch.LongTensor | None = None) → torch.Tensor
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/absolute.py:34`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/absolute.py#L34)
 
 Apply absolute positional embedding to input tensor x.
 
-* **Parameters:**
-  * **x** – shape (batch_size, seq_len, embed_dim) - token embeddings
-  * **seq_positions** – optional tensor of shape (batch_size, seq_len) with position indices.
-    If None, assumes positions are 0..seq_len-1 for each batch.
-* **Returns:**
-  Tensor of same shape as x, with positional embeddings added.
+**Parameters**
 
-### *class* olm.nn.embeddings.Embedding(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
 
-Bases: `Module`
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.
+
+### `Embedding(vocab_size: int, embedding_dim: int)`
+
+**Bases:** `Module`
+
+Source: [`src/olm/nn/embeddings/token_embed.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/token_embed.py#L5)
 
 Token Embedding layer.
 
 Wraps standard PyTorch embedding with a clean interface.
 Maps integer indices to dense vectors.
 
-* **Parameters:**
-  * **vocab_size** (*int*) – Size of the vocabulary.
-  * **embedding_dim** (*int*) – Dimensionality of the word embeddings.
+**Parameters**
 
-#### embedding
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embedding_dim` (`int`): Dimensionality of the word embeddings.
 
-The underlying PyTorch embedding layer.
+**Attributes**
 
-* **Type:**
-  nn.Embedding
+- `embedding` (`nn.Embedding`): The underlying PyTorch embedding layer.
 
-#### forward(x: torch.Tensor) → torch.Tensor
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/token_embed.py:30`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/token_embed.py#L30)
 
 Forward pass of the Embedding layer.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch_size, seq_len) containing token IDs.
-* **Returns:**
-  Output tensor of shape (batch_size, seq_len, embedding_dim).
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### Modules
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, seq_len) containing token IDs.
 
-| [`positional`](olm.nn.embeddings.positional.md#module-olm.nn.embeddings.positional)    |    |
-|----------------------------------------------------------------------------------------|----|
-| [`token_embed`](olm.nn.embeddings.token_embed.md#module-olm.nn.embeddings.token_embed) |    |
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape (batch_size, seq_len, embedding_dim).
+
+### `PartialRotaryPositionalEmbedding(head_dim: int, rotary_percentage: float = 0.5, base: int = 10000, max_seq_len: int = 2048)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:112`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L112)
+
+Partial Rotary Positional Embedding (LLaMA-style RoPE).
+
+Only applies rotary embeddings to a fraction of the head dimensions,
+leaving the remaining dimensions unchanged. This is the approach used
+in models like LLaMA, where typically 25-50% of dimensions are rotated.
+
+For example, with head_dim=128 and rotary_percentage=0.5, only the first
+64 dimensions are rotated, while the last 64 dimensions pass through unchanged.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:183`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L183)
+
+Apply partial rotary positional embedding to input tensor x.
+
+**Parameters**
+
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with partial RoPE applied.
+
+### `PartialScaledRotaryPositionalEmbedding(head_dim: int, rotary_percentage: float = 0.5, max_seq_len: int = 2048, base: int = 10000, scaling_type: Literal['linear', 'ntk', 'dynamic_ntk', 'yarn', 'xpos'] = 'linear', scaling_factor: float = 1.0, original_max_seq_len: int | None = None, yarn_alpha: float = 1.0, yarn_beta: float = 32.0, xpos_scale_base: int | None = None)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:478`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L478)
+
+Partial Rotary Positional Embedding with scaling support.
+
+Combines partial RoPE (only rotating a fraction of dimensions) with
+various scaling strategies for extended context lengths.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:624`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L624)
+
+Apply partial scaled rotary positional embedding to input tensor x.
+
+**Parameters**
+
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices.
+
+**Returns**
+
+Tensor of same shape as x, with partial scaled RoPE applied.
+
+### `PositionalEmbeddingBase(*args: Any, **kwargs: Any) -> None`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L8)
+
+Abstract base class for all positional embedding implementations.
+
+Positional embeddings add information about token positions in a sequence
+to help the model understand order and relative positions. Different positional
+embedding strategies have different properties:
+
+- Learned (Absolute): Simple, effective, but limited to max_seq_len
+- Sinusoidal: Deterministic, can extrapolate to longer sequences
+- RoPE: Applied to Q/K directly, enables relative position modeling
+- ALiBi: Adds bias to attention scores, excellent extrapolation
+
+All positional embedding implementations should inherit from this base class
+and implement the forward method.
+
+#### Methods
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:40`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L40)
+
+String representation of the module for debugging.
+
+Override this in subclasses to provide useful information.
+
+##### `forward(self, *args, **kwargs) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/base.py:25`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/base.py#L25)
+
+Apply positional information to input tensor(s).
+
+The signature and behavior of this method varies by implementation:
+- Some add to embeddings (Absolute, Sinusoidal)
+- Some rotate representations (RoPE)
+- Some return bias to add to attention scores (ALiBi)
+
+**Returns**
+
+Transformed tensor(s) with positional information applied
+
+### `RotaryPositionalEmbedding(head_dim: int, max_seq_len: int, base: int = 10000)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L8)
+
+Rotary Positional Embedding (RoPE) as described in
+“RoFormer: Enhanced Transformer with Rotary Position Embedding” (arXiv 2104.09864).
+
+This module precomputes sin/cos rotation frequencies for a given head‐dim, and then applies to
+query/key representations via interleaving real/imag parts (or equivalently pairs of dims).
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:54`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L54)
+
+Apply rotary positional embedding to input tensor x.
+
+**Parameters**
+
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with RoPE applied.
+
+### `ScaledRotaryPositionalEmbedding(head_dim: int, max_seq_len: int = 2048, base: int = 10000, scaling_type: Literal['linear', 'ntk', 'dynamic_ntk', 'yarn', 'xpos'] = 'linear', scaling_factor: float = 1.0, original_max_seq_len: int | None = None, yarn_alpha: float = 1.0, yarn_beta: float = 32.0, xpos_scale_base: int | None = None)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:250`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L250)
+
+Scaled Rotary Positional Embedding with multiple scaling strategies.
+
+Supports the following scaling methods for extending context length:
+- 'linear': Linear position interpolation (Position Interpolation, arXiv:2306.15595)
+- 'ntk': NTK-aware scaling (dynamically adjusts base frequency)
+- 'dynamic_ntk': Dynamic NTK (adjusts base based on current sequence length)
+- 'yarn': YaRN (Yet another RoPE extensioN method, arXiv:2309.00071)
+- 'xpos': XPos (exponential decay for better extrapolation, arXiv:2212.10554)
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/rope.py:398`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/rope.py#L398)
+
+Apply scaled rotary positional embedding to input tensor x.
+
+**Parameters**
+
+- `x`: shape (batch_size, seq_len, num_heads, head_dim)
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with scaled RoPE applied.
+
+### `SinusoidalPositionalEmbedding(embed_dim: int, max_seq_len: int = 5000, base: int = 10000, dropout: float = 0.0)`
+
+**Bases:** `olm.nn.embeddings.positional.base.PositionalEmbeddingBase`
+
+Source: [`src/olm/nn/embeddings/positional/sinusoidal.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/sinusoidal.py#L9)
+
+Sinusoidal Positional Embedding as described in
+"Attention Is All You Need" (Vaswani et al., 2017).
+
+Uses fixed sine and cosine functions of different frequencies to encode positions.
+Unlike learned embeddings, these are deterministic and can extrapolate to longer
+sequences than seen during training.
+
+PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))
+PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor, seq_positions: torch.LongTensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/positional/sinusoidal.py:80`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/positional/sinusoidal.py#L80)
+
+Apply sinusoidal positional embedding to input tensor x.
+
+**Parameters**
+
+- `x`: shape (batch_size, seq_len, embed_dim) - token embeddings
+- `seq_positions`: optional tensor of shape (batch_size, seq_len) with position indices. If None, assumes positions are 0..seq_len-1 for each batch.
+
+**Returns**
+
+Tensor of same shape as x, with positional embeddings added.

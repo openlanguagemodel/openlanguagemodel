@@ -1,12 +1,7 @@
-olm.nn.norms.rms\_norm
-======================
+olm.nn.norms.rms_norm
+=====================
 
 .. automodule:: olm.nn.norms.rms_norm
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      RMSNorm
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

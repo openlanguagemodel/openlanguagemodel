@@ -1,50 +1,33 @@
-# olm.data.tokenization.hf_tokenizer
+# `olm.data.tokenization.hf_tokenizer`
 
-### Classes
+Source: [`src/olm/data/tokenization/hf_tokenizer.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L1)
 
-| [`HFTokenizer`](#olm.data.tokenization.hf_tokenizer.HFTokenizer)(model_path)   |    |
-|--------------------------------------------------------------------------------|----|
+## Classes
 
-### *class* olm.data.tokenization.hf_tokenizer.HFTokenizer(model_path: str)
+### `HFTokenizer(model_path: str)`
 
-Bases: [`TokenizerBase`](olm.data.tokenization.base.md#olm.data.tokenization.base.TokenizerBase)
+**Bases:** `olm.data.tokenization.base.TokenizerBase`
 
-#### decode(tokens: torch.Tensor) → str
+Source: [`src/olm/data/tokenization/hf_tokenizer.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L8)
+
+#### Methods
+
+##### `decode(self, tokens: torch.Tensor) -> str`
+
+Source: [`src/olm/data/tokenization/hf_tokenizer.py:28`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L28)
 
 Decodes a single 1D tensor of token IDs back into a string.
 
-#### encode(text: str) → torch.Tensor
+##### `encode(self, text: str, add_special_tokens: bool = True) -> torch.Tensor`
+
+Source: [`src/olm/data/tokenization/hf_tokenizer.py:13`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L13)
 
 Encodes a single string into a 1D PyTorch tensor of input IDs.
 Padding is implicitly disabled for single inputs.
 
-### *class* olm.data.tokenization.hf_tokenizer.TokenizerBase
+##### `save(self, path: str) -> None`
 
-Bases: [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/data/tokenization/hf_tokenizer.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/hf_tokenizer.py#L36)
 
-Abstract base class for all tokenizers in OLM.
-
-Defines the interface for converting between text strings and integer token IDs.
-Subclasses must implement encode and decode methods.
-
-#### *abstractmethod* decode(tokens: torch.Tensor) → str
-
-Converts a sequence of token IDs back into a text string.
-
-* **Parameters:**
-  **tokens** (*torch.Tensor*) – A 1D tensor or list of token IDs.
-* **Returns:**
-  The decoded text string.
-* **Return type:**
-  str
-
-#### *abstractmethod* encode(text: str) → torch.Tensor
-
-Converts a text string into a sequence of token IDs.
-
-* **Parameters:**
-  **text** (*str*) – The input text to tokenize.
-* **Returns:**
-  A 1D tensor containing the token IDs.
-* **Return type:**
-  torch.Tensor
+Saves tokenizer in HuggingFace format.
+`path` must be a directory.

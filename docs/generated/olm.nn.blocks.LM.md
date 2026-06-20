@@ -1,39 +1,62 @@
-# olm.nn.blocks.LM
+# `olm.nn.blocks.LM`
 
-### *class* olm.nn.blocks.LM(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+Source: [`src/olm/nn/blocks/LM.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/LM.py#L1)
 
-Bases: [`Block`](olm.nn.structure.block.md#olm.nn.structure.block.Block)
+## Classes
 
-A simple Language Model (LM) architecture.
+### `LM(vocab_size: int, embed_dim: int, num_heads: int, num_layers: int, max_seq_len: int, dropout: float = 0.0, causal: bool = True, ff_multiplier: float = 2.5, tie_embeddings: bool = True)`
 
-This model consists of an embedding layer, a stack of Transformer blocks,
-and a final output projection to the vocabulary size. It is designed for
-causal language modeling (next-token prediction).
+**Bases:** `olm.nn.structure.block.Block`
 
-Structure:
-: Input IDs -> Embedding -> [TransformerBlock] x N -> OutputHead -> Logits
+Source: [`src/olm/nn/blocks/LM.py:9`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/blocks/LM.py#L9)
 
-* **Parameters:**
-  * **vocab_size** (*int*) – Size of the vocabulary.
-  * **embed_dim** (*int*) – Dimension of the embeddings and hidden states.
-  * **num_heads** (*int*) – Number of attention heads in Transformer blocks.
-  * **num_layers** (*int*) – Number of Transformer blocks.
-  * **max_seq_len** (*int*) – Maximum sequence length for the model.
-  * **dropout** (*float* *,* *optional*) – Dropout probability. Defaults to 0.0.
-  * **causal** (*bool* *,* *optional*) – Whether to use causal masking. Defaults to True.
-  * **ff_multiplier** (*float* *,* *optional*) – Multiplier for FFN hidden dimension. Defaults to 2.5.
+GPT-style causal language model assembled from OLM blocks.
 
-#### layers
+``LM`` is the small, configurable model used throughout the beginner
+examples. It consists of a token embedding, ``num_layers`` repeated
+``TransformerBlock`` modules, and an ``OutputHead`` that projects hidden
+states back to vocabulary logits. The output projection reuses the input
+embedding matrix by default.
 
-The sequence of layers in the model.
+**Structure**
 
-* **Type:**
-  nn.ModuleList
+``input_ids`` -> ``Embedding`` -> ``TransformerBlock`` x N ->
+``OutputHead`` -> logits.
 
-#### \_\_init_\_(vocab_size: int, embed_dim: int, num_heads: int, num_layers: int, max_seq_len: int, dropout: float = 0.0, causal: bool = True, ff_multiplier: float = 2.5)
+**Forward**
 
-### Methods
+Accepts integer token IDs with shape ``[batch, seq_len]`` and returns
+logits with shape ``[batch, seq_len, vocab_size]``. The inherited
+``Block.forward`` applies each submodule sequentially.
 
-| `__init__`(vocab_size, embed_dim, num_heads, ...)   |                                            |
-|-----------------------------------------------------|--------------------------------------------|
-| `forward`(x)                                        | Apply each block to the input in sequence. |
+**Parameters**
+
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embed_dim` (`int`): Dimension of the embeddings and hidden states.
+- `num_heads` (`int`): Number of attention heads in Transformer blocks.
+- `num_layers` (`int`): Number of Transformer blocks.
+- `max_seq_len` (`int`): Maximum sequence length for the model.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `causal` (`bool, optional`): Whether to use causal masking. Defaults to True.
+- `ff_multiplier` (`float, optional`): Multiplier for FFN hidden dimension. Defaults to 2.5.
+- `tie_embeddings` (`bool, optional`): Whether the output head should reuse the input embedding matrix. Defaults to True.
+
+**Attributes**
+
+- `blocks` (`nn.ModuleList`): ``[embedding, transformer_stack, output_head]``.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor` (inherited from `Block`)
+
+Source: [`src/olm/nn/structure/block.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/block.py#L26)
+
+Apply each block to the input in sequence.
+
+**Parameters**
+
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all blocks have been applied.

@@ -1,80 +1,44 @@
-# olm.nn.norms.layer_norm
+# `olm.nn.norms.layer_norm`
 
-### Classes
+Source: [`src/olm/nn/norms/layer_norm.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L1)
 
-| [`LayerNorm`](#olm.nn.norms.layer_norm.LayerNorm)(\*args, \*\*kwargs)   | Layer Normalization layer.   |
-|-------------------------------------------------------------------------|------------------------------|
+## Classes
 
-### *class* olm.nn.norms.layer_norm.LayerNorm(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `LayerNorm(d_model: int, eps: float = 1e-05, elementwise_affine: bool = True, device: torch.device | None = None, dtype: torch.dtype | None = None)`
 
-Bases: [`NormBase`](olm.nn.norms.base.md#olm.nn.norms.base.NormBase)
+**Bases:** `olm.nn.norms.base.NormBase`
+
+Source: [`src/olm/nn/norms/layer_norm.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L7)
 
 Layer Normalization layer.
 
-Implements Layer Normalization as described in “Layer Normalization” ([https://arxiv.org/abs/1607.06450](https://arxiv.org/abs/1607.06450)).
+Implements Layer Normalization as described in "Layer Normalization" (https://arxiv.org/abs/1607.06450).
 Normalizes the input across the features dimension.
 
-* **Parameters:**
-  * **d_model** (*int*) – The dimension of the model to normalize.
-  * **eps** (*float* *,* *optional*) – Small constant for numerical stability. Defaults to 1e-5.
-  * **device** (*torch.device* *,* *optional*) – Target device.
-  * **dtype** (*torch.dtype* *,* *optional*) – Target data type.
+**Parameters**
 
-#### gamma
+- `d_model` (`int`): The dimension of the model to normalize.
+- `eps` (`float, optional`): Small constant for numerical stability. Defaults to 1e-5.
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
-Learnable scale parameter.
+**Attributes**
 
-* **Type:**
-  nn.Parameter
+- `gamma` (`nn.Parameter`): Learnable scale parameter.
+- `beta` (`nn.Parameter`): Learnable shift parameter.
 
-#### beta
+#### Methods
 
-Learnable shift parameter.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-* **Type:**
-  nn.Parameter
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/norms/layer_norm.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L36)
 
 Forward pass of LayerNorm.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch_size, sequence_length, d_model).
-* **Returns:**
-  Normalized output tensor of the same shape.
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### *class* olm.nn.norms.layer_norm.NormBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, sequence_length, d_model).
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Returns**
 
-Abstract base class for normalization layers (e.g., LayerNorm, RMSNorm).
-
-Standardizes the interface for normalization, ensuring all implementations
-handle model dimension, device, and dtype consistently.
-
-#### d_model
-
-The dimension of the input features to normalize.
-
-* **Type:**
-  int
-
-#### device
-
-The device the module is on.
-
-* **Type:**
-  torch.device, optional
-
-#### dtype
-
-The data type of the module parameters.
-
-* **Type:**
-  torch.dtype
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Apply normalization to the input tensor.
+- `torch.Tensor`: Normalized output tensor of the same shape.

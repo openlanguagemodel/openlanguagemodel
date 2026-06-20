@@ -12,7 +12,6 @@ from olm.train import callbacks
 from olm.train import optim
 from olm.train import schedulers
 from olm.train import losses
-from olm.train import regularization
 from olm.train import device
 
 # Re-export common components
@@ -25,6 +24,7 @@ from olm.train.callbacks import (
     EarlyStoppingCallback,
 )
 from olm.train.optim import OptimizerBase, AdamW, Lion
+from olm.train.losses import LossBase, CrossEntropyLoss, KLLoss, MaskedCELoss, ZLoss
 from olm.train.schedulers import (
     SchedulerBase,
     CosineAnnealingLR,
@@ -56,7 +56,6 @@ __all__ = [
     "optim",
     "schedulers",
     "losses",
-    "regularization",
     "device",
     # Callbacks
     "CheckpointCallback",
@@ -69,6 +68,12 @@ __all__ = [
     "OptimizerBase",
     "AdamW",
     "Lion",
+    # Losses
+    "LossBase",
+    "CrossEntropyLoss",
+    "KLLoss",
+    "MaskedCELoss",
+    "ZLoss",
     # Schedulers
     "SchedulerBase",
     "CosineAnnealingLR",

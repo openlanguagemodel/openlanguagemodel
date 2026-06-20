@@ -1,12 +1,7 @@
-olm.train.callbacks.lr\_monitor\_cb
-===================================
+olm.train.callbacks.lr_monitor_cb
+=================================
 
 .. automodule:: olm.train.callbacks.lr_monitor_cb
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      LRMonitorCallback
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

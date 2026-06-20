@@ -183,6 +183,88 @@ class DDPTrainer(Trainer):
 
         losses = []
 
+        def finish_accumulation(actual_count: int) -> bool:
+            nonlocal accumulated_loss, accumulated_tokens, accumulation_count, epoch_step
+
+            self._call_callbacks("on_step_begin", self, self.global_step)
+
+            needs_unscale = (
+                self.grad_clip_norm is not None or actual_count != accumulation_target
+            )
+            if needs_unscale:
+                self.scaler.unscale_(self.optimizer)
+
+            if actual_count != accumulation_target:
+                grad_scale = accumulation_target / actual_count
+                for group in self.optimizer.param_groups:
+                    for param in group["params"]:
+                        if param.grad is not None:
+                            param.grad.mul_(grad_scale)
+
+            if self.grad_clip_norm is not None:
+                torch.nn.utils.clip_grad_norm_(
+                    self.model.parameters(), self.grad_clip_norm
+                )
+
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.optimizer.zero_grad(set_to_none=True)
+
+            if self.scheduler is not None:
+                self.scheduler.step()
+
+            avg_loss = accumulated_loss / actual_count
+            self.global_step += 1
+
+            current_lr = self.optimizer.param_groups[0]["lr"]
+            perplexity = math.exp(min(avg_loss, 20))
+
+            step_time = (
+                time.time() - self.step_start_time if self.step_start_time else 0.0
+            )
+            tokens_per_sec = accumulated_tokens / step_time if step_time > 0 else 0.0
+
+            if is_distributed():
+                loss_tensor = torch.tensor([avg_loss], device=self.device)
+                all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
+                avg_loss = loss_tensor.item()
+                perplexity = math.exp(min(avg_loss, 20))
+
+                throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
+                all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
+                tokens_per_sec = throughput_tensor.item()
+
+            self.training_state.update(
+                {
+                    "current_loss": avg_loss,
+                    "perplexity": perplexity,
+                    "tokens_per_sec": tokens_per_sec,
+                    "learning_rate": current_lr,
+                    "total_tokens": self.total_tokens_processed,
+                }
+            )
+
+            if is_main_process():
+                losses.append(avg_loss)
+                self.losses.append(avg_loss)
+
+            if self.global_step % log_interval == 0 and is_main_process():
+                print(
+                    f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
+                    f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
+                    flush=True,
+                )
+
+            self._call_callbacks("on_step_end", self, self.global_step, avg_loss)
+            should_stop = self._should_stop_training()
+
+            accumulated_loss = 0.0
+            accumulated_tokens = 0
+            accumulation_count = 0
+            epoch_step += 1
+
+            return should_stop
+
         # Call callbacks
         self._call_callbacks("on_train_begin", self)
 
@@ -211,14 +293,27 @@ class DDPTrainer(Trainer):
             self._call_callbacks("on_epoch_begin", self, epoch)
 
             accumulated_loss = 0.0
+            accumulated_tokens = 0
+            accumulation_count = 0
+            accumulation_target = self.grad_accum_steps
             epoch_step = 0
+            try:
+                num_batches = len(self.dataloader)
+            except TypeError:
+                num_batches = None
 
             for step, (x, y) in enumerate(self.dataloader):
                 self._call_callbacks("on_batch_begin", self, step)
 
                 # Start timing
-                if step % self.grad_accum_steps == 0:
+                if accumulation_count == 0:
                     self.step_start_time = time.time()
+                    if num_batches is None:
+                        accumulation_target = self.grad_accum_steps
+                    else:
+                        accumulation_target = min(
+                            self.grad_accum_steps, num_batches - step
+                        )
 
                 x = x.to(self.device, non_blocking=True)
                 y = y.to(self.device, non_blocking=True)
@@ -226,12 +321,17 @@ class DDPTrainer(Trainer):
                 # Track tokens
                 batch_tokens = x.numel()
                 self.total_tokens_processed += batch_tokens
+                accumulated_tokens += batch_tokens
 
                 # Use no_sync context for gradient accumulation
                 # This prevents DDP from synchronizing gradients until the last micro-batch
                 context = (
                     self.model.no_sync()
-                    if is_distributed() and (step + 1) % self.grad_accum_steps != 0
+                    if (
+                        is_distributed()
+                        and num_batches is not None
+                        and accumulation_count + 1 < accumulation_target
+                    )
                     else torch.enable_grad()
                 )
 
@@ -240,107 +340,55 @@ class DDPTrainer(Trainer):
                         logits = self.model(x)
                         loss = self.loss(logits, y)
                         loss_val = loss.item()
-                        loss = loss / self.grad_accum_steps
+                        loss = loss / accumulation_target
 
                     self.scaler.scale(loss).backward()
 
                 accumulated_loss += loss_val
+                accumulation_count += 1
                 self.training_state["current_loss"] = loss_val
                 self.training_state["accumulated_loss"] = accumulated_loss
 
                 self._call_callbacks("on_batch_end", self, step, loss_val)
 
                 # Optimizer step after gradient accumulation
-                if (step + 1) % self.grad_accum_steps == 0:
-                    self._call_callbacks("on_step_begin", self, self.global_step)
-
-                    # Gradient clipping
-                    if self.grad_clip_norm is not None:
-                        self.scaler.unscale_(self.optimizer)
-                        torch.nn.utils.clip_grad_norm_(
-                            self.model.parameters(), self.grad_clip_norm
-                        )
-
-                    # Optimizer step
-                    self.scaler.step(self.optimizer)
-                    self.scaler.update()
-                    self.optimizer.zero_grad(set_to_none=True)
-
-                    # Scheduler step
-                    if self.scheduler is not None:
-                        self.scheduler.step()
-
-                    avg_loss = accumulated_loss / self.grad_accum_steps
-                    self.global_step += 1
-
-                    # Calculate metrics
-                    current_lr = self.optimizer.param_groups[0]["lr"]
-                    perplexity = math.exp(min(avg_loss, 20))
-
-                    # Calculate throughput
-                    step_time = (
-                        time.time() - self.step_start_time
-                        if self.step_start_time
-                        else 0.0
-                    )
-                    tokens_in_step = x.size(0) * x.size(1) * self.grad_accum_steps
-                    tokens_per_sec = (
-                        tokens_in_step / step_time if step_time > 0 else 0.0
-                    )
-
-                    # Aggregate metrics across ranks
-                    if is_distributed():
-                        # Average loss across all ranks
-                        loss_tensor = torch.tensor([avg_loss], device=self.device)
-                        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-                        avg_loss = loss_tensor.item()
-
-                        # Sum throughput across all ranks
-                        throughput_tensor = torch.tensor(
-                            [tokens_per_sec], device=self.device
-                        )
-                        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-                        tokens_per_sec = throughput_tensor.item()
-
-                    # Update training state
-                    self.training_state.update(
-                        {
-                            "current_loss": avg_loss,
-                            "perplexity": perplexity,
-                            "tokens_per_sec": tokens_per_sec,
-                            "learning_rate": current_lr,
-                            "total_tokens": self.total_tokens_processed,
-                        }
-                    )
-
-                    # Log only on rank 0
-                    if self.global_step % log_interval == 0 and is_main_process():
-                        losses.append(avg_loss)
-                        self.losses.append(avg_loss)
-                        print(
-                            f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
-                            f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
-                            flush=True,
-                        )
-
-                    self._call_callbacks(
-                        "on_step_end", self, self.global_step, avg_loss
-                    )
-
-                    # Reset accumulated loss
-                    accumulated_loss = 0.0
-                    epoch_step += 1
+                if accumulation_count == accumulation_target:
+                    if finish_accumulation(accumulation_count):
+                        self._call_callbacks("on_epoch_end", self, epoch)
+                        self._call_callbacks("on_train_end", self)
+                        if is_main_process():
+                            self.losses = losses
+                            self._print_training_summary()
+                        return losses
 
                     # Check stopping conditions
                     if max_steps and self.global_step >= max_steps:
                         self._call_callbacks("on_epoch_end", self, epoch)
                         self._call_callbacks("on_train_end", self)
                         if is_main_process():
+                            self.losses = losses
                             self._print_training_summary()
                         return losses
 
                     if steps_per_epoch and epoch_step >= steps_per_epoch:
                         break
+
+            if accumulation_count > 0:
+                if finish_accumulation(accumulation_count):
+                    self._call_callbacks("on_epoch_end", self, epoch)
+                    self._call_callbacks("on_train_end", self)
+                    if is_main_process():
+                        self.losses = losses
+                        self._print_training_summary()
+                    return losses
+
+                if max_steps and self.global_step >= max_steps:
+                    self._call_callbacks("on_epoch_end", self, epoch)
+                    self._call_callbacks("on_train_end", self)
+                    if is_main_process():
+                        self.losses = losses
+                        self._print_training_summary()
+                    return losses
 
             self._call_callbacks("on_epoch_end", self, epoch)
 
@@ -365,12 +413,16 @@ class DDPTrainer(Trainer):
                 try:
                     dataset_size = len(self.dataloader)
                     self.total_steps = epochs * dataset_size
-                except:
+                except TypeError:
                     self.total_steps = epochs * 10000
 
         # Calculate warmup steps
         if self.warmup_steps is None:
-            self.warmup_steps = min(max(int(0.1 * self.total_steps), 100), 5000)
+            self.warmup_steps = min(
+                max(int(0.1 * self.total_steps), 1),
+                5000,
+                self.total_steps,
+            )
 
         self.scheduler = WarmupCosineScheduler(
             self.optimizer,

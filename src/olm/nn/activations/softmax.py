@@ -8,7 +8,8 @@ from olm.nn.activations.base import ActivationBase
 @ACTIVATIONS.register("softmax")
 class Softmax(ActivationBase):
     """Softmax activation wrapper."""
-    def __init__(self, dim: Optional[int] = None, *, device=None, dtype=None) -> None:
+
+    def __init__(self, dim: Optional[int] = -1, *, device=None, dtype=None) -> None:
         super().__init__(device=device, dtype=dtype)
         self.act = nn.Softmax(dim=dim)
 

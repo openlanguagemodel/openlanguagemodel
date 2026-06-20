@@ -19,7 +19,17 @@ class MoERouter(nn.Module):
         self.top_k = top_k
         self.num_experts = num_experts
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Route each token to its top-k experts.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor]: Expert indices and normalized
+            routing weights, both shaped ``[batch, seq_len, top_k]``.
+        """
         # x: (batch_size, seq_len, embed_dim)
         logits = self.gate(x) # (batch, seq, num_experts)
         
@@ -90,6 +100,12 @@ class MoEFeedForwardBase(FeedForwardBase):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass with MoE routing.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+        Returns:
+            torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
         """
         identity = x
         batch_size, seq_len, embed_dim = x.shape

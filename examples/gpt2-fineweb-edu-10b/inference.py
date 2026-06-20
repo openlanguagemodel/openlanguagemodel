@@ -15,7 +15,7 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from olm.models.gpt import GPT2
+from olm.models.openai import GPT2
 from olm.data.tokenization.hf_tokenizer import HFTokenizer
 
 

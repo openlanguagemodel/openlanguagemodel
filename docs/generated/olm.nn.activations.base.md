@@ -1,59 +1,29 @@
-# olm.nn.activations.base
+# `olm.nn.activations.base`
 
-### Classes
+Source: [`src/olm/nn/activations/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/base.py#L1)
 
-| [`ActivationBase`](#olm.nn.activations.base.ActivationBase)(\*args, \*\*kwargs)   | Abstract base class for all activation functions.   |
-|-----------------------------------------------------------------------------------|-----------------------------------------------------|
+## Classes
 
-### *class* olm.nn.activations.base.ABC
+### `ActivationBase(*, device: torch.device | None = None, dtype: torch.dtype | None = None) -> None`
 
-Bases: `object`
+**Bases:** `Module`, `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.nn.activations.base.ActivationBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/nn/activations/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/base.py#L8)
 
 Abstract base class for all activation functions.
 
 Ensures a consistent interface for activation layers, handling device and dtype
-initialization. Subclasses must implement the forward method.
+initialization. Subclasses must implement the `forward` method.
 
-#### device
+**Attributes**
 
-The device the module is on.
+- `device` (`torch.device, optional`): The device the module is on.
+- `dtype` (`torch.dtype`): The data type of the module parameters.
 
-* **Type:**
-  torch.device, optional
+#### Methods
 
-#### dtype
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-The data type of the module parameters.
+Source: [`src/olm/nn/activations/base.py:34`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/base.py#L34)
 
-* **Type:**
-  torch.dtype
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Apply activation to `x`.
-
-### olm.nn.activations.base.abstractmethod(funcobj)
-
-A decorator indicating abstract methods.
-
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
-
-Usage:
-
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …
+Apply activation to ``x``.

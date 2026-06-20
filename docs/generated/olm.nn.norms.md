@@ -1,81 +1,82 @@
-# olm.nn.norms
+# `olm.nn.norms`
 
-### *class* olm.nn.norms.LayerNorm(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+Source: [`src/olm/nn/norms/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/__init__.py#L1)
 
-Bases: [`NormBase`](olm.nn.norms.base.md#olm.nn.norms.base.NormBase)
+## Classes
+
+### `LayerNorm(d_model: int, eps: float = 1e-05, elementwise_affine: bool = True, device: torch.device | None = None, dtype: torch.dtype | None = None)`
+
+**Bases:** `olm.nn.norms.base.NormBase`
+
+Source: [`src/olm/nn/norms/layer_norm.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L7)
 
 Layer Normalization layer.
 
-Implements Layer Normalization as described in “Layer Normalization” ([https://arxiv.org/abs/1607.06450](https://arxiv.org/abs/1607.06450)).
+Implements Layer Normalization as described in "Layer Normalization" (https://arxiv.org/abs/1607.06450).
 Normalizes the input across the features dimension.
 
-* **Parameters:**
-  * **d_model** (*int*) – The dimension of the model to normalize.
-  * **eps** (*float* *,* *optional*) – Small constant for numerical stability. Defaults to 1e-5.
-  * **device** (*torch.device* *,* *optional*) – Target device.
-  * **dtype** (*torch.dtype* *,* *optional*) – Target data type.
+**Parameters**
 
-#### gamma
+- `d_model` (`int`): The dimension of the model to normalize.
+- `eps` (`float, optional`): Small constant for numerical stability. Defaults to 1e-5.
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
-Learnable scale parameter.
+**Attributes**
 
-* **Type:**
-  nn.Parameter
+- `gamma` (`nn.Parameter`): Learnable scale parameter.
+- `beta` (`nn.Parameter`): Learnable shift parameter.
 
-#### beta
+#### Methods
 
-Learnable shift parameter.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-* **Type:**
-  nn.Parameter
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/norms/layer_norm.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/layer_norm.py#L36)
 
 Forward pass of LayerNorm.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch_size, sequence_length, d_model).
-* **Returns:**
-  Normalized output tensor of the same shape.
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### *class* olm.nn.norms.RMSNorm(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, sequence_length, d_model).
 
-Bases: [`NormBase`](olm.nn.norms.base.md#olm.nn.norms.base.NormBase)
+**Returns**
+
+- `torch.Tensor`: Normalized output tensor of the same shape.
+
+### `RMSNorm(d_model: int, eps: float = 1e-05, device: torch.device | None = None, dtype: torch.dtype | None = None)`
+
+**Bases:** `olm.nn.norms.base.NormBase`
+
+Source: [`src/olm/nn/norms/rms_norm.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/rms_norm.py#L7)
 
 RMSNorm (Root Mean Square Layer Normalization) layer.
 
-Implements RMSNorm as described in “Root Mean Square Layer Normalization” ([https://arxiv.org/abs/1910.07467](https://arxiv.org/abs/1910.07467)).
+Implements RMSNorm as described in "Root Mean Square Layer Normalization" (https://arxiv.org/abs/1910.07467).
 A simplified version of LayerNorm that scales invariance properties.
 
-* **Parameters:**
-  * **d_model** (*int*) – The dimension of the model to normalize.
-  * **eps** (*float* *,* *optional*) – Small constant for numerical stability. Defaults to 1e-5.
-  * **device** (*torch.device* *,* *optional*) – Target device.
-  * **dtype** (*torch.dtype* *,* *optional*) – Target data type.
+**Parameters**
 
-#### weight
+- `d_model` (`int`): The dimension of the model to normalize.
+- `eps` (`float, optional`): Small constant for numerical stability. Defaults to 1e-5.
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
 
-Learnable scale parameter.
+**Attributes**
 
-* **Type:**
-  nn.Parameter
+- `weight` (`nn.Parameter`): Learnable scale parameter.
 
-#### forward(x: torch.Tensor) → torch.Tensor
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/norms/rms_norm.py:29`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/rms_norm.py#L29)
 
 Forward pass of RMSNorm.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch_size, sequence_length, d_model).
-* **Returns:**
-  Normalized output tensor of the same shape.
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### Modules
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, sequence_length, d_model).
 
-| [`base`](olm.nn.norms.base.md#module-olm.nn.norms.base)                   |    |
-|---------------------------------------------------------------------------|----|
-| [`layer_norm`](olm.nn.norms.layer_norm.md#module-olm.nn.norms.layer_norm) |    |
-| [`rms_norm`](olm.nn.norms.rms_norm.md#module-olm.nn.norms.rms_norm)       |    |
+**Returns**
+
+- `torch.Tensor`: Normalized output tensor of the same shape.

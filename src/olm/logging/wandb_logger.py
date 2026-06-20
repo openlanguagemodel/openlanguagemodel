@@ -10,7 +10,6 @@ import warnings
 
 from olm.train.trainer.trainer import TrainerCallback
 
-
 # Check if wandb is installed
 try:
     import wandb
@@ -123,7 +122,7 @@ class WandBCallback(TrainerCallback):
         self.log_model = log_model
         self.watch_model = watch_model
         self.watch_freq = watch_freq
-        self.log_predictions = log_predictions
+        self.log_predictions_enabled = log_predictions
         self.log_system_metrics = log_system_metrics
         self.alert_thresholds = alert_thresholds or {}
         self.offline = offline
@@ -212,7 +211,7 @@ class WandBCallback(TrainerCallback):
             )
 
         # Initialize prediction table if requested
-        if self.log_predictions:
+        if self.log_predictions_enabled:
             self.prediction_table = wandb.Table(
                 columns=["step", "input_text", "prediction", "target"]
             )
@@ -308,7 +307,7 @@ class WandBCallback(TrainerCallback):
             return
 
         # Log final prediction table if enabled
-        if self.log_predictions and self.prediction_table is not None:
+        if self.log_predictions_enabled and self.prediction_table is not None:
             wandb.log({"predictions": self.prediction_table})
 
         # Mark run as finished
@@ -428,7 +427,7 @@ class WandBCallback(TrainerCallback):
             predictions: Model predictions.
             targets: Target texts (optional).
         """
-        if not self._should_log or not self.log_predictions:
+        if not self._should_log or not self.log_predictions_enabled:
             return
 
         if self.prediction_table is None:

@@ -110,6 +110,7 @@ ipython_config.py
 #   in version control.
 #   https://pdm.fming.dev/#use-with-ide
 .pdm.toml
+tmp/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
@@ -175,3 +176,27 @@ pyrightconfig.json
 
 # ignore checkpoint dir from any level
 **/checkpoints
+
+# Local agent/worktree backups
+claude_bkp/
+
+# Website build/dependency output
+website/.next/
+website/node_modules/
+website/out/
+website/public/docs-assets/
+website/tsconfig.tsbuildinfo
+
+# Keep website source helpers visible despite the Python template's broad lib/ rule.
+!website/app/lib/
+!website/app/lib/**
+
+# Website build/dependency output
+website/.next/
+website/node_modules/
+website/out/
+website/tsconfig.tsbuildinfo
+
+# Keep website source helpers visible despite the Python template's broad lib/ rule.
+!website/app/lib/
+!website/app/lib/**

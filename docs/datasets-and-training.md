@@ -6,11 +6,8 @@ The `olm` library is designed to handle massive amounts of text data without usi
 
 <h3>1. Preparing Your Data</h3>
 
-To start training, you first need to tell the library where your text is. We have three main ways to do this:
+To start training, you first need to tell the library where your text is. The common paths are:
 
-- **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
-- **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
-- **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
 - **From Local Files**: If you have a folder full of `.txt` files, use `LocalTextDataset`. It scans the directory and streams each file one by one.
 - **From Hugging Face**: If you want to use a dataset from the web (like Wikipedia or Common Crawl), use `HuggingFaceTextDataset`. It downloads chunks of data as you train.
 - **FineWeb Edu**: A built-in shortcut for a high-quality educational dataset, pre-configured with the best settings.
@@ -25,16 +22,11 @@ dataset = LocalTextDataset(
     location="./my_text_folder",
     tokenizer=tk,
     context_length=1024,
-    location="./my_text_folder",
-    tokenizer=tk,
-    context_length=1024,
     shuffle=True
 )
 
 # 2. Or use the built-in FineWeb shortcut
 dataset = FineWebEduDataset(
-    tokenizer=tk,
-    subset="sample-10BT",
     tokenizer=tk,
     subset="sample-10BT",
     context_length=2048
@@ -46,9 +38,7 @@ Shuffling mixes up your data so the model doesn't see the same examples in the s
 
 > [!TIP]
 > **Advanced: Shuffling & Sharding**
-> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000).
->
-> For **local files**, we mix the order of the file names. For **web datasets**, we keep a "buffer" of streaming text and shuffle that buffer (default size: 10,000).
+> For **local files**, we mix the order of the file names. For **web datasets**, we keep a buffer of streaming text and shuffle that buffer.
 >
 > If you use multiple GPUs or workers, the library automatically handles **sharding**: it assigns specific pieces of the dataset to each worker so they never process the same data at the same time.
 
@@ -147,9 +137,9 @@ trainer = Trainer(..., callbacks=[MyLogger()])
 
 ---
 
-<h3>5. Distributed Training (Multi-GPU)</h3>
+<h3>5. Single-Node Multi-GPU Training</h3>
 
-For large models or faster training, you can use multiple GPUs across one or more machines. OLM provides two approaches using PyTorch's native distributed backends:
+For large models or faster training, v2 supports multiple GPUs on a single machine. OLM provides two approaches using PyTorch's native distributed backends:
 
 **DDP (Distributed Data Parallel)** - Best for models that fit on a single GPU
 
@@ -170,8 +160,7 @@ Both approaches use `torchrun` to launch multiple processes:
 # Single machine, 4 GPUs
 torchrun --nproc_per_node=4 train.py
 
-# Multi-node: 2 machines, 4 GPUs each (run on both machines)
-torchrun --nproc_per_node=4 --nnodes=2 --node_rank=0 --master_addr=192.168.1.1 train.py
+# Multi-node launch helpers are planned for v4.
 ```
 
 **DDP Training Example**
@@ -249,7 +238,7 @@ trainer.train(epochs=10)
 > - **Sharding strategies**:
 >     - `FULL_SHARD`: Shard everything (parameters, gradients, optimizer states) - most memory efficient
 >     - `SHARD_GRAD_OP`: Shard gradients and optimizer only - faster than FULL_SHARD
->     - `HYBRID_SHARD`: Full shard within node, replicate across nodes - for multi-node
+>     - `HYBRID_SHARD`: PyTorch strategy for hybrid setups; OLM's documented multi-node workflow is planned for v4
 >     - `NO_SHARD`: No sharding (equivalent to DDP)
 > - **Auto-wrap policies**:
 >     - `"size"`: Wraps layers based on parameter count (use `min_num_params` to control)
@@ -280,7 +269,7 @@ trainer.save_checkpoint(
 | ------------------------------- | --------------------------------------------------- |
 | Model fits on single GPU        | Use **DDP** (simpler, faster)                       |
 | Model doesn't fit on single GPU | Use **FSDP** with `FULL_SHARD`                      |
-| Multi-node training             | Use **FSDP** with `HYBRID_SHARD`                    |
+| Multi-node training             | Planned for **v4**                                  |
 | Maximum throughput              | Use **DDP** or **FSDP** with `SHARD_GRAD_OP`        |
 | Maximum model size              | Use **FSDP** with `FULL_SHARD` + `cpu_offload=True` |
 
@@ -288,11 +277,11 @@ trainer.save_checkpoint(
 
 <h3>6. Automatic Trainer Selection (AutoTrainer)</h3>
 
-The `AutoTrainer` provides intelligent automatic selection between single-GPU training, Distributed Data Parallel (DDP), and Fully Sharded Data Parallel (FSDP) based on your hardware and model characteristics.
+The `AutoTrainer` provides intelligent automatic selection between single-GPU training and single-node multi-GPU Distributed Data Parallel (DDP) or Fully Sharded Data Parallel (FSDP) based on your hardware and model characteristics.
 
 **Why Use AutoTrainer?**
 
-Traditional distributed training requires you to:
+Traditional multi-GPU training requires you to:
 
 - Manually detect GPU count
 - Choose between DDP and FSDP
@@ -326,10 +315,9 @@ trainer.train(epochs=10)
 1. **Hardware Detection**: Scans for available GPUs and their memory
 2. **Strategy Selection**: Chooses the optimal trainer:
     - 0-1 GPU → `Trainer` (single device)
-    - 2-4 GPUs, small model → `DDPTrainer`
-    - 2-4 GPUs, large model → `FSDPTrainer` (HYBRID_SHARD)
-    - 5+ GPUs, any model → `FSDPTrainer` (FULL_SHARD)
-3. **Configuration**: Sets up distributed backend, sharding, mixed precision
+    - 2-4 GPUs on one machine → `DDPTrainer` for smaller models, `FSDPTrainer` for larger models
+    - 5+ GPUs on one machine → `FSDPTrainer` (FULL_SHARD)
+3. **Configuration**: Sets up the single-node distributed backend, sharding, mixed precision
 4. **Initialization**: Handles `setup_distributed()` and device placement
 
 **Configuration Presets**
@@ -440,7 +428,10 @@ from olm.train import AutoTrainer
 
 trainer = AutoTrainer(
     model=model,
-    device="auto",  # Automatically configures for distributed
+    optimizer=AdamW,
+    dataloader=dataloader,
+    device="auto",  # Automatically configures the single-node multi-GPU path
+    context_length=2048,
     ...
 )
 trainer.train(epochs=10)
@@ -452,13 +443,7 @@ Launch with torchrun:
 # Single node, 4 GPUs
 torchrun --nproc_per_node=4 train_script.py
 
-# Multi-node, 8 GPUs per node
-torchrun --nproc_per_node=8 \
-         --nnodes=2 \
-         --node_rank=0 \
-         --master_addr="192.168.1.1" \
-         --master_port=29500 \
-         train_script.py
+# Multi-node launch helpers are planned for v4.
 ```
 
 **Advanced Configuration**
@@ -468,14 +453,17 @@ Fine-tune DDP or FSDP parameters:
 ```python
 trainer = AutoTrainer(
     model=model,
+    optimizer=AdamW,
+    dataloader=dataloader,
     device="auto",
+    context_length=2048,
+    preset="memory_efficient",
     # DDP parameters (used if DDP is selected)
     ddp_find_unused_parameters=False,
     ddp_broadcast_buffers=True,
     ddp_bucket_cap_mb=25,
     # FSDP parameters (used if FSDP is selected)
     fsdp_min_num_params=100_000_000,  # 100M params for auto-wrap
-    fsdp_cpu_offload=True,  # Override preset
     fsdp_backward_prefetch="BACKWARD_PRE",
     ...
 )
@@ -525,6 +513,8 @@ model = load_model("./checkpoints/no_tokenizer_model")
 > [!NOTE]
 > **Architecture Preservation**
 > The `.save()` method preserves the entire model object. This means you don't need to manually define the model's configuration (like `vocab_size` or `num_layers`) when loading; the library reconstructs the exact architecture for you.
+> Only load model directories you trust. OLM's current `.save()` format stores
+> Python module objects so custom architectures can round-trip.
 
 ---
 
@@ -588,9 +578,9 @@ Monitor your model's gradients and weights with histograms:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    log_gradients=True,      # Log gradient histograms
-    gradient_log_freq=100,   # Log every 100 steps
-    watch_model=True         # Use wandb.watch() for detailed tracking
+    log_gradients=True,
+    watch_model=True,
+    watch_freq=100,
 )
 ```
 
@@ -601,9 +591,7 @@ Automatically save and version your checkpoints:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    log_checkpoints=True,           # Save checkpoints as artifacts
-    checkpoint_interval=1000,        # Save every 1000 steps
-    checkpoint_dir="./checkpoints"   # Where to save locally
+    log_model=True,
 )
 ```
 
@@ -614,11 +602,10 @@ Get notified when metrics cross thresholds:
 ```python
 wandb_callback = WandBCallback(
     project="my-project",
-    enable_alerts=True,
     alert_thresholds={
-        "loss": 5.0,              # Alert if loss > 5.0
-        "gradient_norm": 10.0,    # Alert if gradients explode
-    }
+        "loss": {"max": 5.0},
+        "learning_rate": {"min": 1e-6},
+    },
 )
 ```
 
@@ -629,10 +616,10 @@ Log model predictions for qualitative analysis:
 ```python
 # During training, log predictions periodically
 wandb_callback.log_predictions(
+    step=trainer.global_step,
     inputs=["The quick brown", "Once upon a time"],
     predictions=["fox jumped over", "there was a"],
     targets=["fox jumped", "there was"],
-    step=trainer.step
 )
 ```
 
@@ -686,10 +673,10 @@ wandb_callback = WandBCallback(
 
 **7. Distributed Training Support**
 
-WandB integration automatically works with distributed training—only rank 0 logs to avoid duplicates:
+WandB integration automatically works with single-node multi-GPU training—only rank 0 logs to avoid duplicates:
 
 ```python
-# In your distributed training script
+# In your multi-GPU training script
 from olm.train.trainer import DDPTrainer
 from olm.logging import WandBCallback
 

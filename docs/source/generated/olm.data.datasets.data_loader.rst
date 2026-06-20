@@ -1,12 +1,7 @@
-olm.data.datasets.data\_loader
-==============================
+olm.data.datasets.data_loader
+=============================
 
 .. automodule:: olm.data.datasets.data_loader
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      DataLoader
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,12 +1,7 @@
-olm.data.tokenization.hf\_train\_custom
-=======================================
+olm.data.tokenization.hf_train_custom
+=====================================
 
 .. automodule:: olm.data.tokenization.hf_train_custom
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      HFTokenizerTrainCustom
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

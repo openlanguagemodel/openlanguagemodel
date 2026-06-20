@@ -1,63 +1,61 @@
-# olm.data.tokenization.base
+# `olm.data.tokenization.base`
 
-### Classes
+Source: [`src/olm/data/tokenization/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L1)
 
-| [`TokenizerBase`](#olm.data.tokenization.base.TokenizerBase)()   | Abstract base class for all tokenizers in OLM.   |
-|------------------------------------------------------------------|--------------------------------------------------|
+## Classes
 
-### *class* olm.data.tokenization.base.ABC
+### `TokenizerBase()`
 
-Bases: `object`
+**Bases:** `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.data.tokenization.base.TokenizerBase
-
-Bases: [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/data/tokenization/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L5)
 
 Abstract base class for all tokenizers in OLM.
 
 Defines the interface for converting between text strings and integer token IDs.
-Subclasses must implement encode and decode methods.
+Subclasses must implement `encode` and `decode` methods.
 
-#### *abstractmethod* decode(tokens: torch.Tensor) → str
+#### Methods
+
+##### `decode(self, tokens: torch.Tensor) -> str`
+
+Source: [`src/olm/data/tokenization/base.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L32)
 
 Converts a sequence of token IDs back into a text string.
 
-* **Parameters:**
-  **tokens** (*torch.Tensor*) – A 1D tensor or list of token IDs.
-* **Returns:**
-  The decoded text string.
-* **Return type:**
-  str
+**Parameters**
 
-#### *abstractmethod* encode(text: str) → torch.Tensor
+- `tokens` (`torch.Tensor`): A 1D tensor or list of token IDs.
+
+**Returns**
+
+- `str`: The decoded text string.
+
+##### `encode(self, text: str, add_special_tokens: bool = True) -> torch.Tensor`
+
+Source: [`src/olm/data/tokenization/base.py:17`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L17)
 
 Converts a text string into a sequence of token IDs.
 
-* **Parameters:**
-  **text** (*str*) – The input text to tokenize.
-* **Returns:**
-  A 1D tensor containing the token IDs.
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### olm.data.tokenization.base.abstractmethod(funcobj)
+- `text` (`str`): The input text to tokenize.
+- `add_special_tokens` (`bool`): Whether to include tokenizer-specific special tokens such as BOS/EOS markers.
 
-A decorator indicating abstract methods.
+**Returns**
 
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
+- `torch.Tensor`: A 1D tensor containing the token IDs.
 
-Usage:
+##### `save(self, path: str) -> None`
 
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …
+Source: [`src/olm/data/tokenization/base.py:45`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/tokenization/base.py#L45)
+
+Saves the tokenizer to a file.
+
+**Parameters**
+
+- `path` (`str`): Path to save the tokenizer to.
+
+**Returns**
+
+None

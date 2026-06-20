@@ -1,271 +1,185 @@
 # OpenLanguageModel (OLM)
 
-OpenLanguageModel (OLM) is a modular, transparent framework for building, training, and experimenting with transformer‑based language models.
+OpenLanguageModel is a PyTorch-native library for building, training, teaching, and researching transformer language models. It is designed for people who want the model architecture to stay visible while the training stack stays manageable.
 
-OLM is designed to make **sandboxing ideas and prototyping new architectures easy**, while still exposing the full complexity required for serious research and large‑scale training. It deliberately avoids black‑box abstractions: every major component is explicit, inspectable, and replaceable.
+OLM gives you:
 
-At the same time, OLM does not force you to work at the lowest level. You can start training quickly, then progressively peel back layers as you explore, modify, or reimplement parts of the system. In other words, OLM allows you to have a **customisable level of customisability**.
+- readable transformer components in `olm.nn`
+- implemented model families in `olm.models`
+- local and Hugging Face dataset streams in `olm.data`
+- single-device, single-node multi-GPU DDP/FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
 
----
+[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [Colab Notebooks](docs/colab-notebooks.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
 
-## Example: Defining GPT2 using OLM
+## Why OLM
 
-A simple example of defining the [GPT2]() structure using the olm library. 
+Most language-model libraries either hide the architecture behind configuration, or make you rebuild the whole training path from scratch. OLM sits in the middle: every block is an ordinary `torch.nn.Module`, but data loading, optimization, mixed precision, single-node multi-GPU training, checkpointing, and logging are already wired into a clean path.
 
-![Image showing comparison between GPT2 architecture and GPT2 code using olm](https://raw.githubusercontent.com/openlanguagemodel/openlanguagemodel/dev/image.png)
+That makes it useful for:
 
----
+- students learning how language models are assembled and trained
+- researchers running ablations on attention, norms, feed-forward layers, and residual structure
+- practitioners who want existing PyTorch workflows without a hidden runtime
 
-## Minimal Training Example
+## Llama 3 Block In OLM
 
-A simple example of training a simple language model on the [TinyShakespeare](https://huggingface.co/datasets/karpathy/tiny_shakespeare) dataset locally.
+Model code in OLM is meant to read like the architecture it represents. For example, the Llama 3 block is built from RMSNorm, grouped-query attention, SwiGLU, and explicit residual structure:
 
 ```python
-import sys, os, torch, urllib.request; from torch.utils.data import DataLoader; from tempfile import TemporaryDirectory
+from olm.nn.structure import Block
+from olm.nn.structure.combinators import Residual
+from olm.nn.attention import GroupedQueryAttention
+from olm.nn.feedforward import SwiGLUFFN
+from olm.nn.norms import RMSNorm
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from olm.data.datasets import Dataset; from olm.data.tokenization.hf_tokenizer import HFTokenizer; from olm.train.trainer import Trainer; from olm.nn.blocks import LM
+class Llama3Block(Block):
+    def __init__(
+        self,
+        embed_dim: int,
+        intermediate_size: int,
+        num_heads: int,
+        num_kv_heads: int,
+        max_seq_len: int,
+        dropout: float,
+        rope_theta: float,
+    ):
+        super().__init__([
+            Residual(Block([
+                RMSNorm(embed_dim, eps=1e-5),
+                GroupedQueryAttention(
+                    embed_dim,
+                    num_heads,
+                    num_kv_heads,
+                    max_seq_len,
+                    dropout=dropout,
+                    rope_theta=rope_theta,
+                    use_bias=False,
+                ),
+            ])),
+            Residual(Block([
+                RMSNorm(embed_dim, eps=1e-5),
+                SwiGLUFFN(
+                    embed_dim,
+                    hidden_dim=intermediate_size,
+                    dropout=dropout,
+                    bias=False,
+                ),
+            ])),
+        ])
+```
 
-with TemporaryDirectory() as tmp:
-  urllib.request.urlretrieve("https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt", os.path.join(tmp, "i.txt"))
-  tokenizer, device = HFTokenizer("gpt2"), "cuda" if torch.cuda.is_available() else "cpu"
-  model = LM(tokenizer.vocab_size, 64, 4, 2, 33)
-  optimizer = torch.optim.AdamW(model.parameters(), 3e-4)
-  dataset = Dataset(tmp, tokenizer, 32)
-  dataloader = DataLoader(dataset, 4)
-  trainer = Trainer(model, optimizer, dataloader, device, 32, use_amp=False)
-  losses = trainer.train(1, 10, 100)
-  print(f"S:{losses[0]:.4f} E:{losses[-1]:.4f} OK:{losses[-1]<losses[0]}")
-```  
+Source: [`src/olm/models/meta/llama3.py`](src/olm/models/meta/llama3.py)
 
-This setup is intentionally straightforward:
-* Models come from `olm.models`
-* Data pipelines come from `olm.data`
-* Training orchestration lives in `olm.train`
+## Train With The Stack Connected
 
-You can start with this structure and gradually customize any part of it.
+You can keep the model and optimizer as normal PyTorch objects while OLM handles the training loop details:
 
----
+```python
+import torch
+
+from olm.data.datasets import DataLoader, FineWebEduDataset
+from olm.data.tokenization import HFTokenizer
+from olm.models.openai import GPT2Model
+from olm.train import AutoTrainer
+from olm.train.optim import AdamW
+
+tokenizer = HFTokenizer("gpt2")
+dataset = FineWebEduDataset(tokenizer, context_length=1024, streaming=True)
+loader = DataLoader(dataset, batch_size=8, num_workers=4)
+
+model = GPT2Model(
+    vocab_size=tokenizer.vocab_size,
+    embed_dim=768,
+    num_layers=12,
+    num_heads=12,
+    max_seq_len=1024,
+)
+
+trainer = AutoTrainer(
+    model,
+    AdamW,
+    loader,
+    device="auto",
+    context_length=1024,
+    learning_rate=3e-4,
+    grad_accum_steps=8,
+)
+trainer.train(epochs=1, max_steps=1000)
+```
+
+`AutoTrainer` chooses between CPU, single-GPU, and single-node multi-GPU DDP/FSDP paths based on the hardware and model. You can still use `Trainer`, `DDPTrainer`, or `FSDPTrainer` directly when you want explicit control.
+
+## Implemented Model Families
+
+OLM includes named presets and configurable base classes for common transformer families:
+
+| Family | Source |
+|---|---|
+| GPT-2 | [`src/olm/models/openai/gpt2.py`](src/olm/models/openai/gpt2.py) |
+| Llama 2 | [`src/olm/models/meta/llama2.py`](src/olm/models/meta/llama2.py) |
+| Llama 3 / 3.1 / 3.2 | [`src/olm/models/meta/llama3.py`](src/olm/models/meta/llama3.py) |
+| Qwen 2.5 | [`src/olm/models/alibaba/qwen2.py`](src/olm/models/alibaba/qwen2.py) |
+| Phi-3 / Phi-3.5 | [`src/olm/models/microsoft/phi3.py`](src/olm/models/microsoft/phi3.py) |
+| Phi-4 | [`src/olm/models/microsoft/phi4.py`](src/olm/models/microsoft/phi4.py) |
+| Gemma 2 | [`src/olm/models/google/gemma2.py`](src/olm/models/google/gemma2.py) |
+| OLMo | [`src/olm/models/allenai/olmo.py`](src/olm/models/allenai/olmo.py) |
+| OPT | [`src/olm/models/facebook/opt.py`](src/olm/models/facebook/opt.py) |
+
+See [`docs/api.md`](docs/api.md) for the generated API reference and [`examples/`](examples/) for training scripts.
 
 ## Installation
 
-OLM is designed to be used as a regular Python library, with full access to the source.
-
-### Requirements
-
-* Python ≥ 3.10
-* PyTorch (CPU or CUDA, depending on your setup)
-
-OLM intentionally keeps its dependency surface small and relies heavily on PyTorch under the hood.
-
-### Install (Editable, Recommended)
+Use Python 3.10, 3.11, or 3.12.
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/openlanguagemodel/openlanguagemodel.git
 cd openlanguagemodel
 pip install -e .
 ```
-An editable install is recommended so you can inspect, modify, and extend components easily.
 
----
-## Configuration & Experiment Setup
+For development:
 
-Models in OLM can be described using simple YAML configuration files.
-
-```yaml
-model:
-name: gpt
-vocab_size: 50257
-n_layers: 12
-n_heads: 12
-d_model: 768
-  
-training:
-batch_size: 64
-max_steps: 100000
-```
-  
-Configurations describe **what** to run, not **how** it runs. All execution logic lives in Python and is fully editable.
-This separation keeps experiments reproducible without turning configuration files into code.
-
----
-
-## Why OLM?
-
-OLM exists to answer a common tension in ML systems:
-
-* High‑level frameworks are easy to use but hard to extend
-* Low‑level code is flexible but slow to iterate
-
-OLM sits in the middle.
-
-You can:
-
-* Get a model training with minimal setup
-* Swap architectural components without rewriting everything
-* Introduce entirely new structures and wiring patterns
-* Drop down to raw PyTorch whenever needed
-  
-If you are a beginner, looking to get their feet wet and quickly get started with language models, OLM makes it simple and easy
-to setup and work with many popular language models and datasets. If you are a more intermediate user looking to dive deep into
-architeectures or an advanced user looking to conduct research into novel structures then OLM also offers an easy environment to
-help with those workflows. Check out the [docs](/docs/) for understanding specific portions of the library and how it can be leveraged to its maximum capability
-
----
-
-## Design Philosophy
-
-OLM is built around three core ideas:
-
-* **Accessible by default** – Training and experimentation should be easy to start
-* **Transparent by construction** – No implicit behavior, no magic helpers
-* **Structure as a first‑class concept** – How blocks are composed matters as much as the blocks themselves
-
-Rather than hiding complexity, OLM **organizes it** into clear, navigable layers.
-
----
-## Repository Structure
-
-```
-openlanguagemodel/
-├── configs/            # YAML experiment configurations
-├── docs/               # Design notes and guides
-├── examples/           # End‑to‑end training examples
-├── src/olm/            # Core library code
-│ ├── data/             # Datasets, tokenization, loaders
-│ ├── models/           # High‑level model definitions
-│ ├── nn/               # Neural building blocks and structure
-| | ├── activations/    # Common activation functions
-| | ├── attention/      # Attention Models
-| | ├── blocks/         # Frequently used transformer blocks
-| | ├── embeddings/     # Positional and token embeddings
-| | ├── feedforward/    # Feedforward layers
-| | ├── moe/            # Mixture of experts
-| | ├── norms/          # Normalisation functions
-| | ├── structure/      # Helpers for structuring models
-│ ├── train/            # Training loop and orchestration
-│ └── utils/            # Shared helpers
-├── tests/
-└── verify_imports.py
+```bash
+pip install -e ".[dev]"
+pytest tests
 ```
 
----
-## PyTorch as the Foundation
+Optional extras:
 
-OLM is built directly on top of **PyTorch**.
-
-* All models are standard `torch.nn.Module`s
-* Autograd, optimizers, and AMP come directly from torch
-* No custom execution engines or hidden graph layers
-
-This means that you can drop into raw pytorch at any moment, and the code will accept that change readily. Also, the debugging
-and error handling, as well as managing pipelines behave exactly as expected. Knowledge of pytorch is thus encouraged although
-not completely necessary. This structure also allows you to have a varying amount of customisability. In a few words,
-
-"OLM extends PyTorch — it does not replace it."
-
----
-
-## Core Architecture: `olm.nn`
-
-At the heart of OLM is the `olm.nn` package. This is where *all neural logic lives*.
-Conceptually, everything in OLM resolves to components defined here.
-
-```
-olm.nn
-│
-├── attention/      # Multi‑head attention, masking, projections
-├── activations/    # GELU, SwiGLU, custom activations
-├── norm/           # LayerNorm and variants
-├── embeddings/     # Token and positional embeddings
-├── structure/      # Residuals, combinators, block wiring
-└── misc/           # Small reusable neural utilities
+```bash
+pip install -e ".[wandb]"  # Weights & Biases logging
+pip install -e ".[docs]"   # documentation tooling
 ```
 
-Each component is:
+See [`docs/installation.md`](docs/installation.md) for dependency and release-build details.
 
-* A plain `torch.nn.Module`
-* Independently testable
-* Safe to extend, replace, or rewrite
+## Documentation Flow
 
-You can use these building blocks directly, subclass them, or bypass them entirely.
+- Install from [`docs/installation.md`](docs/installation.md)
+- Start with [`docs/getting-started.md`](docs/getting-started.md)
+- Review architecture concepts in [`docs/architecture.md`](docs/architecture.md)
+- Run guided Colabs from [`docs/colab-notebooks.md`](docs/colab-notebooks.md)
+- Train from examples in [`examples/`](examples/)
+- Use [`docs/datasets-and-training.md`](docs/datasets-and-training.md) for data, trainer, AutoTrainer, callbacks, and checkpointing
+- Use [`docs/api.md`](docs/api.md) when you need exact signatures and source-defined methods
+- Read [`docs/release-v2.2.0.md`](docs/release-v2.2.0.md) for the v2.2 release notes
 
----
-## Structural Composition: `olm.nn.structure`
+## Project Status
 
-A distinguishing feature of OLM is its explicit treatment of **structure**.
+OLM v2.2 is the stabilization and release-readiness pass: tied output embeddings by default, model-family smoke coverage, AutoTrainer, streaming datasets, AMP, checkpointing, single-node DDP/FSDP paths, clearer installation docs, and a stronger generated API reference. Multi-node training remains a v4 roadmap item.
 
-Instead of hard‑coding how layers are connected, OLM separates *what a block does* from *how blocks are wired together*.
+## Citation
 
-The `olm.nn.structure` module provides:
-* Residual combinators
-* Block wrappers
-* Explicit composition utilities
-
-This makes it easy to:
-
-* Experiment with alternative residual paths
-* Implement pre‑norm, post‑norm, or custom normalization schemes
-* Build non‑standard transformer variants
-* Reuse the same core layers across multiple architectures
-
-Custom structures are not special cases — they are first‑class citizens. Entirely new wiring patterns can be implemented without modifying existing layers.
-
----
-## Models: `olm.models`
-
-Models in OLM are intentionally lightweight.
-
-They:
-* Assemble components from `olm.nn`
-* Define forward passes clearly
-* Contain no training or optimization logic
-
-This separation allows you to:
-
-* Reuse the same architecture across different training setups
-* Modify internal blocks without touching the trainer
-* Prototype new architectures quickly
-
----
-## Data Pipeline: `olm.data`
-
-The `olm.data` module handles everything related to **input text and batching**, while remaining flexible enough for different research workflows.
-
-It provides:
-
-* Dataset abstractions
-* Tokenization hooks
-* Iterable and streaming datasets
-* Collation utilities for language modeling
-
----
-## Training Setup: `olm.train`
-
-OLM is designed so that **setting up training is simple**, even though nothing is hidden.
-
-A typical training setup involves:
-
-```python
-
-model = build_model(cfg)
-
-dataloader = build_dataloader(cfg)
-
-trainer = Trainer(model, dataloader, ...)
-
-trainer.train()
-
+```bibtex
+@software{openlanguagemodel2026,
+  title = {OpenLanguageModel},
+  author = {Tavish Mankash and Vardhaman Kalloli and Keshava Prasad},
+  year = {2026},
+  url = {https://github.com/openlanguagemodel/openlanguagemodel}
+}
 ```
 
-The trainer exists to connect components, not to dictate behavior. If you want to modify the training loop — logging, accumulation, precision, or checkpointing — you can do so directly.
+## License
 
----
-## Who OLM Is For
-
-OLM works well for:
-
-* Students learning how transformers are built
-* Researchers prototyping new architectures
-* Engineers who want control without unnecessary boilerplate
+MIT. See [`LICENSE`](LICENSE).

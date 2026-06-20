@@ -21,6 +21,9 @@ class DataLoader(TorchDataLoader):
     - Persistent workers for efficiency
     - Distributed training support with DistributedSampler
 
+    For OLM text datasets, iteration usually yields batched
+    ``(input_ids, labels)`` tensors with shape ``[batch, context_length]``.
+
     Args:
         dataset: Dataset to load from (can be map-style or iterable).
         batch_size: Number of samples per batch (default: 8).

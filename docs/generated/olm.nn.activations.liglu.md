@@ -1,58 +1,38 @@
-# olm.nn.activations.liglu
+# `olm.nn.activations.liglu`
 
-### Classes
+Source: [`src/olm/nn/activations/liglu.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/liglu.py#L1)
 
-| [`LiGLU`](#olm.nn.activations.liglu.LiGLU)(\*args, \*\*kwargs)   | LiGLU activation function.   |
-|------------------------------------------------------------------|------------------------------|
+## Classes
 
-### *class* olm.nn.activations.liglu.ActivationBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `LiGLU(*, device: torch.device | None = None, dtype: torch.dtype | None = None) -> None`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.activations.base.ActivationBase`
 
-Abstract base class for all activation functions.
-
-Ensures a consistent interface for activation layers, handling device and dtype
-initialization. Subclasses must implement the forward method.
-
-#### device
-
-The device the module is on.
-
-* **Type:**
-  torch.device, optional
-
-#### dtype
-
-The data type of the module parameters.
-
-* **Type:**
-  torch.dtype
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Apply activation to `x`.
-
-### *class* olm.nn.activations.liglu.LiGLU(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`ActivationBase`](olm.nn.activations.base.md#olm.nn.activations.base.ActivationBase)
+Source: [`src/olm/nn/activations/liglu.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/liglu.py#L5)
 
 LiGLU activation function.
 
 Implements the LiGLU variant (Linear GLU).
-LiGLU(x, W, V) = (xW) \* (xV)
-Here: LiGLU(x) = gate \* value (No activation on gate)
+LiGLU(x, W, V) = (xW) * (xV)
+Here: LiGLU(x) = gate * value (No activation on gate)
 
-* **Parameters:**
-  * **device** (*torch.device* *,* *optional*) – Target device.
-  * **dtype** (*torch.dtype* *,* *optional*) – Target data type.
+**Parameters**
 
-#### forward(x: torch.Tensor) → torch.Tensor
+- `device` (`torch.device, optional`): Target device.
+- `dtype` (`torch.dtype, optional`): Target data type.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/activations/liglu.py:19`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/liglu.py#L19)
 
 Forward pass of LiGLU.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor.
-* **Returns:**
-  Output tensor with half the last dimension.
-* **Return type:**
-  torch.Tensor
+**Parameters**
+
+- `x` (`torch.Tensor`): Input tensor.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor with half the last dimension.

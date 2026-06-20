@@ -1,60 +1,28 @@
-# olm.train.callbacks.early_stopping_cb
+# `olm.train.callbacks.early_stopping_cb`
+
+Source: [`src/olm/train/callbacks/early_stopping_cb.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/early_stopping_cb.py#L1)
 
 Early stopping callback to prevent overfitting.
 
-### Classes
+## Classes
 
-| [`EarlyStoppingCallback`](#olm.train.callbacks.early_stopping_cb.EarlyStoppingCallback)([patience, min_delta])   | Callback to stop training early if validation loss doesn't improve.   |
-|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+### `EarlyStoppingCallback(patience: int = 5, min_delta: float = 0.0)`
 
-### *class* olm.train.callbacks.early_stopping_cb.EarlyStoppingCallback(patience: int = 5, min_delta: float = 0.0)
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
 
-Bases: [`TrainerCallback`](olm.train.trainer.trainer.md#olm.train.trainer.trainer.TrainerCallback)
+Source: [`src/olm/train/callbacks/early_stopping_cb.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/early_stopping_cb.py#L8)
 
-Callback to stop training early if validation loss doesn’t improve.
+Callback to stop training early if validation loss doesn't improve.
 
-* **Parameters:**
-  * **patience** – Number of validation checks to wait for improvement.
-  * **min_delta** – Minimum change in validation loss to qualify as improvement.
+**Parameters**
 
-#### on_step_end(trainer, step: int, loss: float) → None
+- `patience`: Number of validation checks to wait for improvement.
+- `min_delta`: Minimum change in validation loss to qualify as improvement.
+
+#### Methods
+
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/early_stopping_cb.py:24`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/early_stopping_cb.py#L24)
 
 Check for early stopping after each step.
-
-### *class* olm.train.callbacks.early_stopping_cb.TrainerCallback
-
-Bases: `object`
-
-Base class for trainer callbacks.
-
-#### on_batch_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), batch_idx: int) → None
-
-Called at the beginning of each batch.
-
-#### on_batch_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), batch_idx: int, loss: float) → None
-
-Called at the end of each batch.
-
-#### on_epoch_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), epoch: int) → None
-
-Called at the beginning of each epoch.
-
-#### on_epoch_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), epoch: int) → None
-
-Called at the end of each epoch.
-
-#### on_step_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), step: int) → None
-
-Called at the beginning of each optimization step (after gradient accumulation).
-
-#### on_step_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), step: int, loss: float) → None
-
-Called at the end of each optimization step.
-
-#### on_train_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer)) → None
-
-Called at the beginning of training.
-
-#### on_train_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer)) → None
-
-Called at the end of training.
