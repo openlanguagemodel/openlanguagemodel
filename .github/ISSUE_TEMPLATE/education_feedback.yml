@@ -1,0 +1,29 @@
+name: Course or classroom feedback
+description: Share feedback from using OLM in a course, workshop, or study group.
+title: "[Education]: "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Teaching context
+      description: Tell us the course, workshop, club, or self-study setting.
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked well?
+      description: Which docs, notebooks, examples, or explanations landed?
+  - type: textarea
+    id: friction
+    attributes:
+      label: What confused learners?
+      description: Share any rough edges, missing setup steps, or concepts that needed more explanation.
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: What would help your class?
+      description: Colabs, slides, exercises, examples, APIs, or docs changes.

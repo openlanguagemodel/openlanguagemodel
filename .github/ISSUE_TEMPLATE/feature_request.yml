@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest a focused improvement or new capability.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Explain the workflow, teaching use case, research need, or pain point.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the API, docs change, model family, or behavior you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: If relevant, describe other designs or libraries you compared.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - documentation/examples
+        - API polish
+        - bug fix
+        - model family
+        - training feature
+        - education/course support
+        - larger roadmap item
