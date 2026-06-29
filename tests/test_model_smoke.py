@@ -6,20 +6,24 @@ from torch.utils.data import TensorDataset
 from olm.data.datasets import DataLoader
 import olm.models.alibaba.qwen2 as qwen2_module
 import olm.models.allenai.olmo as olmo_module
+import olm.models.allenai.olmo3 as olmo3_module
 import olm.models.facebook.opt as opt_module
 import olm.models.google.gemma2 as gemma2_module
 import olm.models.meta.llama2 as llama2_module
 import olm.models.meta.llama3 as llama3_module
 import olm.models.microsoft.phi3 as phi3_module
 import olm.models.microsoft.phi4 as phi4_module
+import olm.models.minimax.minimax_m2 as minimax_module
 import olm.models.openai.gpt2 as gpt2_module
 from olm.models.alibaba import Qwen2Model
-from olm.models.allenai import OLMoModel, OLMo_7B
+from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
 from olm.models.facebook import OPTModel
 from olm.models.google import Gemma2Model
 from olm.models.meta import Llama2Model, Llama3Model
 from olm.models.microsoft import Phi3Model, Phi4Model, Phi4_14B
+from olm.models.minimax import MiniMaxM2Model
 from olm.models.openai import GPT2Model
+from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
 from olm.train import Trainer
 from olm.train.optim import AdamW
 
@@ -145,6 +149,39 @@ def _model_cases():
                 num_layers=1,
                 num_heads=4,
                 dropout=0.0,
+            ),
+        ),
+        (
+            "olmo3",
+            Olmo3Model(
+                vocab_size=128,
+                embed_dim=32,
+                intermediate_size=64,
+                num_layers=4,
+                num_heads=4,
+                num_kv_heads=2,
+                head_dim=8,
+                max_seq_len=16,
+                rms_norm_eps=1e-6,
+                sliding_window=4,
+            ),
+        ),
+        (
+            "minimax_m2",
+            MiniMaxM2Model(
+                vocab_size=128,
+                embed_dim=32,
+                moe_intermediate_size=16,
+                num_layers=1,
+                num_heads=4,
+                num_kv_heads=2,
+                max_seq_len=16,
+                num_experts=4,
+                top_k=2,
+                head_dim=8,
+                rope_theta=5000000.0,
+                rotary_percentage=0.5,
+                use_qk_norm=True,
             ),
         ),
     ]
@@ -309,6 +346,66 @@ def test_llama3_2_1b_reference_config():
     assert kwargs["rope_theta"] == 500000.0
 
 
+def test_olmo3_uses_post_norm_and_sliding_window_pattern():
+    model = Olmo3Model(128, 32, 64, 4, 4, 2, 8, max_seq_len=16, sliding_window=4)
+    blocks = model.blocks[1].stack
+
+    # 3 sliding-window layers followed by 1 full-attention (global) layer.
+    assert [b.sliding_window for b in blocks] == [4, 4, 4, None]
+    # Post-norm: per-sublayer output norms, QK-norm enabled, no input norm.
+    first = blocks[0]
+    assert hasattr(first, "post_attention_layernorm")
+    assert hasattr(first, "post_feedforward_layernorm")
+    assert not hasattr(first, "input_layernorm")
+    assert first.self_attn.use_qk_norm
+
+
+def test_olmo3_reference_presets_are_untied():
+    with patch.object(
+        olmo3_module.Olmo3Model, "__init__", return_value=None
+    ) as init:
+        olmo3_module.Olmo3_7B()
+        olmo3_module.Olmo3_32B()
+
+    seven_b, thirty_two_b = [call.kwargs for call in init.call_args_list]
+    assert seven_b["tie_weights"] is False
+    assert seven_b["num_heads"] == 32 and seven_b["num_kv_heads"] == 32
+    assert seven_b["vocab_size"] == 100278
+    assert thirty_two_b["tie_weights"] is False
+    assert thirty_two_b["num_heads"] == 40 and thirty_two_b["num_kv_heads"] == 8
+    assert thirty_two_b["intermediate_size"] == 27648
+    assert thirty_two_b["rope_theta"] == 500000.0
+
+
+def test_minimax_m2_uses_partial_rope_and_sigmoid_router():
+    model = MiniMaxM2Model(128, 32, 16, 1, 4, 2, 16, 4, 2, head_dim=8)
+    block = model.blocks[1].stack[0]
+    attn = block.blocks[0].block.blocks[1]
+    moe = block.blocks[1].block.blocks[1]
+
+    assert isinstance(attn.rope, PartialRotaryPositionalEmbedding)
+    # head_dim=8, rotary_percentage=0.5 -> 4 rotated dims
+    assert attn.rope.rotary_dim == 4
+    assert attn.use_qk_norm
+    assert isinstance(moe.router, minimax_module.MiniMaxM2Router)
+
+
+def test_minimax_m2_reference_preset_is_untied():
+    with patch.object(
+        minimax_module.MiniMaxM2Model, "__init__", return_value=None
+    ) as init:
+        minimax_module.MiniMaxM2()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 200064
+    assert kwargs["head_dim"] == 128
+    assert kwargs["num_experts"] == 256
+    assert kwargs["top_k"] == 8
+    assert kwargs["rope_theta"] == 5000000.0
+    assert kwargs["rotary_percentage"] == 0.5
+
+
 def test_phi3_reference_preset_constants():
     with patch.object(phi3_module.Phi3Model, "__init__", return_value=None) as init:
         phi3_module.Phi3_5_Mini()
@@ -379,7 +476,9 @@ def test_qwen25_1_5b_reference_config():
         (phi4_module, "Phi4Model", ["Phi4_14B"]),
         (gemma2_module, "Gemma2Model", ["Gemma2_2B", "Gemma2_9B", "Gemma2_27B"]),
         (olmo_module, "OLMoModel", ["OLMo_7B"]),
+        (olmo3_module, "Olmo3Model", ["Olmo3_7B", "Olmo3_32B"]),
         (opt_module, "OPTModel", ["OPT125M"]),
+        (minimax_module, "MiniMaxM2Model", ["MiniMaxM2"]),
     ],
 )
 def test_named_model_presets_call_base_constructor(module, base_name, preset_names):
