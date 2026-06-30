@@ -8,7 +8,7 @@ from .tanh import Tanh
 from .relu import ReLU
 from .leaky_relu import LeakyReLU
 from .gelu import GELU
-from .silu import SiLU
+from .silu import SiLU, Swish
 from .elu import ELU
 from .selu import SELU
 from .prelu import PReLU

@@ -1,115 +1,139 @@
-# olm.nn.structure.combinators
+# `olm.nn.structure.combinators`
 
-### *class* olm.nn.structure.combinators.BaseCombinator(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+Source: [`src/olm/nn/structure/combinators/__init__.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/__init__.py#L1)
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+## Classes
+
+### `BaseCombinator()`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/structure/combinators/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/base.py#L5)
 
 Abstract base class for combinator modules.
 
-Subclasses implement `forward` to define how inputs are combined.
+Subclasses implement ``forward`` to define how inputs are combined.
 
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/structure/combinators/base.py:15`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/base.py#L15)
 
 Compute the combinator output from an input tensor.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor produced by the combinator.
+**Parameters**
 
-### *class* olm.nn.structure.combinators.Parallel(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x`: Input tensor.
 
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+**Returns**
+
+Output tensor produced by the combinator.
+
+### `Parallel(blocks: List[torch.nn.modules.module.Module], merge: Callable = None, dim: int = -1)`
+
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
+
+Source: [`src/olm/nn/structure/combinators/parallel.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L6)
 
 Apply multiple blocks to the same input and merge their outputs.
 
 The merge function takes a list of tensors and a dimension argument.
 
-* **Parameters:**
-  * **blocks** – Modules applied in parallel to the same input.
-  * **merge** – Function that combines the list of outputs and a dimension.
-  * **dim** – Dimension used by the merge function when applicable.
+**Parameters**
 
-#### blocks
+- `blocks`: Modules applied in parallel to the same input.
+- `merge`: Function that combines the list of outputs and a dimension.
+- `dim`: Dimension used by the merge function when applicable.
 
-ModuleList storing the parallel blocks.
+**Attributes**
 
-#### merge
+- `blocks`: ModuleList storing the parallel blocks.
+- `merge`: Merge function used to combine outputs.
+- `dim`: Dimension passed to the merge function.
 
-Merge function used to combine outputs.
+#### Methods
 
-#### dim
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-Dimension passed to the merge function.
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/structure/combinators/parallel.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L37)
 
 Apply all blocks in parallel and merge their outputs.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Merged output tensor.
+**Parameters**
 
-### *class* olm.nn.structure.combinators.Repeat(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x`: Input tensor.
 
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+**Returns**
+
+Merged output tensor.
+
+### `Repeat(module_func: Callable[[], torch.nn.modules.module.Module], num_repeat: int)`
+
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
+
+Source: [`src/olm/nn/structure/combinators/repeat.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/repeat.py#L6)
 
 Repeat a module a fixed number of times in sequence.
 
-The module function should return a new module instance each call.
+The module function should return a new module instance each call. It is
+used to build ``stack`` during initialization and is not needed for forward
+passes after the modules have been created.
 
-* **Parameters:**
-  * **module_func** – Callable returning a new module instance.
-  * **num_repeat** – Number of times to repeat the module.
+**Parameters**
 
-#### module
+- `module_func`: Callable returning a new module instance.
+- `num_repeat`: Number of times to repeat the module.
 
-Factory callable used to create new modules.
+**Attributes**
 
-#### num_repeat
+- `num_repeat`: Number of repeats.
+- `stack`: ModuleList containing the repeated modules.
 
-Number of repeats.
+#### Methods
 
-#### stack
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-ModuleList containing the repeated modules.
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/structure/combinators/repeat.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/repeat.py#L42)
 
 Apply the repeated modules in sequence.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor after all repeats.
+**Parameters**
 
-### *class* olm.nn.structure.combinators.Residual(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x`: Input tensor.
 
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+**Returns**
+
+Output tensor after all repeats.
+
+### `Residual(block: torch.nn.modules.module.Module)`
+
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
+
+Source: [`src/olm/nn/structure/combinators/residual.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/residual.py#L5)
 
 Residual wrapper that adds the block output to its input.
 
-* **Parameters:**
-  **block** – Module applied to the input before residual addition.
+**Parameters**
 
-#### block
+- `block`: Module applied to the input before residual addition.
 
-Module used for the residual transformation.
+**Attributes**
 
-#### forward(x: torch.Tensor) → torch.Tensor
+- `block`: Module used for the residual transformation.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/structure/combinators/residual.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/residual.py#L26)
 
 Apply the block and add the result to the input.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor with residual connection applied.
+**Parameters**
 
-### Modules
+- `x`: Input tensor.
 
-| [`base`](olm.nn.structure.combinators.base.md#module-olm.nn.structure.combinators.base)             |    |
-|-----------------------------------------------------------------------------------------------------|----|
-| [`parallel`](olm.nn.structure.combinators.parallel.md#module-olm.nn.structure.combinators.parallel) |    |
-| [`repeat`](olm.nn.structure.combinators.repeat.md#module-olm.nn.structure.combinators.repeat)       |    |
-| [`residual`](olm.nn.structure.combinators.residual.md#module-olm.nn.structure.combinators.residual) |    |
+**Returns**
+
+Output tensor with residual connection applied.

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from typing import Optional
 from olm.nn.attention.base import AttentionBase, AttentionwithRoPEBase
+from olm.nn.attention.masks import attention_mask_to_bool
 
 
 class MultiHeadAttention(AttentionBase):
@@ -46,7 +47,8 @@ class MultiHeadAttention(AttentionBase):
             attention_scores = attention_scores.masked_fill(~causal_mask, float('-inf'))
 
         if mask is not None:
-            attention_scores = attention_scores.masked_fill(mask == 0, float('-inf'))
+            allowed_mask = attention_mask_to_bool(mask, device=q.device)
+            attention_scores = attention_scores.masked_fill(~allowed_mask, float('-inf'))
 
         attention_probs = torch.softmax(attention_scores, dim=-1)
         attention_probs = self.dropout(attention_probs)
@@ -98,7 +100,8 @@ class MultiHeadAttentionwithRoPE(AttentionwithRoPEBase):
             attention_scores = attention_scores.masked_fill(~causal_mask, float('-inf'))
 
         if mask is not None:
-            attention_scores = attention_scores.masked_fill(mask == 0, float('-inf'))
+            allowed_mask = attention_mask_to_bool(mask, device=q.device)
+            attention_scores = attention_scores.masked_fill(~allowed_mask, float('-inf'))
 
         attention_probs = torch.softmax(attention_scores, dim=-1)
         attention_probs = self.dropout(attention_probs)

@@ -1,34 +1,14 @@
-# olm.train.optim.base
+# `olm.train.optim.base`
 
-### Classes
+Source: [`src/olm/train/optim/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L1)
 
-| [`OptimizerBase`](#olm.train.optim.base.OptimizerBase)(\*args, \*\*kwargs)   | Abstract base class for all optimizers in the OLM framework.   |
-|------------------------------------------------------------------------------|----------------------------------------------------------------|
+## Classes
 
-### *class* olm.train.optim.base.ABC
+### `OptimizerBase(params: collections.abc.Iterable[torch.Tensor] | collections.abc.Iterable[dict[str, Any]] | collections.abc.Iterable[tuple[str, torch.Tensor]], defaults: dict[str, typing.Any]) -> None`
 
-Bases: `object`
+**Bases:** `Optimizer`, `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.train.optim.base.Any(\*args, \*\*kwargs)
-
-Bases: `object`
-
-Special type indicating an unconstrained type.
-
-- Any is compatible with every type.
-- Any assumed to have all methods.
-- All values assumed to be instances of Any.
-
-Note that all the above statements are true from the point of view of
-static type checkers. At runtime, Any should not be used with instance
-checks.
-
-### *class* olm.train.optim.base.OptimizerBase(\*args: [Any](#olm.train.optim.base.Any), \*\*kwargs: [Any](#olm.train.optim.base.Any))
-
-Bases: `Optimizer`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/train/optim/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L8)
 
 Abstract base class for all optimizers in the OLM framework.
 
@@ -36,74 +16,69 @@ Provides a consistent interface for optimizer implementations, including
 standard methods for parameter updates, gradient zeroing, and state management.
 All custom optimizers should inherit from this class.
 
-This base class extends PyTorch’s Optimizer class and adds additional
+This base class extends PyTorch's Optimizer class and adds additional
 functionality specific to the OLM framework.
 
 Subclasses must implement the step() method to define the optimization logic.
 
-#### extra_repr() → str
+#### Methods
+
+##### `extra_repr(self) -> str`
+
+Source: [`src/olm/train/optim/base.py:74`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L74)
 
 String representation of the optimizer for debugging.
 
 Override this in subclasses to provide useful information.
 
-#### load_state_dict(state_dict: Dict[str, [Any](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Any)])
+##### `load_state_dict(self, state_dict: Dict[str, Any])`
+
+Source: [`src/olm/train/optim/base.py:64`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L64)
 
 Loads the optimizer state.
 
-* **Parameters:**
-  **state_dict** – optimizer state. Should be an object returned
-  from a call to state_dict().
+**Parameters**
 
-#### state_dict() → Dict[str, [Any](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Any)]
+- `state_dict`: optimizer state. Should be an object returned from a call to state_dict().
+
+##### `state_dict(self) -> Dict[str, Any]`
+
+Source: [`src/olm/train/optim/base.py:48`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L48)
 
 Returns the state of the optimizer as a dict.
 
 It contains two entries:
 
-- `state`: dict holding current optimization state. Its content
+- ``state``: dict holding current optimization state. Its content
   differs between optimizer classes.
-- `param_groups`: list containing all parameter groups where each
+- ``param_groups``: list containing all parameter groups where each
   parameter group is a dict.
 
-* **Returns:**
-  Dictionary containing optimizer state
+**Returns**
 
-#### *abstractmethod* step(closure: Callable[[], float] | None = None) → float | None
+Dictionary containing optimizer state
+
+##### `step(self, closure: Callable[[], float] | None = None) -> float | None`
+
+Source: [`src/olm/train/optim/base.py:22`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L22)
 
 Performs a single optimization step.
 
-* **Parameters:**
-  **closure** – A closure that reevaluates the model and returns the loss.
-  Some optimization algorithms (e.g., L-BFGS) require multiple
-  evaluations of the loss function.
-* **Returns:**
-  Optional loss value if closure is provided.
+**Parameters**
 
-#### zero_grad(set_to_none: bool = True)
+- `closure`: A closure that reevaluates the model and returns the loss. Some optimization algorithms (e.g., L-BFGS) require multiple evaluations of the loss function.
+
+**Returns**
+
+Optional loss value if closure is provided.
+
+##### `zero_grad(self, set_to_none: bool = True)`
+
+Source: [`src/olm/train/optim/base.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/optim/base.py#L37)
 
 Sets gradients of all optimized tensors to zero or None.
 
-* **Parameters:**
-  **set_to_none** – Instead of setting to zero, set the grads to None.
-  This is more memory efficient and can slightly improve performance.
-  Default: True
+**Parameters**
 
-### olm.train.optim.base.abstractmethod(funcobj)
-
-A decorator indicating abstract methods.
-
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
-
-Usage:
-
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …
+- `set_to_none`: Instead of setting to zero, set the grads to None. This is more memory efficient and can slightly improve performance.
+- `Default`: True

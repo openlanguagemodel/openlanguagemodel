@@ -1,65 +1,43 @@
-# olm.nn.structure.combinators.parallel
+# `olm.nn.structure.combinators.parallel`
 
-### Classes
+Source: [`src/olm/nn/structure/combinators/parallel.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L1)
 
-| [`Parallel`](#olm.nn.structure.combinators.parallel.Parallel)(\*args, \*\*kwargs)   | Apply multiple blocks to the same input and merge their outputs.   |
-|-------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.structure.combinators.parallel.BaseCombinator(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `Parallel(blocks: List[torch.nn.modules.module.Module], merge: Callable = None, dim: int = -1)`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
 
-Abstract base class for combinator modules.
-
-Subclasses implement `forward` to define how inputs are combined.
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Compute the combinator output from an input tensor.
-
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor produced by the combinator.
-
-### *class* olm.nn.structure.combinators.parallel.Parallel(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+Source: [`src/olm/nn/structure/combinators/parallel.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L6)
 
 Apply multiple blocks to the same input and merge their outputs.
 
 The merge function takes a list of tensors and a dimension argument.
 
-* **Parameters:**
-  * **blocks** – Modules applied in parallel to the same input.
-  * **merge** – Function that combines the list of outputs and a dimension.
-  * **dim** – Dimension used by the merge function when applicable.
+**Parameters**
 
-#### blocks
+- `blocks`: Modules applied in parallel to the same input.
+- `merge`: Function that combines the list of outputs and a dimension.
+- `dim`: Dimension used by the merge function when applicable.
 
-ModuleList storing the parallel blocks.
+**Attributes**
 
-#### merge
+- `blocks`: ModuleList storing the parallel blocks.
+- `merge`: Merge function used to combine outputs.
+- `dim`: Dimension passed to the merge function.
 
-Merge function used to combine outputs.
+#### Methods
 
-#### dim
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-Dimension passed to the merge function.
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/structure/combinators/parallel.py:37`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/parallel.py#L37)
 
 Apply all blocks in parallel and merge their outputs.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Merged output tensor.
+**Parameters**
 
-### *class* olm.nn.structure.combinators.parallel.Union
+- `x`: Input tensor.
 
-Bases: `object`
+**Returns**
 
-Represent a union type
-
-E.g. for int | str
+Merged output tensor.

@@ -36,20 +36,20 @@ class RotaryPositionalEmbedding(PositionalEmbeddingBase):
         # we store as buffer for caching
         self.register_buffer("inv_freq", inv_freq, persistent=False)
 
-        # cache sin/cos for positions up to max_seq_len
-        t = torch.arange(max_seq_len, dtype=torch.float32)
-        # outer product: (max_seq_len, head_dim/2)
-        freqs = torch.einsum(
-            "i,j->ij", t, inv_freq
-        )  # shape = [max_seq_len, head_dim/2]
-        # now cos and sin
-        emb_sin = freqs.sin()
-        emb_cos = freqs.cos()
-        # shape to broadcast: [max_seq_len, 1, head_dim/2]
-        emb_sin = emb_sin.unsqueeze(1)
-        emb_cos = emb_cos.unsqueeze(1)
-        self.register_buffer("emb_sin", emb_sin, persistent=False)
-        self.register_buffer("emb_cos", emb_cos, persistent=False)
+        self.register_buffer(
+            "emb_sin", torch.empty(0, 1, head_dim // 2), persistent=False
+        )
+        self.register_buffer(
+            "emb_cos", torch.empty(0, 1, head_dim // 2), persistent=False
+        )
+
+    def _update_cache(self, seq_len: int, device: torch.device) -> None:
+        """Materialize sin/cos cache up to the requested sequence length."""
+        t = torch.arange(seq_len, dtype=torch.float32, device=device)
+        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32)
+        freqs = torch.einsum("i,j->ij", t, inv_freq)
+        self.register_buffer("emb_sin", freqs.sin().unsqueeze(1), persistent=False)
+        self.register_buffer("emb_cos", freqs.cos().unsqueeze(1), persistent=False)
 
     def forward(
         self, x: torch.Tensor, seq_positions: Optional[torch.LongTensor] = None
@@ -80,15 +80,17 @@ class RotaryPositionalEmbedding(PositionalEmbeddingBase):
         else:
             pos = seq_positions
 
-        # fetch sin/cos for these positions
-        # emb_sin/cos shape: [max_seq_len, 1, head_dim/2]
-        if seq_len > self.max_seq_len:
+        required_len = int(pos.max().item()) + 1 if pos.numel() else seq_len
+        if required_len > self.max_seq_len:
             raise ValueError(
-                f"Sequence length {seq_len} greater than max_seq_len {self.max_seq_len}"
+                f"Sequence length {required_len} greater than max_seq_len {self.max_seq_len}"
             )
 
-        sin = self.emb_sin[pos]  # (batch, seq_len, 1, head_dim/2)
-        cos = self.emb_cos[pos]  # same shape
+        if self.emb_sin.device != x.device or self.emb_sin.size(0) < required_len:
+            self._update_cache(required_len, x.device)
+
+        sin = self.emb_sin[pos].to(dtype=x.dtype)  # (batch, seq_len, 1, head_dim/2)
+        cos = self.emb_cos[pos].to(dtype=x.dtype)  # same shape
 
         # apply to x — interleave halves of head_dim into pairs
         # split x into even/odd dims: (x_even, x_odd)
@@ -163,18 +165,20 @@ class PartialRotaryPositionalEmbedding(PositionalEmbeddingBase):
         # inv_freq shape: (rotary_dim/2,)
         self.register_buffer("inv_freq", inv_freq, persistent=False)
 
-        # cache sin/cos for positions up to max_seq_len
-        t = torch.arange(max_seq_len, dtype=torch.float32)
-        # outer product: (max_seq_len, rotary_dim/2)
+        self.register_buffer(
+            "emb_sin", torch.empty(0, 1, rotary_dim // 2), persistent=False
+        )
+        self.register_buffer(
+            "emb_cos", torch.empty(0, 1, rotary_dim // 2), persistent=False
+        )
+
+    def _update_cache(self, seq_len: int, device: torch.device) -> None:
+        """Materialize sin/cos cache up to the requested sequence length."""
+        t = torch.arange(seq_len, dtype=torch.float32, device=device)
+        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32)
         freqs = torch.einsum("i,j->ij", t, inv_freq)
-        # now cos and sin
-        emb_sin = freqs.sin()
-        emb_cos = freqs.cos()
-        # shape to broadcast: [max_seq_len, 1, rotary_dim/2]
-        emb_sin = emb_sin.unsqueeze(1)
-        emb_cos = emb_cos.unsqueeze(1)
-        self.register_buffer("emb_sin", emb_sin, persistent=False)
-        self.register_buffer("emb_cos", emb_cos, persistent=False)
+        self.register_buffer("emb_sin", freqs.sin().unsqueeze(1), persistent=False)
+        self.register_buffer("emb_cos", freqs.cos().unsqueeze(1), persistent=False)
 
     def forward(
         self, x: torch.Tensor, seq_positions: Optional[torch.LongTensor] = None
@@ -205,10 +209,10 @@ class PartialRotaryPositionalEmbedding(PositionalEmbeddingBase):
         else:
             pos = seq_positions
 
-        # Check sequence length
-        if seq_len > self.max_seq_len:
+        required_len = int(pos.max().item()) + 1 if pos.numel() else seq_len
+        if required_len > self.max_seq_len:
             raise ValueError(
-                f"Sequence length {seq_len} greater than max_seq_len {self.max_seq_len}"
+                f"Sequence length {required_len} greater than max_seq_len {self.max_seq_len}"
             )
 
         # split x into rotary and pass-through parts
@@ -218,8 +222,11 @@ class PartialRotaryPositionalEmbedding(PositionalEmbeddingBase):
         ]  # (b, seq_len, n_heads, head_dim - rotary_dim)
 
         # fetch sin/cos for these positions
-        sin = self.emb_sin[pos]  # (batch, seq_len, 1, rotary_dim/2)
-        cos = self.emb_cos[pos]  # same shape
+        if self.emb_sin.device != x.device or self.emb_sin.size(0) < required_len:
+            self._update_cache(required_len, x.device)
+
+        sin = self.emb_sin[pos].to(dtype=x.dtype)  # (batch, seq_len, 1, rotary_dim/2)
+        cos = self.emb_cos[pos].to(dtype=x.dtype)  # same shape
 
         # apply rotation to the rotary part
         # split x_rot into even/odd dims: (x_even, x_odd)
@@ -312,9 +319,12 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             )
 
         self.register_buffer("inv_freq", inv_freq, persistent=False)
-
-        # Compute position embeddings
-        self._update_embeddings(max_seq_len)
+        self.register_buffer(
+            "emb_sin", torch.empty(0, 1, head_dim // 2), persistent=False
+        )
+        self.register_buffer(
+            "emb_cos", torch.empty(0, 1, head_dim // 2), persistent=False
+        )
 
         # For XPos, compute scale factors
         if scaling_type == "xpos":
@@ -342,16 +352,18 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
 
         return inv_freq_scaled
 
-    def _update_embeddings(self, seq_len: int):
+    def _update_embeddings(self, seq_len: int, device: Optional[torch.device] = None):
         """Update sin/cos embeddings for given sequence length."""
-        t = torch.arange(seq_len, dtype=torch.float32)
+        device = device or self.inv_freq.device
+        t = torch.arange(seq_len, dtype=torch.float32, device=device)
+        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32)
 
         if self.scaling_type == "linear":
             # Linear scaling: divide positions by scaling factor
             t = t / self.scaling_factor
 
         # Compute frequencies
-        freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+        freqs = torch.einsum("i,j->ij", t, inv_freq)
 
         # Compute sin/cos
         emb_sin = freqs.sin().unsqueeze(1)
@@ -412,30 +424,41 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             pos = seq_positions
 
         # Handle dynamic NTK scaling
-        if self.scaling_type == "dynamic_ntk" and seq_len > self.max_seq_len:
+        required_len = int(pos.max().item()) + 1 if pos.numel() else seq_len
+
+        if self.scaling_type == "dynamic_ntk" and required_len > self.max_seq_len:
             # Recompute frequencies dynamically
-            inv_freq = self._get_dynamic_ntk_inv_freq(seq_len)
-            t = torch.arange(seq_len, dtype=torch.float32, device=x.device)
+            inv_freq = self._get_dynamic_ntk_inv_freq(required_len).to(
+                device=x.device, dtype=torch.float32
+            )
+            t = torch.arange(required_len, dtype=torch.float32, device=x.device)
             freqs = torch.einsum("i,j->ij", t, inv_freq)
-            sin = freqs.sin().unsqueeze(1)
-            cos = freqs.cos().unsqueeze(1)
-            sin = sin[pos]
-            cos = cos[pos]
+            sin = freqs.sin().unsqueeze(1)[pos].to(dtype=x.dtype)
+            cos = freqs.cos().unsqueeze(1)[pos].to(dtype=x.dtype)
         else:
             # Use cached embeddings
-            if seq_len > self.max_seq_len:
+            if required_len > self.max_seq_len:
                 # Extend cache if needed (for non-dynamic methods)
-                self._update_embeddings(seq_len)
-                self.max_seq_len = seq_len
+                self.max_seq_len = required_len
 
-            sin = self.emb_sin[pos]
-            cos = self.emb_cos[pos]
+            if self.emb_sin.device != x.device or self.emb_sin.size(0) < required_len:
+                self._update_embeddings(required_len, x.device)
+
+            sin = self.emb_sin[pos].to(dtype=x.dtype)
+            cos = self.emb_cos[pos].to(dtype=x.dtype)
 
         # Apply XPos scaling if enabled
         if self.scaling_type == "xpos":
             # Apply exponential decay based on position
-            xpos_scale = self.scale ** pos.unsqueeze(-1).float()
-            xpos_scale = xpos_scale.unsqueeze(-2)  # Add head dimension
+            scale = self.scale.to(device=x.device, dtype=x.dtype)
+            xpos_scale = scale ** pos.unsqueeze(-1).to(dtype=x.dtype)
+            xpos_scale = (
+                xpos_scale.unsqueeze(-2)
+                .expand(-1, -1, n_heads, head_dim // 2)
+                .reshape(b, seq_len, n_heads, head_dim // 2, 1)
+                .expand(-1, -1, -1, -1, 2)
+                .reshape(b, seq_len, n_heads, head_dim)
+            )
             x = x * xpos_scale
 
         # Apply rotation
@@ -532,7 +555,12 @@ class PartialScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             )
 
         self.register_buffer("inv_freq", inv_freq, persistent=False)
-        self._update_embeddings(max_seq_len)
+        self.register_buffer(
+            "emb_sin", torch.empty(0, 1, rotary_dim // 2), persistent=False
+        )
+        self.register_buffer(
+            "emb_cos", torch.empty(0, 1, rotary_dim // 2), persistent=False
+        )
 
         # XPos scale factors
         if scaling_type == "xpos":
@@ -555,14 +583,16 @@ class PartialScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
 
         return inv_freq_scaled
 
-    def _update_embeddings(self, seq_len: int):
+    def _update_embeddings(self, seq_len: int, device: Optional[torch.device] = None):
         """Update sin/cos embeddings for given sequence length."""
-        t = torch.arange(seq_len, dtype=torch.float32)
+        device = device or self.inv_freq.device
+        t = torch.arange(seq_len, dtype=torch.float32, device=device)
+        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32)
 
         if self.scaling_type == "linear":
             t = t / self.scaling_factor
 
-        freqs = torch.einsum("i,j->ij", t, self.inv_freq)
+        freqs = torch.einsum("i,j->ij", t, inv_freq)
         emb_sin = freqs.sin().unsqueeze(1)
         emb_cos = freqs.cos().unsqueeze(1)
 
@@ -623,23 +653,30 @@ class PartialScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
         x_pass = x[..., self.rotary_dim :]
 
         # Handle dynamic NTK scaling
-        if self.scaling_type == "dynamic_ntk" and seq_len > self.max_seq_len:
-            inv_freq = self._get_dynamic_ntk_inv_freq(seq_len)
-            t = torch.arange(seq_len, dtype=torch.float32, device=x.device)
-            freqs = torch.einsum("i,j->ij", t, inv_freq)
-            sin = freqs.sin().unsqueeze(1)[pos]
-            cos = freqs.cos().unsqueeze(1)[pos]
-        else:
-            if seq_len > self.max_seq_len:
-                self._update_embeddings(seq_len)
-                self.max_seq_len = seq_len
+        required_len = int(pos.max().item()) + 1 if pos.numel() else seq_len
 
-            sin = self.emb_sin[pos]
-            cos = self.emb_cos[pos]
+        if self.scaling_type == "dynamic_ntk" and required_len > self.max_seq_len:
+            inv_freq = self._get_dynamic_ntk_inv_freq(required_len).to(
+                device=x.device, dtype=torch.float32
+            )
+            t = torch.arange(required_len, dtype=torch.float32, device=x.device)
+            freqs = torch.einsum("i,j->ij", t, inv_freq)
+            sin = freqs.sin().unsqueeze(1)[pos].to(dtype=x.dtype)
+            cos = freqs.cos().unsqueeze(1)[pos].to(dtype=x.dtype)
+        else:
+            if required_len > self.max_seq_len:
+                self.max_seq_len = required_len
+
+            if self.emb_sin.device != x.device or self.emb_sin.size(0) < required_len:
+                self._update_embeddings(required_len, x.device)
+
+            sin = self.emb_sin[pos].to(dtype=x.dtype)
+            cos = self.emb_cos[pos].to(dtype=x.dtype)
 
         # Apply XPos scaling
         if self.scaling_type == "xpos":
-            xpos_scale = self.scale ** pos.unsqueeze(-1).float()
+            scale = self.scale.to(device=x.device, dtype=x.dtype)
+            xpos_scale = scale ** pos.unsqueeze(-1).to(dtype=x.dtype)
             xpos_scale = xpos_scale.unsqueeze(-2)
             # Pad xpos_scale to match rotary dimensions
             xpos_scale_full = (

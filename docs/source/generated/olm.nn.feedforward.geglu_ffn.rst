@@ -1,12 +1,7 @@
-olm.nn.feedforward.geglu\_ffn
-=============================
+olm.nn.feedforward.geglu_ffn
+============================
 
 .. automodule:: olm.nn.feedforward.geglu_ffn
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      GeGLUFFN
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,62 +1,30 @@
-# olm.train.callbacks.validation_cb
+# `olm.train.callbacks.validation_cb`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L1)
 
 Validation callback for running validation during training.
 
-### Classes
+## Classes
 
-| [`ValidationCallback`](#olm.train.callbacks.validation_cb.ValidationCallback)(val_dataloader[, ...])   | Callback to perform validation at specified intervals.   |
-|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
+### `ValidationCallback(val_dataloader, eval_every: int = 500, device: str | None = None, use_amp: bool = True)`
 
-### *class* olm.train.callbacks.validation_cb.TrainerCallback
+**Bases:** `olm.train.trainer.trainer.TrainerCallback`
 
-Bases: `object`
-
-Base class for trainer callbacks.
-
-#### on_batch_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), batch_idx: int) → None
-
-Called at the beginning of each batch.
-
-#### on_batch_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), batch_idx: int, loss: float) → None
-
-Called at the end of each batch.
-
-#### on_epoch_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), epoch: int) → None
-
-Called at the beginning of each epoch.
-
-#### on_epoch_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), epoch: int) → None
-
-Called at the end of each epoch.
-
-#### on_step_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), step: int) → None
-
-Called at the beginning of each optimization step (after gradient accumulation).
-
-#### on_step_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer), step: int, loss: float) → None
-
-Called at the end of each optimization step.
-
-#### on_train_begin(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer)) → None
-
-Called at the beginning of training.
-
-#### on_train_end(trainer: [Trainer](olm.train.trainer.trainer.md#olm.train.trainer.trainer.Trainer)) → None
-
-Called at the end of training.
-
-### *class* olm.train.callbacks.validation_cb.ValidationCallback(val_dataloader, eval_every: int = 500, device: str = 'cuda', use_amp: bool = True)
-
-Bases: [`TrainerCallback`](olm.train.trainer.trainer.md#olm.train.trainer.trainer.TrainerCallback)
+Source: [`src/olm/train/callbacks/validation_cb.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L11)
 
 Callback to perform validation at specified intervals.
 
-* **Parameters:**
-  * **val_dataloader** – Validation dataloader.
-  * **eval_every** – Validate every N steps.
-  * **device** – Device to run validation on.
-  * **use_amp** – Whether to use automatic mixed precision.
+**Parameters**
 
-#### on_step_end(trainer, step: int, loss: float) → None
+- `val_dataloader`: Validation dataloader.
+- `eval_every`: Validate every N steps.
+- `device`: Device to run validation on.
+- `use_amp`: Whether to use automatic mixed precision.
+
+#### Methods
+
+##### `on_step_end(self, trainer, step: int, loss: float) -> None`
+
+Source: [`src/olm/train/callbacks/validation_cb.py:36`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/train/callbacks/validation_cb.py#L36)
 
 Run validation after each optimization step if needed.

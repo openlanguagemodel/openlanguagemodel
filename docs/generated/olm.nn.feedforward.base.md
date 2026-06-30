@@ -1,58 +1,35 @@
-# olm.nn.feedforward.base
+# `olm.nn.feedforward.base`
 
-### Classes
+Source: [`src/olm/nn/feedforward/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/base.py#L1)
 
-| [`FeedForwardBase`](#olm.nn.feedforward.base.FeedForwardBase)(\*args, \*\*kwargs)   | Abstract base class for feedforward networks in a transformer block.   |
-|-------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.feedforward.base.ABC
+### `FeedForwardBase(embed_dim: int, **kwargs)`
 
-Bases: `object`
+**Bases:** `Module`, `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.nn.feedforward.base.FeedForwardBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/nn/feedforward/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/base.py#L5)
 
 Abstract base class for feedforward networks in a transformer block.
 
-Defines the interface for FFNs/MLPs. Subclasses must implement the forward method.
+Defines the interface for FFNs/MLPs. Subclasses must implement the `forward` method.
 
-#### embed_dim
+**Attributes**
 
-The input and output dimension.
+- `embed_dim` (`int`): The input and output dimension.
 
-* **Type:**
-  int
+#### Methods
 
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/feedforward/base.py:25`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/base.py#L25)
 
 Forward pass of the feedforward network.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### olm.nn.feedforward.base.abstractmethod(funcobj)
+- `x` (`torch.Tensor`): Input tensor of shape (batch, seq_len, embed_dim).
 
-A decorator indicating abstract methods.
+**Returns**
 
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
-
-Usage:
-
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …
+- `torch.Tensor`: Output tensor of shape (batch, seq_len, embed_dim).

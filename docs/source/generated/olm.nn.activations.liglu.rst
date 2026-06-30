@@ -2,11 +2,6 @@ olm.nn.activations.liglu
 ========================
 
 .. automodule:: olm.nn.activations.liglu
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      LiGLU
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

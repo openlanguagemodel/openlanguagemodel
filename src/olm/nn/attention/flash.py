@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
 from olm.nn.attention.base import AttentionBase, AttentionwithRoPEBase
+from olm.nn.attention.masks import attention_mask_to_bool
 from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
 import warnings
 
@@ -113,7 +114,7 @@ class FlashAttention(AttentionBase):
         # When a padding mask is supplied, fold the causal constraint into it so
         # causality is not lost.
         if mask is not None:
-            attn_mask = mask if mask.dtype == torch.bool else mask.bool()
+            attn_mask = attention_mask_to_bool(mask, device=q.device)
             if self.causal:
                 L_q, L_k = q.size(-2), k.size(-2)
                 causal_bool = torch.ones(
@@ -161,7 +162,8 @@ class FlashAttention(AttentionBase):
 
         # Apply custom mask if provided
         if mask is not None:
-            attn_scores = attn_scores.masked_fill(mask == 0, float("-inf"))
+            allowed_mask = attention_mask_to_bool(mask, device=q.device)
+            attn_scores = attn_scores.masked_fill(~allowed_mask, float("-inf"))
 
         # Compute attention probabilities
         attn_probs = F.softmax(attn_scores, dim=-1)
@@ -249,9 +251,18 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         max_seq_len: int,
         dropout: float = 0.0,
         causal: bool = False,
+        bias: bool = True,
+        rope_theta: float = 10000.0,
         use_flash_attn: Optional[bool] = None,
     ):
-        super().__init__(embed_dim, num_heads, max_seq_len, dropout)
+        super().__init__(
+            embed_dim,
+            num_heads,
+            max_seq_len,
+            dropout,
+            bias=bias,
+            rope_theta=rope_theta,
+        )
         self.causal = causal
 
         # Check if PyTorch scaled_dot_product_attention is available (PyTorch >= 2.0)
@@ -316,7 +327,7 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
         # When a padding mask is supplied, fold the causal constraint into it so
         # causality is not lost.
         if mask is not None:
-            attn_mask = mask if mask.dtype == torch.bool else mask.bool()
+            attn_mask = attention_mask_to_bool(mask, device=q.device)
             if self.causal:
                 L_q, L_k = q.size(-2), k.size(-2)
                 causal_bool = torch.ones(
@@ -364,7 +375,8 @@ class FlashAttentionwithRoPE(AttentionwithRoPEBase):
 
         # Apply custom mask if provided
         if mask is not None:
-            attn_scores = attn_scores.masked_fill(mask == 0, float("-inf"))
+            allowed_mask = attention_mask_to_bool(mask, device=q.device)
+            attn_scores = attn_scores.masked_fill(~allowed_mask, float("-inf"))
 
         # Compute attention probabilities
         attn_probs = F.softmax(attn_scores, dim=-1)

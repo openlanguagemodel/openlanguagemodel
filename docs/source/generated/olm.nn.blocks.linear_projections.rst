@@ -1,12 +1,7 @@
-olm.nn.blocks.linear\_projections
-=================================
+olm.nn.blocks.linear_projections
+================================
 
 .. automodule:: olm.nn.blocks.linear_projections
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      QKVProjection
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

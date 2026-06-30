@@ -1,66 +1,30 @@
-# olm.nn.norms.base
+# `olm.nn.norms.base`
 
-### Classes
+Source: [`src/olm/nn/norms/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L1)
 
-| [`NormBase`](#olm.nn.norms.base.NormBase)(\*args, \*\*kwargs)   | Abstract base class for normalization layers (e.g., LayerNorm, RMSNorm).   |
-|-----------------------------------------------------------------|----------------------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.norms.base.ABC
+### `NormBase(d_model: int, device=None, dtype=None)`
 
-Bases: `object`
+**Bases:** `Module`, `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.nn.norms.base.NormBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/nn/norms/base.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L5)
 
 Abstract base class for normalization layers (e.g., LayerNorm, RMSNorm).
 
 Standardizes the interface for normalization, ensuring all implementations
 handle model dimension, device, and dtype consistently.
 
-#### d_model
+**Attributes**
 
-The dimension of the input features to normalize.
+- `d_model` (`int`): The dimension of the input features to normalize.
+- `device` (`torch.device, optional`): The device the module is on.
+- `dtype` (`torch.dtype`): The data type of the module parameters.
 
-* **Type:**
-  int
+#### Methods
 
-#### device
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-The device the module is on.
-
-* **Type:**
-  torch.device, optional
-
-#### dtype
-
-The data type of the module parameters.
-
-* **Type:**
-  torch.dtype
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/norms/base.py:32`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/norms/base.py#L32)
 
 Apply normalization to the input tensor.
-
-### olm.nn.norms.base.abstractmethod(funcobj)
-
-A decorator indicating abstract methods.
-
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
-
-Usage:
-
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …

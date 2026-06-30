@@ -1,20 +1,20 @@
-
-import torch
 import torch.nn as nn
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
-from olm.nn.attention import MultiHeadAttention
+from olm.nn.attention import FlashAttention
 from olm.nn.feedforward import ClassicFFN
 from olm.nn.activations import ReLU
-from olm.nn.norms import RMSNorm, LayerNorm
+from olm.nn.norms import LayerNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.embeddings.positional.absolute import AbsolutePositionalEmbedding
+from olm.nn.blocks import OutputHead
+
 
 class OPTBlock(Block):
     """
     A single Transformer block for the OPT architecture.
 
-    Composes a Residual Multi-Head Attention block and a Residual ReLU 
+    Composes a Residual Multi-Head Attention block and a Residual ReLU
     Feed-Forward block, both utilizing Pre-LayerNorm.
 
     Structure:
@@ -34,34 +34,38 @@ class OPTBlock(Block):
         num_heads: int,
         dropout: float = 0.1,
     ):
-        super().__init__([
-            Residual(
-                Block(
-                    [
-                        LayerNorm(embed_dim, eps=1e-6),
-                        MultiHeadAttention(
-                            embed_dim,
-                            num_heads,
-                            causal=True,
-                        ),
-                    ]
-                )
-            ),
-            Residual(
-                Block(
-                    [
-                        LayerNorm(embed_dim, eps=1e-6),
-                        ClassicFFN(
-                            embed_dim,
-                            hidden_dim=intermediate_size,
-                            dropout=dropout,
-                            activation_fn=ReLU(),
-                        ),
-                    ]
-                )
-            ),
-        ])
-        
+        super().__init__(
+            [
+                Residual(
+                    Block(
+                        [
+                            LayerNorm(embed_dim, eps=1e-6),
+                            FlashAttention(
+                                embed_dim,
+                                num_heads,
+                                dropout=dropout,
+                                causal=True,
+                            ),
+                        ]
+                    )
+                ),
+                Residual(
+                    Block(
+                        [
+                            LayerNorm(embed_dim, eps=1e-6),
+                            ClassicFFN(
+                                embed_dim,
+                                hidden_dim=intermediate_size,
+                                dropout=dropout,
+                                activation_fn=ReLU(),
+                            ),
+                        ]
+                    )
+                ),
+            ]
+        )
+
+
 class OPTModel(Block):
     """
     OPT Model Definition.
@@ -70,6 +74,11 @@ class OPTModel(Block):
     - Pre-normalization with LayerNorm
     - Multi-Head Attention with Causal Masking
     - ReLU activation in Feed-Forward Networks
+    - Tied output projection through ``OutputHead`` by default
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
 
     Args:
         vocab_size (int): Vocabulary size.
@@ -80,24 +89,44 @@ class OPTModel(Block):
         dropout (float, optional): Dropout probability. Defaults to 0.1.
     """
 
-    def __init__(self, vocab_size, embed_dim, intermediate_size, num_layers, num_heads, dropout=0.1):
+    def __init__(
+        self,
+        vocab_size,
+        embed_dim,
+        intermediate_size,
+        num_layers,
+        num_heads,
+        dropout=0.1,
+        tie_weights=True,
+    ):
         token_embedding = Embedding(vocab_size, embed_dim)
-        lm_head = nn.Linear(embed_dim, vocab_size, bias=False)
+        lm_head = OutputHead(
+            embed_dim,
+            vocab_size,
+            tied_embedding=token_embedding,
+            tie_weights=tie_weights,
+            use_norm=False,
+        )
 
-        super().__init__([
-            token_embedding,
-            AbsolutePositionalEmbedding(max_seq_len=2048, embed_dim=embed_dim, dropout=0.0),
-            nn.Dropout(dropout),
-            Repeat(lambda: OPTBlock(embed_dim, intermediate_size, num_heads, dropout), num_layers),
-            LayerNorm(embed_dim, eps=1e-5),
-            lm_head,
-        ])
+        super().__init__(
+            [
+                token_embedding,
+                AbsolutePositionalEmbedding(
+                    max_seq_len=2048, embed_dim=embed_dim, dropout=0.0
+                ),
+                nn.Dropout(dropout),
+                Repeat(
+                    lambda: OPTBlock(embed_dim, intermediate_size, num_heads, dropout),
+                    num_layers,
+                ),
+                LayerNorm(embed_dim, eps=1e-5),
+                lm_head,
+            ]
+        )
 
         self.token_embedding = token_embedding
         self.lm_head = lm_head
 
-        # tie weights
-        self.lm_head.weight = self.token_embedding.embedding.weight
 
 class OPT125M(OPTModel):
     """
@@ -105,17 +134,11 @@ class OPT125M(OPTModel):
     """
 
     def __init__(self):
-
         super().__init__(
-            vocab_size = 50272,
-            embed_dim = 768,
-            intermediate_size = 3072,
-            num_layers = 12,
-            num_heads = 12,
-            dropout = 0.1,
+            vocab_size=50272,
+            embed_dim=768,
+            intermediate_size=3072,
+            num_layers=12,
+            num_heads=12,
+            dropout=0.1,
         )
-
-        token_emb = self.blocks[0]     # Embedding wrapper
-        lm_head = self.blocks[-1]      # nn.Linear
-
-        lm_head.weight = token_emb.embedding.weight

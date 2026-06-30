@@ -1,23 +1,7 @@
 olm.nn.blocks.LM
 ================
 
-.. currentmodule:: olm.nn.blocks
-
-.. autoclass:: LM
-
-   
-   .. automethod:: __init__
-
-   
-   .. rubric:: Methods
-
-   .. autosummary::
-   
-      ~LM.__init__
-      ~LM.forward
-   
-   
-
-   
-   
-   
+.. automodule:: olm.nn.blocks.LM
+   :members:
+   :undoc-members:
+   :show-inheritance:

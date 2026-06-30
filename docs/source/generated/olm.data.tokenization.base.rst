@@ -2,11 +2,6 @@ olm.data.tokenization.base
 ==========================
 
 .. automodule:: olm.data.tokenization.base
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      TokenizerBase
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

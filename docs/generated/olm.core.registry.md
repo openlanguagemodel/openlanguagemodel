@@ -1,76 +1,19 @@
-# olm.core.registry
+# `olm.core.registry`
 
-### Classes
+Source: [`src/olm/core/registry.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/core/registry.py#L1)
 
-| [`Registry`](#olm.core.registry.Registry)()   |    |
-|-----------------------------------------------|----|
+## Classes
 
-### *class* olm.core.registry.Registry
+### `Registry()`
 
-Bases: `object`
+Source: [`src/olm/core/registry.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/core/registry.py#L7)
 
-#### get(name: str) → Callable[[...], T]
+#### Methods
 
-#### register(name: str)
+##### `get(self, name: str) -> Callable[..., ~T]`
 
-### *class* olm.core.registry.TypeVar
+Source: [`src/olm/core/registry.py:18`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/core/registry.py#L18)
 
-Bases: `object`
+##### `register(self, name: str)`
 
-Type variable.
-
-The preferred way to construct a type variable is via the dedicated
-syntax for generic functions, classes, and type aliases:
-
-```default
-class Sequence[T]:  # T is a TypeVar
-    ...
-```
-
-This syntax can also be used to create bound and constrained type
-variables:
-
-```default
-# S is a TypeVar bound to str
-class StrSequence[S: str]:
-    ...
-
-# A is a TypeVar constrained to str or bytes
-class StrOrBytesSequence[A: (str, bytes)]:
-    ...
-```
-
-Type variables can also have defaults:
-
-> class IntDefault[T = int]:
-> : …
-
-However, if desired, reusable type variables can also be constructed
-manually, like so:
-
-```default
-T = TypeVar('T')  # Can be anything
-S = TypeVar('S', bound=str)  # Can be any subtype of str
-A = TypeVar('A', str, bytes)  # Must be exactly str or bytes
-D = TypeVar('D', default=int)  # Defaults to int
-```
-
-Type variables exist primarily for the benefit of static type
-checkers.  They serve as the parameters for generic types as well
-as for generic function and type alias definitions.
-
-The variance of type variables is inferred by type checkers when they
-are created through the type parameter syntax and when
-`infer_variance=True` is passed. Manually created type variables may
-be explicitly marked covariant or contravariant by passing
-`covariant=True` or `contravariant=True`. By default, manually
-created type variables are invariant. See PEP 484 and PEP 695 for more
-details.
-
-#### evaluate_bound
-
-#### evaluate_constraints
-
-#### evaluate_default
-
-#### has_default()
+Source: [`src/olm/core/registry.py:11`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/core/registry.py#L11)

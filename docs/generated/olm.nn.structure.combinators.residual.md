@@ -1,45 +1,37 @@
-# olm.nn.structure.combinators.residual
+# `olm.nn.structure.combinators.residual`
 
-### Classes
+Source: [`src/olm/nn/structure/combinators/residual.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/residual.py#L1)
 
-| [`Residual`](#olm.nn.structure.combinators.residual.Residual)(\*args, \*\*kwargs)   | Residual wrapper that adds the block output to its input.   |
-|-------------------------------------------------------------------------------------|-------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.structure.combinators.residual.BaseCombinator(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `Residual(block: torch.nn.modules.module.Module)`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
 
-Abstract base class for combinator modules.
-
-Subclasses implement `forward` to define how inputs are combined.
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Compute the combinator output from an input tensor.
-
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor produced by the combinator.
-
-### *class* olm.nn.structure.combinators.residual.Residual(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+Source: [`src/olm/nn/structure/combinators/residual.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/residual.py#L5)
 
 Residual wrapper that adds the block output to its input.
 
-* **Parameters:**
-  **block** – Module applied to the input before residual addition.
+**Parameters**
 
-#### block
+- `block`: Module applied to the input before residual addition.
 
-Module used for the residual transformation.
+**Attributes**
 
-#### forward(x: torch.Tensor) → torch.Tensor
+- `block`: Module used for the residual transformation.
+
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/structure/combinators/residual.py:26`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/residual.py#L26)
 
 Apply the block and add the result to the input.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor with residual connection applied.
+**Parameters**
+
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor with residual connection applied.

@@ -1,12 +1,7 @@
-olm.nn.activations.leaky\_relu
-==============================
+olm.nn.activations.leaky_relu
+=============================
 
 .. automodule:: olm.nn.activations.leaky_relu
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      LeakyReLU
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

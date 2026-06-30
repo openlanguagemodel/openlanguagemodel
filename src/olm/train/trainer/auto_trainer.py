@@ -66,9 +66,16 @@ def AutoTrainer(
     Automatically select and configure the optimal trainer based on hardware.
 
     This factory function intelligently chooses between Trainer, DDPTrainer,
-    and FSDPTrainer based on available GPUs and model size. It handles all
-    the complexity of distributed training setup, device selection, and
+    and FSDPTrainer based on available GPUs and model size. It handles the
+    single-node multi-GPU setup, device selection, and
     parameter configuration.
+
+    Forward/training contract:
+        The model is expected to accept ``input_ids`` shaped
+        ``[batch, context_length]`` and return logits shaped
+        ``[batch, context_length, vocab_size]``. The dataloader should yield
+        ``(input_ids, labels)`` where both tensors are shaped
+        ``[batch, context_length]``.
 
     Args:
         model: Model to train.
@@ -152,9 +159,10 @@ def AutoTrainer(
         ... )
     """
     # Parse device configuration
+    requested_device = device.lower() if isinstance(device, str) else None
     if isinstance(device, str):
         device_config = parse_device_string(device, model=model)
-        if device == "auto" or device.endswith(":auto"):
+        if requested_device in {"auto", "cuda:auto"}:
             # Auto mode: determine strategy
             device_config = determine_strategy(
                 device_config,
@@ -201,6 +209,12 @@ def AutoTrainer(
     if device_config.device_type == "cuda":
         if is_distributed():
             trainer_device = f"cuda:{get_local_rank()}"
+        elif (
+            requested_device is not None
+            and requested_device.startswith("cuda")
+            and requested_device != "cuda:auto"
+        ):
+            trainer_device = requested_device
         else:
             trainer_device = "cuda"
     else:

@@ -2,11 +2,6 @@ olm.nn.feedforward.base
 =======================
 
 .. automodule:: olm.nn.feedforward.base
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      FeedForwardBase
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

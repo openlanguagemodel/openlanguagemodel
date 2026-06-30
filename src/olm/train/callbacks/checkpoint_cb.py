@@ -5,6 +5,7 @@ Checkpoint callback for saving model checkpoints during training.
 from pathlib import Path
 import torch
 
+from olm.core.dist import is_distributed, is_main_process
 from olm.train.trainer import TrainerCallback
 
 
@@ -47,6 +48,23 @@ class CheckpointCallback(TrainerCallback):
         self, trainer, step: int, is_regular: bool = False, is_best: bool = False
     ) -> None:
         """Save a checkpoint."""
+        if trainer.__class__.__name__ == "FSDPTrainer" and hasattr(
+            trainer, "save_checkpoint"
+        ):
+            if is_regular:
+                checkpoint_path = self.checkpoint_dir / f"step_{step}.pt"
+                trainer.save_checkpoint(str(checkpoint_path))
+                if is_main_process():
+                    self._cleanup_old_checkpoints()
+
+            if is_best:
+                trainer.save_checkpoint(str(self.checkpoint_dir / "best_model.pt"))
+
+            return
+
+        if is_distributed() and not is_main_process():
+            return
+
         checkpoint = {
             "step": step,
             "epoch": trainer.current_epoch,
@@ -66,18 +84,21 @@ class CheckpointCallback(TrainerCallback):
             torch.save(checkpoint, checkpoint_path)
             print(f"[Checkpoint] Saved checkpoint: {checkpoint_path}")
 
-            # Keep only last N checkpoints (sort numerically, not alphabetically)
-            checkpoints = sorted(
-                self.checkpoint_dir.glob("step_*.pt"),
-                key=lambda p: int(p.stem.split("_")[1]),
-            )
-            if len(checkpoints) > self.keep_last_n:
-                for old_ckpt in checkpoints[: -self.keep_last_n]:
-                    old_ckpt.unlink()
-                    print(f"[Checkpoint] Removed old checkpoint: {old_ckpt}")
+            self._cleanup_old_checkpoints()
 
         # Save best checkpoint
         if is_best:
             best_path = self.checkpoint_dir / "best_model.pt"
             torch.save(checkpoint, best_path)
             print(f"[Checkpoint] Saved best model: {best_path}")
+
+    def _cleanup_old_checkpoints(self) -> None:
+        """Keep only the most recent numbered checkpoints."""
+        checkpoints = sorted(
+            self.checkpoint_dir.glob("step_*.pt"),
+            key=lambda p: int(p.stem.split("_")[1]),
+        )
+        if len(checkpoints) > self.keep_last_n:
+            for old_ckpt in checkpoints[: -self.keep_last_n]:
+                old_ckpt.unlink()
+                print(f"[Checkpoint] Removed old checkpoint: {old_ckpt}")

@@ -1,29 +1,30 @@
-# olm.data.datasets.local_dataset
+# `olm.data.datasets.local_dataset`
 
-### Classes
+Source: [`src/olm/data/datasets/local_dataset.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/datasets/local_dataset.py#L1)
 
-| [`LocalTextDataset`](#olm.data.datasets.local_dataset.LocalTextDataset)(\*args, \*\*kwargs)   | Dataset that streams text from local .txt files in a directory.   |
-|-----------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+## Classes
 
-### *class* olm.data.datasets.local_dataset.BaseTextDataset(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `LocalTextDataset(location: str | os.PathLike, tokenizer, context_length: int, skip_batches: int = 0, shuffle: bool = False, seed: int = 42)`
 
-Bases: `IterableDataset`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.data.datasets.base_dataset.BaseTextDataset`
 
-Abstract base class for text-based streaming datasets.
-
-Handles tokenization buffering and sequence generation generically.
-Subclasses must implement \_get_text_iterator to yield text chunks.
-
-### *class* olm.data.datasets.local_dataset.LocalTextDataset(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`BaseTextDataset`](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.BaseTextDataset)
+Source: [`src/olm/data/datasets/local_dataset.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/data/datasets/local_dataset.py#L8)
 
 Dataset that streams text from local .txt files in a directory.
 
-### *class* olm.data.datasets.local_dataset.Union
+``LocalTextDataset`` scans ``location`` for ``.txt`` files, streams each
+non-empty line, tokenizes through ``BaseTextDataset``, and yields causal
+language-model samples.
 
-Bases: `object`
+**Iteration**
 
-Represent a union type
+Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
 
-E.g. for int | str
+**Parameters**
+
+- `location`: Directory containing ``.txt`` files.
+- `tokenizer`: Tokenizer with an ``encode`` method.
+- `context_length` (`int`): Number of input tokens per sample.
+- `skip_batches` (`int`): Number of samples to skip before yielding.
+- `shuffle` (`bool`): Whether to shuffle file order deterministically.
+- `seed` (`int`): Shuffle seed.

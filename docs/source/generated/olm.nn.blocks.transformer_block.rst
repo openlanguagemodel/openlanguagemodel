@@ -1,12 +1,7 @@
-olm.nn.blocks.transformer\_block
-================================
+olm.nn.blocks.transformer_block
+===============================
 
 .. automodule:: olm.nn.blocks.transformer_block
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      TransformerBlock
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

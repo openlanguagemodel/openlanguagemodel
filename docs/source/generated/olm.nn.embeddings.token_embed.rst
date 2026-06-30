@@ -1,12 +1,7 @@
-olm.nn.embeddings.token\_embed
-==============================
+olm.nn.embeddings.token_embed
+=============================
 
 .. automodule:: olm.nn.embeddings.token_embed
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Embedding
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

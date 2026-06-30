@@ -1,12 +1,7 @@
-olm.nn.norms.layer\_norm
-========================
+olm.nn.norms.layer_norm
+=======================
 
 .. automodule:: olm.nn.norms.layer_norm
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      LayerNorm
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

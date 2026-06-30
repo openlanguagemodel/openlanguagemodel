@@ -10,6 +10,11 @@ class QKVProjection(nn.Module):
     Applies three separate linear transformations to the input to generate Q, K, and V tensors.
     Supports various weight initialization schemes.
 
+    Forward:
+        Accepts ``x`` with shape ``[batch, seq_len, dim_in]`` and returns
+        ``(q, k, v)`` with shapes ``[batch, seq_len, dim_q]``,
+        ``[batch, seq_len, dim_k]``, and ``[batch, seq_len, dim_v]``.
+
     Attributes:
         W_q (Linear): Linear layer for Query projection.
         W_k (Linear): Linear layer for Key projection.

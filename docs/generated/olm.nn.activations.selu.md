@@ -1,43 +1,19 @@
-# olm.nn.activations.selu
+# `olm.nn.activations.selu`
 
-### Classes
+Source: [`src/olm/nn/activations/selu.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/selu.py#L1)
 
-| [`SELU`](#olm.nn.activations.selu.SELU)(\*args, \*\*kwargs)   | SELU activation wrapper.   |
-|---------------------------------------------------------------|----------------------------|
+## Classes
 
-### *class* olm.nn.activations.selu.ActivationBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `SELU(inplace: bool = False, *, device=None, dtype=None) -> None`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.activations.base.ActivationBase`
 
-Abstract base class for all activation functions.
-
-Ensures a consistent interface for activation layers, handling device and dtype
-initialization. Subclasses must implement the forward method.
-
-#### device
-
-The device the module is on.
-
-* **Type:**
-  torch.device, optional
-
-#### dtype
-
-The data type of the module parameters.
-
-* **Type:**
-  torch.dtype
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Apply activation to `x`.
-
-### *class* olm.nn.activations.selu.SELU(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`ActivationBase`](olm.nn.activations.base.md#olm.nn.activations.base.ActivationBase)
+Source: [`src/olm/nn/activations/selu.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/selu.py#L7)
 
 SELU activation wrapper.
 
-#### forward(x: torch.Tensor) → torch.Tensor
+#### Methods
 
-Apply activation to `x`.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/activations/selu.py:14`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/activations/selu.py#L14)

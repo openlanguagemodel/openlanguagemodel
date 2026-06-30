@@ -1,12 +1,7 @@
-olm.data.datasets.local\_dataset
-================================
+olm.data.datasets.local_dataset
+===============================
 
 .. automodule:: olm.data.datasets.local_dataset
-
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      LocalTextDataset
-   
+   :members:
+   :undoc-members:
+   :show-inheritance:

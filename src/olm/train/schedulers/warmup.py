@@ -41,7 +41,7 @@ class WarmupLR(SchedulerBase):
             return [base_lr for base_lr in self.base_lrs]
 
         # Linear warmup
-        warmup_factor = (self.last_epoch + 1) / self.warmup_steps
+        warmup_factor = (self.last_epoch + 1) / max(1, self.warmup_steps)
         return [
             self.start_lr + (base_lr - self.start_lr) * warmup_factor
             for base_lr in self.base_lrs
@@ -52,7 +52,7 @@ class WarmupLR(SchedulerBase):
         if self.last_epoch >= self.warmup_steps:
             return self.base_lrs
 
-        warmup_factor = (self.last_epoch + 1) / self.warmup_steps
+        warmup_factor = (self.last_epoch + 1) / max(1, self.warmup_steps)
         return [
             self.start_lr + (base_lr - self.start_lr) * warmup_factor
             for base_lr in self.base_lrs
@@ -105,13 +105,12 @@ class WarmupCosineScheduler(SchedulerBase):
 
         if self.last_epoch < self.warmup_steps:
             # Warmup phase
-            warmup_factor = (self.last_epoch + 1) / self.warmup_steps
+            warmup_factor = (self.last_epoch + 1) / max(1, self.warmup_steps)
             return [base_lr * warmup_factor for base_lr in self.base_lrs]
 
         # Cosine annealing phase
-        progress = (self.last_epoch - self.warmup_steps) / (
-            self.total_steps - self.warmup_steps
-        )
+        decay_steps = max(1, self.total_steps - self.warmup_steps)
+        progress = (self.last_epoch - self.warmup_steps) / decay_steps
         progress = min(progress, 1.0)
 
         return [

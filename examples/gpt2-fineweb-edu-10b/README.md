@@ -1,6 +1,6 @@
 # GPT-2 124M Training on FineWeb Edu 10B Tokens
 
-Training GPT-2 124M on the FineWeb Edu dataset (10B token sample) with a target validation loss of **3.28**.
+Training GPT-2 124M on the FineWeb Edu dataset (10B token sample).
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ Final results will be saved to:
 
 With the default configuration:
 
--   **Target validation loss**: 3.28
+-   **Training objective**: causal next-token prediction on FineWeb-Edu
 -   **Training time**: ~8-12 hours on 4x A100 GPUs
 -   **Throughput**: ~300K-400K tokens/second
 -   **Total tokens**: 10 billion

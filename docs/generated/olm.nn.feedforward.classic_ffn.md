@@ -1,106 +1,44 @@
-# olm.nn.feedforward.classic_ffn
+# `olm.nn.feedforward.classic_ffn`
 
-### Classes
+Source: [`src/olm/nn/feedforward/classic_ffn.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_ffn.py#L1)
 
-| [`ClassicFFN`](#olm.nn.feedforward.classic_ffn.ClassicFFN)(\*args, \*\*kwargs)   | Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.   |
-|----------------------------------------------------------------------------------|---------------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.feedforward.classic_ffn.ClassicFFN(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `ClassicFFN(embed_dim, hidden_dim=None, activation_fn=None, dropout=0.0, bias=True)`
 
-Bases: [`FeedForwardBase`](olm.nn.feedforward.base.md#olm.nn.feedforward.base.FeedForwardBase)
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
+
+Source: [`src/olm/nn/feedforward/classic_ffn.py:7`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_ffn.py#L7)
 
 Standard Multi-Layer Perceptron (MLP) used in Transformer blocks.
 
 Implements a position-wise feed-forward network consisting of two linear transformations
 with a non-linear activation function in between.
 
-Structure:
-: Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
+**Structure**
 
-#### hidden_dim
+Input -> Linear(embed_dim -> hidden_dim) -> Activation -> Dropout -> Linear(hidden_dim -> embed_dim) -> Dropout
 
-Dimension of the inner hidden layer.
+**Attributes**
 
-* **Type:**
-  int
+- `hidden_dim` (`int`): Dimension of the inner hidden layer.
+- `up_proj` (`Linear`): Projection from embedding dim to hidden dim.
+- `act` (`nn.Module`): Activation function.
+- `down_proj` (`Linear`): Projection from hidden dim to embedding dim.
+- `dropout` (`nn.Dropout`): Dropout layer.
 
-#### up_proj
+#### Methods
 
-Projection from embedding dim to hidden dim.
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-* **Type:**
-  [Linear](#olm.nn.feedforward.classic_ffn.Linear)
+Source: [`src/olm/nn/feedforward/classic_ffn.py:51`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/classic_ffn.py#L51)
 
-#### act
+Apply the position-wise feed-forward network.
 
-Activation function.
+**Parameters**
 
-* **Type:**
-  nn.Module
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
-#### down_proj
+**Returns**
 
-Projection from hidden dim to embedding dim.
-
-* **Type:**
-  [Linear](#olm.nn.feedforward.classic_ffn.Linear)
-
-#### dropout
-
-Dropout layer.
-
-* **Type:**
-  nn.Dropout
-
-#### forward(x)
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.classic_ffn.FeedForwardBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
-
-Abstract base class for feedforward networks in a transformer block.
-
-Defines the interface for FFNs/MLPs. Subclasses must implement the forward method.
-
-#### embed_dim
-
-The input and output dimension.
-
-* **Type:**
-  int
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.classic_ffn.GELU(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`ActivationBase`](olm.nn.activations.base.md#olm.nn.activations.base.ActivationBase)
-
-GELU activation wrapper.
-
-#### forward(x: torch.Tensor) → torch.Tensor
-
-Apply activation to `x`.
-
-### *class* olm.nn.feedforward.classic_ffn.Linear(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Linear`
-
-#### forward(x)
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.

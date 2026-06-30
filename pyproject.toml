@@ -1,33 +1,46 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "openlanguagemodel"
-version = "2.1"
-description = "OpenLanguageModel (OLM): A clean library based off pytorch to quickly implement LLMs with custom architectures."
+version = "2.2.0"
+description = "OpenLanguageModel (OLM): a modular PyTorch LLM library for building, training, teaching, and researching transformer language models."
 readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "MIT"}
+requires-python = ">=3.10,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    {name = "OpenLanguageModel Team"},
+    {name = "Tavish Mankash"},
+    {name = "Vardhaman Kalloli"},
+    {name = "Keshava Prasad"},
 ]
-keywords = ["deep learning", "machine learning", "language models", "transformers", "pytorch", "llm"]
+keywords = [
+    "deep learning",
+    "machine learning",
+    "language models",
+    "transformers",
+    "pytorch",
+    "llm",
+    "llm training",
+    "transformer architecture",
+    "distributed training",
+    "fineweb-edu",
+    "education",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 dependencies = [
-    "torch>=2.0.0",
+    "torch>=2.1.0",
     "numpy>=1.20.0",
     "tqdm>=4.60.0",
     "pyyaml>=6.0",
@@ -37,27 +50,30 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "setuptools>=77.0",
     "pytest>=7.0.0",
     "black>=22.0.0",
     "flake8>=4.0.0",
     "mypy>=0.950",
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.24.0",
+    "sphinx>=7.0.0",
+    "sphinx-markdown-builder>=0.6.0",
     "build",
     "twine",
-]
-flash = [
-    "flash-attn>=2.0.0",
 ]
 wandb = [
     "wandb>=0.16.0",
 ]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-markdown-builder>=0.6.0",
+]
 
 [project.urls]
-Homepage = "https://github.com/openlanguagemodel/openlanguagemodel"
+Homepage = "https://openlanguagemodel.github.io/openlanguagemodel/"
+Documentation = "https://openlanguagemodel.github.io/openlanguagemodel/docs/"
 Repository = "https://github.com/openlanguagemodel/openlanguagemodel"
 Issues = "https://github.com/openlanguagemodel/openlanguagemodel/issues"
+"Release Notes" = "https://openlanguagemodel.github.io/openlanguagemodel/docs/release-v2.2.0/"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -68,11 +84,23 @@ include = ["olm*"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+norecursedirs = [
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+    "website",
+    "claude_bkp",
+]

@@ -1,56 +1,43 @@
-# olm.nn.structure.combinators.repeat
+# `olm.nn.structure.combinators.repeat`
 
-### Classes
+Source: [`src/olm/nn/structure/combinators/repeat.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/repeat.py#L1)
 
-| [`Repeat`](#olm.nn.structure.combinators.repeat.Repeat)(\*args, \*\*kwargs)   | Repeat a module a fixed number of times in sequence.   |
-|-------------------------------------------------------------------------------|--------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.structure.combinators.repeat.BaseCombinator(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `Repeat(module_func: Callable[[], torch.nn.modules.module.Module], num_repeat: int)`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.structure.combinators.base.BaseCombinator`
 
-Abstract base class for combinator modules.
-
-Subclasses implement `forward` to define how inputs are combined.
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Compute the combinator output from an input tensor.
-
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor produced by the combinator.
-
-### *class* olm.nn.structure.combinators.repeat.Repeat(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`BaseCombinator`](olm.nn.structure.combinators.base.md#olm.nn.structure.combinators.base.BaseCombinator)
+Source: [`src/olm/nn/structure/combinators/repeat.py:6`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/repeat.py#L6)
 
 Repeat a module a fixed number of times in sequence.
 
-The module function should return a new module instance each call.
+The module function should return a new module instance each call. It is
+used to build ``stack`` during initialization and is not needed for forward
+passes after the modules have been created.
 
-* **Parameters:**
-  * **module_func** – Callable returning a new module instance.
-  * **num_repeat** – Number of times to repeat the module.
+**Parameters**
 
-#### module
+- `module_func`: Callable returning a new module instance.
+- `num_repeat`: Number of times to repeat the module.
 
-Factory callable used to create new modules.
+**Attributes**
 
-#### num_repeat
+- `num_repeat`: Number of repeats.
+- `stack`: ModuleList containing the repeated modules.
 
-Number of repeats.
+#### Methods
 
-#### stack
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-ModuleList containing the repeated modules.
-
-#### forward(x: torch.Tensor) → torch.Tensor
+Source: [`src/olm/nn/structure/combinators/repeat.py:42`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/structure/combinators/repeat.py#L42)
 
 Apply the repeated modules in sequence.
 
-* **Parameters:**
-  **x** – Input tensor.
-* **Returns:**
-  Output tensor after all repeats.
+**Parameters**
+
+- `x`: Input tensor.
+
+**Returns**
+
+Output tensor after all repeats.

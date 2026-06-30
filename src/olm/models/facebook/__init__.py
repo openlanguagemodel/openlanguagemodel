@@ -1,1 +1,3 @@
-from .opt import OPT125M
+from .opt import OPTModel, OPT125M
+
+__all__ = ["OPTModel", "OPT125M"]

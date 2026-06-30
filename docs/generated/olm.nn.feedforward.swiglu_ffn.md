@@ -1,131 +1,55 @@
-# olm.nn.feedforward.swiglu_ffn
+# `olm.nn.feedforward.swiglu_ffn`
 
-### Classes
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L1)
 
-| [`SwiGLUFFN`](#olm.nn.feedforward.swiglu_ffn.SwiGLUFFN)(\*args, \*\*kwargs)   | SwiGLU-based feed-forward network used in modern Transformers (e.g., LLaMA, PaLM).   |
-|-------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+## Classes
 
-### *class* olm.nn.feedforward.swiglu_ffn.FeedForwardBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `SwiGLUFFN(embed_dim: int, hidden_dim: int = None, dropout: float = 0.0, bias: bool = True, ff_multiplier: float = 2.5)`
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Bases:** `olm.nn.feedforward.base.FeedForwardBase`
 
-Abstract base class for feedforward networks in a transformer block.
-
-Defines the interface for FFNs/MLPs. Subclasses must implement the forward method.
-
-#### embed_dim
-
-The input and output dimension.
-
-* **Type:**
-  int
-
-#### *abstractmethod* forward(x: torch.Tensor) → torch.Tensor
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.swiglu_ffn.Linear(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Linear`
-
-#### forward(x)
-
-### *class* olm.nn.feedforward.swiglu_ffn.SwiGLU(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`ActivationBase`](olm.nn.activations.base.md#olm.nn.activations.base.ActivationBase)
-
-SwiGLU activation function.
-
-Implements the SwiGLU activation as described in “GLU Variants Improve Transformer”.
-It applies the SiLU activation to one half of the input (the gate) and multiplies it
-by the other half (the value).
-
-Equation:
-: SwiGLU(x, W, V) = Swish_1(xW) \* (xV)
-  Here, we assume the input x is already projected/concatenated such that we chunk it.
-  So: SwiGLU(x) = (x_1 \* SiLU(x_2)) where x = [x_1, x_2]
-
-* **Parameters:**
-  * **device** (*torch.device* *,* *optional*) – Target device.
-  * **dtype** (*torch.dtype* *,* *optional*) – Target data type.
-
-#### forward(x: torch.Tensor) → torch.Tensor
-
-Forward pass of SwiGLU.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor. Expected to have an even last dimension size.
-* **Returns:**
-  Output tensor with half the last dimension of the input.
-* **Return type:**
-  torch.Tensor
-
-### *class* olm.nn.feedforward.swiglu_ffn.SwiGLUFFN(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`FeedForwardBase`](olm.nn.feedforward.base.md#olm.nn.feedforward.base.FeedForwardBase)
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L8)
 
 SwiGLU-based feed-forward network used in modern Transformers (e.g., LLaMA, PaLM).
 
 This layer implements the gated linear unit with Swish (SiLU) activation, which has been
 shown to improve performance over standard GELU/ReLU FFNs.
 
-Structure:
-: Input
-  -> Linear(embed_dim -> 2 \* hidden_dim) [Splits into Gate and Value]
-  -> SwiGLU(Gate \* SiLU(Value))
-  -> Linear(hidden_dim -> embed_dim)
-  -> Dropout
+**Structure**
 
-* **Parameters:**
-  * **embed_dim** (*int*) – The dimension of the input and output.
-  * **hidden_dim** (*int* *,* *optional*) – The intermediate inner dimension.
-    If None, defaults to int(ff_multiplier \* embed_dim).
-  * **dropout** (*float* *,* *optional*) – Dropout probability. Defaults to 0.0.
-  * **bias** (*bool* *,* *optional*) – Whether to use bias in linear layers. Defaults to True.
-  * **ff_multiplier** (*float* *,* *optional*) – Multiplier for default hidden dimension. Defaults to 2.5 (commonly 8/3 for SwiGLU).
+Input
+-> Linear(embed_dim -> 2 * hidden_dim) [Splits into Gate and Value]
+-> SwiGLU(Gate * SiLU(Value))
+-> Linear(hidden_dim -> embed_dim)
+-> Dropout
 
-#### up_proj
+**Parameters**
 
-Projects and splits input into gate and value parts.
+- `embed_dim` (`int`): The dimension of the input and output.
+- `hidden_dim` (`int, optional`): The intermediate inner dimension. If None, defaults to `int(ff_multiplier * embed_dim)`.
+- `dropout` (`float, optional`): Dropout probability. Defaults to 0.0.
+- `bias` (`bool, optional`): Whether to use bias in linear layers. Defaults to True.
+- `ff_multiplier` (`float, optional`): Multiplier for default hidden dimension. Defaults to 2.5 (commonly 8/3 for SwiGLU).
 
-* **Type:**
-  [Linear](#olm.nn.feedforward.swiglu_ffn.Linear)
+**Attributes**
 
-#### act
+- `up_proj` (`Linear`): Projects and splits input into gate and value parts.
+- `act` (`SwiGLU`): The activation function.
+- `down_proj` (`Linear`): Projects back to embedding dimension.
+- `dropout` (`nn.Dropout`): Dropout layer.
 
-The activation function.
+#### Methods
 
-* **Type:**
-  [SwiGLU](#olm.nn.feedforward.swiglu_ffn.SwiGLU)
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
 
-#### down_proj
+Source: [`src/olm/nn/feedforward/swiglu_ffn.py:68`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/feedforward/swiglu_ffn.py#L68)
 
-Projects back to embedding dimension.
+Apply SwiGLU feed-forward projection.
 
-* **Type:**
-  [Linear](#olm.nn.feedforward.swiglu_ffn.Linear)
+**Parameters**
 
-#### dropout
+- `x` (`torch.Tensor`): Hidden states shaped ``[batch, seq_len, embed_dim]``.
 
-Dropout layer.
+**Returns**
 
-* **Type:**
-  nn.Dropout
-
-#### forward(x)
-
-Forward pass of the feedforward network.
-
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch, seq_len, embed_dim).
-* **Returns:**
-  Output tensor of shape (batch, seq_len, embed_dim).
-* **Return type:**
-  torch.Tensor
+- `torch.Tensor`: Hidden states shaped ``[batch, seq_len, embed_dim]``.

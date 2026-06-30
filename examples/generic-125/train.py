@@ -2,8 +2,6 @@
 """
 Generic 125M Training on FineWeb Edu 10B Tokens
 
-Target: Achieve 3.28 validation loss
-
 Usage:
     python -u train.py --epochs 1 --batch_size 16 --learning_rate 3e-4
     python -u train.py --resume checkpoints/checkpoint_latest.pt

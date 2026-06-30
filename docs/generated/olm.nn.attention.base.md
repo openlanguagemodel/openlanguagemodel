@@ -1,262 +1,125 @@
-# olm.nn.attention.base
+# `olm.nn.attention.base`
 
-### Classes
+Source: [`src/olm/nn/attention/base.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L1)
 
-| [`AttentionBase`](#olm.nn.attention.base.AttentionBase)(\*args, \*\*kwargs)                 | Abstract base class for attention mechanisms.                                  |
-|---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`AttentionwithRoPEBase`](#olm.nn.attention.base.AttentionwithRoPEBase)(\*args, \*\*kwargs) | Abstract base class for attention mechanisms with Rotary Positional Embedding. |
+## Classes
 
-### *class* olm.nn.attention.base.ABC
+### `AttentionBase(embed_dim: int, num_heads: int, dropout: float = 0.0, bias: bool = True)`
 
-Bases: `object`
+**Bases:** `Module`, `ABC`
 
-Helper class that provides a standard way to create an ABC using
-inheritance.
-
-### *class* olm.nn.attention.base.AttentionBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+Source: [`src/olm/nn/attention/base.py:8`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L8)
 
 Abstract base class for attention mechanisms.
 
 Provides the common structure for attention layers, including QKV projections
 and output projection. Subclasses must implement the specific attention logic
-in compute_attention.
+in `compute_attention`.
 
-#### embed_dim
+**Attributes**
 
-Total dimension of the model.
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `head_dim` (`int`): Dimension of each attention head.
+- `scale` (`float`): Scaling factor for dot products (1 / sqrt(head_dim)).
+- `dropout` (`nn.Dropout`): Dropout layer applied to attention weights.
+- `q_proj` (`Linear`): Linear projection for Query.
+- `k_proj` (`Linear`): Linear projection for Key.
+- `v_proj` (`Linear`): Linear projection for Value.
+- `out_proj` (`Linear`): Linear projection for Output.
 
-* **Type:**
-  int
+#### Methods
 
-#### num_heads
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
-Number of parallel attention heads.
-
-* **Type:**
-  int
-
-#### head_dim
-
-Dimension of each attention head.
-
-* **Type:**
-  int
-
-#### scale
-
-Scaling factor for dot products (1 / sqrt(head_dim)).
-
-* **Type:**
-  float
-
-#### dropout
-
-Dropout layer applied to attention weights.
-
-* **Type:**
-  nn.Dropout
-
-#### q_proj
-
-Linear projection for Query.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### k_proj
-
-Linear projection for Key.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### v_proj
-
-Linear projection for Value.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### out_proj
-
-Linear projection for Output.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### *abstractmethod* compute_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) → torch.Tensor
+Source: [`src/olm/nn/attention/base.py:57`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L57)
 
 Computes the attention scores and output.
 
-* **Parameters:**
-  * **q** (*torch.Tensor*) – Query tensor [batch, heads, seq, head_dim].
-  * **k** (*torch.Tensor*) – Key tensor [batch, heads, seq, head_dim].
-  * **v** (*torch.Tensor*) – Value tensor [batch, heads, seq, head_dim].
-  * **mask** (*torch.Tensor* *,* *optional*) – Attention mask. Defaults to None.
-* **Returns:**
-  The attention output [batch, heads, seq, head_dim].
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-#### forward(x: torch.Tensor, mask: torch.Tensor | None = None) → torch.Tensor
+- `q` (`torch.Tensor`): Query tensor [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The attention output [batch, heads, seq, head_dim].
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:73`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L73)
 
 Standard forward pass for attention layers.
 
-Projects input to Q, K, V, calls compute_attention, and projects output.
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-* **Parameters:**
-  * **x** (*torch.Tensor*) – Input tensor [batch, seq, embed_dim].
-  * **mask** (*torch.Tensor* *,* *optional*) – Attention mask. Defaults to None.
-* **Returns:**
-  Output tensor [batch, seq, embed_dim].
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### *class* olm.nn.attention.base.AttentionwithRoPEBase(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
 
-Bases: `Module`, [`ABC`](olm.train.schedulers.base.md#olm.train.schedulers.base.ABC)
+**Returns**
+
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].
+
+### `AttentionwithRoPEBase(embed_dim: int, num_heads: int, max_seq_len: int, dropout: float = 0.0, bias: bool = True, rope_theta: float = 10000.0)`
+
+**Bases:** `Module`, `ABC`
+
+Source: [`src/olm/nn/attention/base.py:95`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L95)
 
 Abstract base class for attention mechanisms with Rotary Positional Embedding.
 
 Provides the common structure for attention layers, including QKV projections
 and output projection. Subclasses must implement the specific attention logic
-in compute_attention.
+in `compute_attention`.
 
-#### embed_dim
+**Attributes**
 
-Total dimension of the model.
+- `embed_dim` (`int`): Total dimension of the model.
+- `num_heads` (`int`): Number of parallel attention heads.
+- `head_dim` (`int`): Dimension of each attention head.
+- `scale` (`float`): Scaling factor for dot products (1 / sqrt(head_dim)).
+- `dropout` (`nn.Dropout`): Dropout layer applied to attention weights.
+- `q_proj` (`Linear`): Linear projection for Query.
+- `k_proj` (`Linear`): Linear projection for Key.
+- `v_proj` (`Linear`): Linear projection for Value.
+- `out_proj` (`Linear`): Linear projection for Output.
 
-* **Type:**
-  int
+#### Methods
 
-#### num_heads
+##### `compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
 
-Number of parallel attention heads.
-
-* **Type:**
-  int
-
-#### head_dim
-
-Dimension of each attention head.
-
-* **Type:**
-  int
-
-#### scale
-
-Scaling factor for dot products (1 / sqrt(head_dim)).
-
-* **Type:**
-  float
-
-#### dropout
-
-Dropout layer applied to attention weights.
-
-* **Type:**
-  nn.Dropout
-
-#### q_proj
-
-Linear projection for Query.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### k_proj
-
-Linear projection for Key.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### v_proj
-
-Linear projection for Value.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### out_proj
-
-Linear projection for Output.
-
-* **Type:**
-  [Linear](#olm.nn.attention.base.Linear)
-
-#### *abstractmethod* compute_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) → torch.Tensor
+Source: [`src/olm/nn/attention/base.py:148`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L148)
 
 Computes the attention scores and output.
 
-* **Parameters:**
-  * **q** (*torch.Tensor*) – Query tensor [batch, heads, seq, head_dim].
-  * **k** (*torch.Tensor*) – Key tensor [batch, heads, seq, head_dim].
-  * **v** (*torch.Tensor*) – Value tensor [batch, heads, seq, head_dim].
-  * **mask** (*torch.Tensor* *,* *optional*) – Attention mask. Defaults to None.
-* **Returns:**
-  The attention output [batch, heads, seq, head_dim].
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-#### forward(x: torch.Tensor, mask: torch.Tensor | None = None) → torch.Tensor
+- `q` (`torch.Tensor`): Query tensor [batch, heads, seq, head_dim].
+- `k` (`torch.Tensor`): Key tensor [batch, heads, seq, head_dim].
+- `v` (`torch.Tensor`): Value tensor [batch, heads, seq, head_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
+
+**Returns**
+
+- `torch.Tensor`: The attention output [batch, heads, seq, head_dim].
+
+##### `forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor`
+
+Source: [`src/olm/nn/attention/base.py:164`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/attention/base.py#L164)
 
 Standard forward pass for attention layers.
 
-Projects input to Q, K, V, calls compute_attention, and projects output.
+Projects input to Q, K, V, calls `compute_attention`, and projects output.
 
-* **Parameters:**
-  * **x** (*torch.Tensor*) – Input tensor [batch, seq, embed_dim].
-  * **mask** (*torch.Tensor* *,* *optional*) – Attention mask. Defaults to None.
-* **Returns:**
-  Output tensor [batch, seq, embed_dim].
-* **Return type:**
-  torch.Tensor
+**Parameters**
 
-### *class* olm.nn.attention.base.Linear(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+- `x` (`torch.Tensor`): Input tensor [batch, seq, embed_dim].
+- `mask` (`torch.Tensor, optional`): Attention mask. Defaults to None.
 
-Bases: `Linear`
+**Returns**
 
-#### forward(x)
-
-### *class* olm.nn.attention.base.RotaryPositionalEmbedding(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
-
-Bases: [`PositionalEmbeddingBase`](olm.nn.embeddings.positional.base.md#olm.nn.embeddings.positional.base.PositionalEmbeddingBase)
-
-Rotary Positional Embedding (RoPE) as described in
-“RoFormer: Enhanced Transformer with Rotary Position Embedding” (arXiv 2104.09864).
-
-This module precomputes sin/cos rotation frequencies for a given head‐dim, and then applies to
-query/key representations via interleaving real/imag parts (or equivalently pairs of dims).
-
-#### forward(x: torch.Tensor, seq_positions: torch.LongTensor | None = None) → torch.Tensor
-
-Apply rotary positional embedding to input tensor x.
-
-* **Parameters:**
-  * **x** – shape (batch_size, seq_len, num_heads, head_dim)
-  * **seq_positions** – optional tensor of shape (batch_size, seq_len) with position indices.
-    If None, assumes positions are 0..seq_len-1 for each batch.
-* **Returns:**
-  Tensor of same shape as x, with RoPE applied.
-
-### olm.nn.attention.base.abstractmethod(funcobj)
-
-A decorator indicating abstract methods.
-
-Requires that the metaclass is ABCMeta or derived from it.  A
-class that has a metaclass derived from ABCMeta cannot be
-instantiated unless all of its abstract methods are overridden.
-The abstract methods can be called using any of the normal
-‘super’ call mechanisms.  abstractmethod() may be used to declare
-abstract methods for properties and descriptors.
-
-Usage:
-
-> class C(metaclass=ABCMeta):
-> : @abstractmethod
->   def my_abstract_method(self, arg1, arg2, argN):
->   <br/>
->   > …
+- `torch.Tensor`: Output tensor [batch, seq, embed_dim].

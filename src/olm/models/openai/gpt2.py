@@ -9,11 +9,11 @@ from olm.nn.blocks import OutputHead
 class GPT2Block(Block):
     """
     A single Transformer block for GPT-2.
-    
+
     Structure:
         x = x + Attn(LN(x))
         x = x + FFN(LN(x))
-        
+
     Args:
         embed_dim (int): Model dimension.
         num_heads (int): Number of attention heads.
@@ -34,29 +34,31 @@ class GPT2Block(Block):
 class GPT2Model(Block):
     """
     Base class for GPT-2 models.
+
+    Structure:
+        Token embedding + learned positional embedding -> GPT2Block x N ->
+        tied OutputHead.
+
+    Forward:
+        Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
+        ``[batch, seq_len, vocab_size]``.
     """
-    def __init__(self, vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1):
-        # GPT-2 Logic:
-        # Embedding, PositionalEmbedding, Stack of Blocks, OutputHead(LN + Linear)
-        
+    def __init__(self, vocab_size: int, embed_dim: int, num_layers: int, num_heads: int, max_seq_len: int, dropout: float = 0.1, tie_weights: bool = True):
+        token_embedding = Embedding(vocab_size, embed_dim)
+
         super().__init__([
             Block([
-                Embedding(vocab_size, embed_dim),
+                token_embedding,
                 AbsolutePositionalEmbedding(max_seq_len, embed_dim, dropout)
             ]),
             Repeat(lambda: GPT2Block(embed_dim, num_heads, dropout), num_layers),
-            OutputHead(embed_dim, vocab_size)
+            OutputHead(
+                embed_dim,
+                vocab_size,
+                tied_embedding=token_embedding,
+                tie_weights=tie_weights,
+            )
         ])
-        
-        # Tie weights: Output head linear = Embedding
-        # Structure:
-        #   self.blocks[0] -> Block([Embedding, PosEmbedding])
-        #     -> blocks[0] is Embedding wrapper
-        #   self.blocks[2] -> OutputHead([LayerNorm, Linear])
-        #     -> blocks[1] is Linear
-        
-        # Accessing the Embedding wrapper's internal embedding module weight
-        self.blocks[2].blocks[1].weight = self.blocks[0].blocks[0].embedding.weight
 
 class GPT2(GPT2Model):
     """GPT-2 Small (124M)."""

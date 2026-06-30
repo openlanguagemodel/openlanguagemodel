@@ -1,37 +1,41 @@
-# olm.nn.embeddings.token_embed
+# `olm.nn.embeddings.token_embed`
 
-### Classes
+Source: [`src/olm/nn/embeddings/token_embed.py:1`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/token_embed.py#L1)
 
-| [`Embedding`](#olm.nn.embeddings.token_embed.Embedding)(\*args, \*\*kwargs)   | Token Embedding layer.   |
-|-------------------------------------------------------------------------------|--------------------------|
+## Classes
 
-### *class* olm.nn.embeddings.token_embed.Embedding(\*args: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any), \*\*kwargs: [Any](olm.data.datasets.base_dataset.md#olm.data.datasets.base_dataset.Any))
+### `Embedding(vocab_size: int, embedding_dim: int)`
 
-Bases: `Module`
+**Bases:** `Module`
+
+Source: [`src/olm/nn/embeddings/token_embed.py:5`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/token_embed.py#L5)
 
 Token Embedding layer.
 
 Wraps standard PyTorch embedding with a clean interface.
 Maps integer indices to dense vectors.
 
-* **Parameters:**
-  * **vocab_size** (*int*) – Size of the vocabulary.
-  * **embedding_dim** (*int*) – Dimensionality of the word embeddings.
+**Parameters**
 
-#### embedding
+- `vocab_size` (`int`): Size of the vocabulary.
+- `embedding_dim` (`int`): Dimensionality of the word embeddings.
 
-The underlying PyTorch embedding layer.
+**Attributes**
 
-* **Type:**
-  nn.Embedding
+- `embedding` (`nn.Embedding`): The underlying PyTorch embedding layer.
 
-#### forward(x: torch.Tensor) → torch.Tensor
+#### Methods
+
+##### `forward(self, x: torch.Tensor) -> torch.Tensor`
+
+Source: [`src/olm/nn/embeddings/token_embed.py:30`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/nn/embeddings/token_embed.py#L30)
 
 Forward pass of the Embedding layer.
 
-* **Parameters:**
-  **x** (*torch.Tensor*) – Input tensor of shape (batch_size, seq_len) containing token IDs.
-* **Returns:**
-  Output tensor of shape (batch_size, seq_len, embedding_dim).
-* **Return type:**
-  torch.Tensor
+**Parameters**
+
+- `x` (`torch.Tensor`): Input tensor of shape (batch_size, seq_len) containing token IDs.
+
+**Returns**
+
+- `torch.Tensor`: Output tensor of shape (batch_size, seq_len, embedding_dim).

@@ -1,0 +1,20 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#f4f4f0"/>
+  <rect x="56" y="56" width="1088" height="518" fill="none" stroke="#0a0a0a" stroke-width="2"/>
+  <path d="M92 120h180v36H92zM92 178h260v36H92zM92 236h136v36H92z" fill="#b30000"/>
+  <text x="430" y="208" fill="#0a0a0a" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="400">OpenLanguageModel</text>
+  <text x="430" y="282" fill="#0a0a0a" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="400">PyTorch LLM library for learning and ablations</text>
+  <text x="430" y="365" fill="#444" font-family="Menlo, Consolas, monospace" font-size="27">build · train · modify transformer language models</text>
+  <g transform="translate(430 432)">
+    <rect width="170" height="52" fill="#0a0a0a"/>
+    <text x="22" y="35" fill="#f4f4f0" font-family="Menlo, Consolas, monospace" font-size="22">pytorch</text>
+    <rect x="190" width="142" height="52" fill="#b30000"/>
+    <text x="212" y="35" fill="#fff" font-family="Menlo, Consolas, monospace" font-size="22">training</text>
+    <rect x="352" width="136" height="52" fill="#0a0a0a"/>
+    <text x="374" y="35" fill="#f4f4f0" font-family="Menlo, Consolas, monospace" font-size="22">course</text>
+  </g>
+  <circle cx="1017" cy="446" r="72" fill="#b30000"/>
+  <rect x="982" y="418" width="24" height="24" fill="#0a0a0a"/>
+  <rect x="1030" y="418" width="24" height="24" fill="#0a0a0a"/>
+  <path d="M977 486h84" stroke="#0a0a0a" stroke-width="10" stroke-linecap="square"/>
+</svg>
