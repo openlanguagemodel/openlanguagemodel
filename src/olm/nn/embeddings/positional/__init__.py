@@ -6,6 +6,7 @@ from .rope import (
     ScaledRotaryPositionalEmbedding,
     PartialScaledRotaryPositionalEmbedding,
 )
+from .llama3_rope import Llama3RotaryPositionalEmbedding
 from .absolute import AbsolutePositionalEmbedding
 from .alibi import ALiBiPositionalBias
 from .sinusoidal import SinusoidalPositionalEmbedding
@@ -16,6 +17,7 @@ __all__ = [
     "PartialRotaryPositionalEmbedding",
     "ScaledRotaryPositionalEmbedding",
     "PartialScaledRotaryPositionalEmbedding",
+    "Llama3RotaryPositionalEmbedding",
     "AbsolutePositionalEmbedding",
     "ALiBiPositionalBias",
     "SinusoidalPositionalEmbedding",
