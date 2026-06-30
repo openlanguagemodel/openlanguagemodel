@@ -24,6 +24,7 @@ from olm.models.meta import (
     Llama3_2_3B,
 )
 from olm.models.microsoft import Phi3Model, Phi3_5_Mini, Phi3_Small, Phi4Model, Phi4_14B
+from olm.models.mistralai import MistralLarge3Model, MistralLarge3
 from olm.models.openai import GPT2Model, GPT2, GPT2Medium, GPT2Large, GPT2XL
 
 __all__ = [
@@ -55,6 +56,8 @@ __all__ = [
     "Phi3_Small",
     "Phi4Model",
     "Phi4_14B",
+    "MistralLarge3Model",
+    "MistralLarge3",
     "Gemma2Model",
     "Gemma2_2B",
     "Gemma2_9B",
