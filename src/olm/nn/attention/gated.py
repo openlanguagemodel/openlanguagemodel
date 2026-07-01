@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from typing import Optional
 
 from olm.nn.torch_nn_wrappers import Linear
+from olm.nn.attention.base import AttentionwithRoPEBase
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings.positional.rope import (
     RotaryPositionalEmbedding,
@@ -11,7 +12,7 @@ from olm.nn.embeddings.positional.rope import (
 )
 
 
-class GatedAttention(nn.Module):
+class GatedAttention(AttentionwithRoPEBase):
     """
     Full softmax attention with a learnable output gate.
 
@@ -46,13 +47,15 @@ class GatedAttention(nn.Module):
         rms_norm_eps: float = 1e-6,
         dropout: float = 0.0,
     ):
-        super().__init__()
+        nn.Module.__init__(self)
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
         self.head_dim = head_dim
         self.num_groups = num_heads // num_kv_heads
+        self.scale = head_dim ** -0.5
         self.dropout_p = dropout
+        self.max_seq_len = max_seq_len
 
         q_dim = num_heads * head_dim
         kv_dim = num_kv_heads * head_dim
@@ -80,6 +83,13 @@ class GatedAttention(nn.Module):
         else:
             self.rope = RotaryPositionalEmbedding(head_dim, max_seq_len, base=rope_theta)
 
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        return F.scaled_dot_product_attention(
+            q, k, v,
+            dropout_p=self.dropout_p if self.training else 0.0,
+            is_causal=True,
+        )
+
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         B, N, _ = x.shape
 
@@ -104,12 +114,7 @@ class GatedAttention(nn.Module):
             v = v[:, :, None].expand(B, self.num_kv_heads, self.num_groups, N, self.head_dim)
             v = v.reshape(B, self.num_heads, N, self.head_dim)
 
-        attn_out = F.scaled_dot_product_attention(
-            q, k, v,
-            dropout_p=self.dropout_p if self.training else 0.0,
-            is_causal=True,
-        )
-
+        attn_out = self.compute_attention(q, k, v, mask)
         attn_out = attn_out.transpose(1, 2).contiguous().view(B, N, self.num_heads * self.head_dim)
 
         gate = torch.sigmoid(self.output_gate(x))

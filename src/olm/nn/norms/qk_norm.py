@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 from typing import Optional
 
+from olm.nn.norms.base import NormBase
 from olm.nn.norms.rms_norm import RMSNorm
 
 
-class QKNorm(nn.Module):
+class QKNorm(NormBase):
     """
     Query-Key Normalization applied independently per attention head.
 
@@ -17,14 +18,22 @@ class QKNorm(nn.Module):
     Reference: "Scaling Vision Transformers" (https://arxiv.org/abs/2106.04560)
 
     Args:
-        head_dim (int): Dimension of each attention head.
+        head_dim (int): Dimension of each attention head (used as d_model).
         eps (float): Small constant for numerical stability in RMSNorm.
+        device (torch.device, optional): Target device.
+        dtype (torch.dtype, optional): Target data type.
     """
 
-    def __init__(self, head_dim: int, eps: float = 1e-6):
-        super().__init__()
-        self.q_norm = RMSNorm(head_dim, eps=eps)
-        self.k_norm = RMSNorm(head_dim, eps=eps)
+    def __init__(
+        self,
+        head_dim: int,
+        eps: float = 1e-6,
+        device: Optional[torch.device] = None,
+        dtype: Optional[torch.dtype] = None,
+    ):
+        super().__init__(head_dim, device=device, dtype=dtype)
+        self.q_norm = RMSNorm(head_dim, eps=eps, device=device, dtype=dtype)
+        self.k_norm = RMSNorm(head_dim, eps=eps, device=device, dtype=dtype)
 
     def forward(
         self, q: torch.Tensor, k: torch.Tensor

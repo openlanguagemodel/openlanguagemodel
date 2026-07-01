@@ -4,10 +4,11 @@ import torch.nn.functional as F
 from typing import Optional
 
 from olm.nn.torch_nn_wrappers import Linear
+from olm.nn.attention.base import AttentionBase
 from olm.nn.norms import RMSNorm
 
 
-class LightningAttention(nn.Module):
+class LightningAttention(AttentionBase):
     """
     Lightning Attention -- a linear attention variant used by Ling 2.5.
 
@@ -38,10 +39,11 @@ class LightningAttention(nn.Module):
         head_dim: Optional[int] = None,
         dropout: float = 0.0,
     ):
-        super().__init__()
+        nn.Module.__init__(self)
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.head_dim = head_dim or embed_dim // num_heads
+        self.scale = self.head_dim ** -0.5
 
         total_dim = num_heads * self.head_dim
 
@@ -62,16 +64,37 @@ class LightningAttention(nn.Module):
         """ELU+1 feature map: phi(x) = elu(x) + 1."""
         return F.elu(x, alpha=1.0) + 1.0
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
-        Causal linear attention (parallel mode).
+        Causal linear attention via recurrent state accumulation.
 
         Args:
-            x: ``[batch, seq_len, embed_dim]``
+            q, k, v: ``[batch, heads, seq_len, head_dim]`` (already feature-mapped).
 
         Returns:
-            ``[batch, seq_len, embed_dim]``
+            ``[batch, heads, seq_len, head_dim]``
         """
+        B, H, N, D = q.shape
+
+        outputs = []
+        S = torch.zeros(B, H, D, D, device=q.device, dtype=q.dtype)
+        z = torch.zeros(B, H, D, device=q.device, dtype=q.dtype)
+
+        for t in range(N):
+            k_t = k[:, :, t]
+            v_t = v[:, :, t]
+            q_t = q[:, :, t]
+
+            S = S + torch.einsum("bhd,bhe->bhde", k_t, v_t)
+            z = z + k_t
+
+            num = torch.einsum("bhd,bhde->bhe", q_t, S)
+            denom = torch.einsum("bhd,bhd->bh", q_t, z).unsqueeze(-1).clamp(min=1e-6)
+            outputs.append(num / denom)
+
+        return torch.stack(outputs, dim=2)
+
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         B, N, _ = x.shape
 
         q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim)
@@ -84,29 +107,11 @@ class LightningAttention(nn.Module):
         q = self._elu_feature_map(q)
         k = self._elu_feature_map(k)
 
-        q = q.transpose(1, 2)  # [B, H, N, d]
+        q = q.transpose(1, 2)
         k = k.transpose(1, 2)
         v = v.transpose(1, 2)
 
-        outputs = []
-        S = torch.zeros(B, self.num_heads, self.head_dim, self.head_dim,
-                         device=x.device, dtype=x.dtype)
-        z = torch.zeros(B, self.num_heads, self.head_dim,
-                        device=x.device, dtype=x.dtype)
-
-        for t in range(N):
-            k_t = k[:, :, t]    # [B, H, d]
-            v_t = v[:, :, t]    # [B, H, d]
-            q_t = q[:, :, t]    # [B, H, d]
-
-            S = S + torch.einsum("bhd,bhe->bhde", k_t, v_t)
-            z = z + k_t
-
-            num = torch.einsum("bhd,bhde->bhe", q_t, S)
-            denom = torch.einsum("bhd,bhd->bh", q_t, z).unsqueeze(-1).clamp(min=1e-6)
-            outputs.append(num / denom)
-
-        out = torch.stack(outputs, dim=2)  # [B, H, N, d]
+        out = self.compute_attention(q, k, v, mask)
         out = out.transpose(1, 2).contiguous().view(B, N, self.num_heads * self.head_dim)
 
         gate = torch.sigmoid(self.output_gate(x))

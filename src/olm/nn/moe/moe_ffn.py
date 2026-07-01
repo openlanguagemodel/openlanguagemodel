@@ -6,14 +6,14 @@ from olm.nn.feedforward.base import FeedForwardBase
 from olm.nn.moe.router import MoERouter
 
 
-class MoEFeedForward(nn.Module):
+class MoEFeedForward(FeedForwardBase):
     """
     Mixture-of-Experts feed-forward layer with configurable routing.
 
-    Replaces the older ``MoEFeedForwardBase`` with support for sigmoid
-    routing, auxiliary-loss-free balancing, routed scaling, and other
-    features required by Step 3.5 Flash, MiniMax M2.5, Sarvam, Ling 2.5,
-    and Qwen3.5.
+    Extends ``FeedForwardBase`` with support for sigmoid routing,
+    auxiliary-loss-free balancing, routed scaling, shared experts, and
+    other features required by Step 3.5 Flash, MiniMax M2.5, Sarvam,
+    Ling 2.5, and Qwen3.5.
 
     Args:
         embed_dim: Input / output hidden dimension.
@@ -28,8 +28,6 @@ class MoEFeedForward(nn.Module):
         norm_weights: Re-normalize top-k weights.
         fp32_gate: Run gate in FP32.
         routed_scaling_factor: Scale factor on routed output.
-        first_k_dense: Number of initial layers that should act as dense
-            (ignored here -- handled by the model composer).
     """
 
     def __init__(
@@ -47,8 +45,7 @@ class MoEFeedForward(nn.Module):
         fp32_gate: bool = False,
         routed_scaling_factor: float = 1.0,
     ):
-        super().__init__()
-        self.embed_dim = embed_dim
+        super().__init__(embed_dim)
         self.num_experts = num_experts
         self.num_shared_experts = num_shared_experts
         self.top_k = top_k

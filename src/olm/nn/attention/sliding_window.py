@@ -4,11 +4,12 @@ import torch.nn.functional as F
 from typing import Optional
 
 from olm.nn.torch_nn_wrappers import Linear
+from olm.nn.attention.base import AttentionwithRoPEBase
 from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
 from olm.nn.norms import RMSNorm
 
 
-class SlidingWindowAttention(nn.Module):
+class SlidingWindowAttention(AttentionwithRoPEBase):
     """
     Grouped-Query Attention with a fixed sliding window.
 
@@ -48,14 +49,16 @@ class SlidingWindowAttention(nn.Module):
         use_bias: bool = False,
         qkv_bias: bool = False,
     ):
-        super().__init__()
+        nn.Module.__init__(self)
         self.head_dim = head_dim or embed_dim // num_heads
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
         self.num_groups = num_heads // num_kv_heads
         self.embed_dim = embed_dim
         self.window_size = window_size
+        self.scale = self.head_dim ** -0.5
         self.dropout_p = dropout
+        self.max_seq_len = max_seq_len
 
         self.q_dim = num_heads * self.head_dim
         self.kv_dim = num_kv_heads * self.head_dim
@@ -80,7 +83,30 @@ class SlidingWindowAttention(nn.Module):
         window = (row.unsqueeze(1) - col.unsqueeze(0)) < self.window_size
         return causal & window
 
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        N = q.shape[2]
+        sw_mask = self._build_sliding_window_mask(N, q.device)
+
+        attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        attn_scores = attn_scores.masked_fill(~sw_mask, float("-inf"))
+        attn_probs = F.softmax(attn_scores, dim=-1)
+        attn_probs = F.dropout(attn_probs, p=self.dropout_p, training=self.training)
+
+        return torch.matmul(attn_probs, v)
+
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Computes the attention scores and output.
+
+        Args:
+            q (torch.Tensor): Query tensor [batch, heads, seq, head_dim].
+            k (torch.Tensor): Key tensor [batch, heads, seq, head_dim].
+            v (torch.Tensor): Value tensor [batch, heads, seq, head_dim].
+            mask (torch.Tensor, optional): Attention mask. Defaults to None.
+
+        Returns:
+            torch.Tensor: The attention output [batch, heads, seq, head_dim].
+        """
         B, N, _ = x.shape
 
         q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim)
@@ -104,13 +130,6 @@ class SlidingWindowAttention(nn.Module):
             v = v[:, :, None, :, :].expand(B, self.num_kv_heads, self.num_groups, N, self.head_dim)
             v = v.reshape(B, self.num_heads, N, self.head_dim)
 
-        sw_mask = self._build_sliding_window_mask(N, x.device)
-
-        attn_scores = torch.matmul(q, k.transpose(-2, -1)) * (self.head_dim ** -0.5)
-        attn_scores = attn_scores.masked_fill(~sw_mask, float("-inf"))
-        attn_probs = F.softmax(attn_scores, dim=-1)
-        attn_probs = F.dropout(attn_probs, p=self.dropout_p, training=self.training)
-
-        out = torch.matmul(attn_probs, v)
+        out = self.compute_attention(q, k, v, mask)
         out = out.transpose(1, 2).contiguous().view(B, N, self.q_dim)
         return self.out_proj(out)

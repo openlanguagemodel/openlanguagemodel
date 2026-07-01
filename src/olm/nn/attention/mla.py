@@ -4,11 +4,12 @@ import torch.nn.functional as F
 from typing import Optional
 
 from olm.nn.torch_nn_wrappers import Linear
+from olm.nn.attention.base import AttentionwithRoPEBase
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
 
 
-class MultiHeadLatentAttention(nn.Module):
+class MultiHeadLatentAttention(AttentionwithRoPEBase):
     """
     Multi-head Latent Attention (MLA) as used by DeepSeek V3, Sarvam 105B,
     Ling 2.5, Kimi K2/K2.5, Mistral Large 3.
@@ -53,16 +54,19 @@ class MultiHeadLatentAttention(nn.Module):
         rms_norm_eps: float = 1e-6,
         dropout: float = 0.0,
     ):
-        super().__init__()
+        nn.Module.__init__(self)
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.qk_nope_head_dim = qk_nope_head_dim
         self.qk_rope_head_dim = qk_rope_head_dim
         self.qk_head_dim = qk_nope_head_dim + qk_rope_head_dim
+        self.head_dim = self.qk_head_dim
         self.v_head_dim = v_head_dim
         self.kv_lora_rank = kv_lora_rank
         self.q_lora_rank = q_lora_rank or 0
         self.dropout_p = dropout
+        self.scale = self.qk_head_dim ** -0.5
+        self.max_seq_len = max_seq_len
 
         # Q path
         if self.q_lora_rank > 0:
@@ -83,16 +87,20 @@ class MultiHeadLatentAttention(nn.Module):
             bias=False,
         )
 
-        # Separate rope projection for K (from compressed KV)
         self.k_rope_proj = Linear(embed_dim, qk_rope_head_dim, bias=False)
 
-        # RoPE for the positional component
         self.rope = RotaryPositionalEmbedding(
             qk_rope_head_dim, max_seq_len, base=rope_theta
         )
 
-        # Output
         self.out_proj = Linear(num_heads * v_head_dim, embed_dim, bias=False)
+
+    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        return F.scaled_dot_product_attention(
+            q, k, v,
+            dropout_p=self.dropout_p if self.training else 0.0,
+            is_causal=True,
+        )
 
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         B, N, _ = x.shape
@@ -115,7 +123,7 @@ class MultiHeadLatentAttention(nn.Module):
         k_nope = kv[..., : self.qk_nope_head_dim]
         v = kv[..., self.qk_nope_head_dim :]
 
-        k_rope = self.k_rope_proj(x).unsqueeze(2)  # [B, N, 1, rope_dim]
+        k_rope = self.k_rope_proj(x).unsqueeze(2)
         k_rope = k_rope.expand(B, N, self.num_heads, self.qk_rope_head_dim)
 
         # --- Apply RoPE to positional components ---
@@ -123,19 +131,11 @@ class MultiHeadLatentAttention(nn.Module):
         k_rope = self.rope(k_rope)
 
         # --- Concat nope + rope for full Q and K ---
-        q_full = torch.cat([q_nope, q_rope], dim=-1)  # [B, N, H, qk_head_dim]
-        k_full = torch.cat([k_nope, k_rope], dim=-1)  # [B, N, H, qk_head_dim]
+        q_full = torch.cat([q_nope, q_rope], dim=-1).transpose(1, 2)
+        k_full = torch.cat([k_nope, k_rope], dim=-1).transpose(1, 2)
+        v = v.transpose(1, 2)
 
-        # --- Attention ---
-        q_full = q_full.transpose(1, 2)  # [B, H, N, qk_head_dim]
-        k_full = k_full.transpose(1, 2)
-        v = v.transpose(1, 2)  # [B, H, N, v_head_dim]
-
-        attn_out = F.scaled_dot_product_attention(
-            q_full, k_full, v,
-            dropout_p=self.dropout_p if self.training else 0.0,
-            is_causal=True,
-        )
+        attn_out = self.compute_attention(q_full, k_full, v, mask)
 
         attn_out = attn_out.transpose(1, 2).contiguous().view(B, N, self.num_heads * self.v_head_dim)
         return self.out_proj(attn_out)
