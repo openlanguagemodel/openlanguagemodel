@@ -23,15 +23,17 @@ class Residual(BaseCombinator):
 
         self.block = block
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Apply the block and add the result to the input.
 
         Args:
             x: Input tensor.
+            **kwargs: Forwarded to the inner block (e.g. ``mask``).
 
         Returns:
             Output tensor with residual connection applied.
         """
-        y = x + self.block(x)
-        return y
+        from olm.nn.structure.combinators.base import _forward_module
+
+        return x + _forward_module(self.block, x, **kwargs)

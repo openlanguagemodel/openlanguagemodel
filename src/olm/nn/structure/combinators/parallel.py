@@ -34,18 +34,21 @@ class Parallel(BaseCombinator):
         self.merge = merge if merge is not None else (lambda x, d: torch.sum(torch.stack(x, dim=d), dim=d))
         self.dim = dim
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Apply all blocks in parallel and merge their outputs.
 
         Args:
             x: Input tensor.
+            **kwargs: Forwarded to each block (e.g. ``mask``).
 
         Returns:
             Merged output tensor.
         """
+        from olm.nn.structure.combinators.base import _forward_module
+
         outputs = []
         for block in self.blocks:
-            outputs.append(block(x))
+            outputs.append(_forward_module(block, x, **kwargs))
 
         return self.merge(outputs, self.dim)
