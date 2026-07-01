@@ -4,11 +4,11 @@ from .flash import FlashAttention, FlashAttentionwithRoPE
 from .gqa import GroupedQueryAttention
 from .alibi import MultiHeadAttentionwithALiBi
 from .sliding_window import SlidingWindowAttention
-from .head_gated_attention import HeadGate
+from .head_gated import HeadGate
 from .mla import MultiHeadLatentAttention
-from .gated_attention import GatedAttention
+from .gated import GatedAttention
 from .gated_deltanet import GatedDeltaNet
-from .lightning_attn import LightningAttention
+from .lightning import LightningAttention
 
 __all__ = [
     "MultiHeadAttention", "MultiHeadAttentionwithRoPE",
