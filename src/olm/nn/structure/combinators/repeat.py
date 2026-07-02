@@ -39,16 +39,19 @@ class Repeat(BaseCombinator):
         state["module"] = None
         return state
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Apply the repeated modules in sequence.
 
         Args:
             x: Input tensor.
+            **kwargs: Forwarded to each block (e.g. ``mask``).
 
         Returns:
             Output tensor after all repeats.
         """
+        from olm.nn.structure.combinators.base import _forward_module
+
         for block in self.stack:
-            x = block(x)
+            x = _forward_module(block, x, **kwargs)
         return x

@@ -23,18 +23,24 @@ class Block(nn.Module):
         super().__init__()
         self.blocks = nn.ModuleList(blocks)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Apply each block to the input in sequence.
 
+        Extra keyword arguments (e.g. ``mask``) are forwarded to every
+        sub-module whose ``forward`` signature accepts them.
+
         Args:
             x: Input tensor.
+            **kwargs: Forwarded to sub-modules that accept them.
 
         Returns:
             Output tensor after all blocks have been applied.
         """
+        from olm.nn.structure.combinators.base import _forward_module
+
         for block in self.blocks:
-            x = block(x)
+            x = _forward_module(block, x, **kwargs)
         return x
 
     def save(self, path: str, tokenizer: TokenizerBase = None) -> None:
