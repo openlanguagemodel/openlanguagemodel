@@ -3,6 +3,7 @@ from .base import AttentionBase, AttentionwithRoPEBase
 from .flash import FlashAttention, FlashAttentionwithRoPE
 from .gqa import GroupedQueryAttention
 from .alibi import MultiHeadAttentionwithALiBi
+from .mla import MultiHeadLatentAttention
 from .sliding_window import SlidingWindowAttention
 from .head_gated import HeadGate
 from .mla import MultiHeadLatentAttention
@@ -15,6 +16,7 @@ __all__ = [
     "AttentionBase", "AttentionwithRoPEBase",
     "FlashAttention", "FlashAttentionwithRoPE",
     "GroupedQueryAttention", "MultiHeadAttentionwithALiBi",
+    "MultiHeadLatentAttention"
     "SlidingWindowAttention", "HeadGate",
     "MultiHeadLatentAttention", "GatedAttention",
     "GatedDeltaNet", "LightningAttention",
