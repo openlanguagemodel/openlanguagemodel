@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from olm.nn.structure.block import Block
 from olm.nn.norms import LayerNorm
 from torch import nn
