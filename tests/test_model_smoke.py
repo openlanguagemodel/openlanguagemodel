@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset
 
 from olm.data.datasets import DataLoader
 import olm.models.alibaba.qwen2 as qwen2_module
+import olm.models.alibaba.qwen3_next as qwen3_next_module
 import olm.models.allenai.olmo as olmo_module
 import olm.models.allenai.olmo3 as olmo3_module
 import olm.models.facebook.opt as opt_module
@@ -17,11 +18,16 @@ import olm.models.minimax.minimax_m2 as minimax_module
 import olm.models.openai.gpt2 as gpt2_module
 from olm.models.alibaba import Qwen2Model
 from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
+import olm.models.moonshotai.kimi_linear as kimi_linear_module
+import olm.models.openai.gpt2 as gpt2_module
+from olm.models.alibaba import Qwen2Model, Qwen3NextModel
+from olm.models.allenai import OLMoModel, OLMo_7B
 from olm.models.facebook import OPTModel
 from olm.models.google import Gemma2Model
 from olm.models.meta import Llama2Model, Llama3Model
 from olm.models.microsoft import Phi3Model, Phi4Model, Phi4_14B
 from olm.models.minimax import MiniMaxM2Model
+from olm.models.moonshotai import KimiLinearModel
 from olm.models.openai import GPT2Model
 from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
 from olm.train import Trainer
@@ -157,6 +163,10 @@ def _model_cases():
                 vocab_size=128,
                 embed_dim=32,
                 intermediate_size=64,
+            "qwen3_next",
+            Qwen3NextModel(
+                vocab_size=128,
+                embed_dim=32,
                 num_layers=4,
                 num_heads=4,
                 num_kv_heads=2,
@@ -182,6 +192,41 @@ def _model_cases():
                 rope_theta=5000000.0,
                 rotary_percentage=0.5,
                 use_qk_norm=True,
+                linear_num_key_heads=4,
+                linear_num_value_heads=4,
+                linear_key_head_dim=8,
+                linear_value_head_dim=8,
+                linear_conv_kernel_size=4,
+                moe_intermediate_size=16,
+                num_experts=4,
+                num_shared_experts=1,
+                top_k=2,
+                full_attention_interval=4,
+            ),
+        ),
+        (
+            "kimi_linear",
+            KimiLinearModel(
+                vocab_size=128,
+                embed_dim=32,
+                num_layers=4,
+                kda_num_heads=4,
+                kda_head_dim=8,
+                kda_conv_kernel_size=4,
+                mla_num_heads=4,
+                max_seq_len=16,
+                kv_lora_rank=8,
+                qk_nope_head_dim=4,
+                qk_rope_head_dim=4,
+                v_head_dim=4,
+                q_lora_rank=None,
+                intermediate_size=16,
+                moe_intermediate_size=16,
+                num_experts=4,
+                num_shared_experts=1,
+                top_k=2,
+                full_attention_interval=4,
+                first_k_dense_replace=1,
             ),
         ),
     ]
@@ -295,6 +340,82 @@ def test_olmo_reference_vocab_size():
     with patch.object(olmo_module.OLMoModel, "__init__", return_value=None) as init:
         OLMo_7B()
     assert init.call_args.kwargs["vocab_size"] == 50280
+
+
+def test_qwen3_next_alternates_linear_and_full_attention():
+    from olm.nn.attention import GatedAttention, GatedDeltaNet
+
+    model = Qwen3NextModel(
+        128, 32, 8, 4, 2, 8, 16, 4, 4, 8, 8, 4, 16, 4, 1, 2, full_attention_interval=4
+    )
+    layers = model.blocks[1].blocks
+    attn_types = [type(layer.blocks[0].block.blocks[1]) for layer in layers]
+
+    # 3 linear (Gated DeltaNet) layers, then 1 full (Gated Attention) layer, repeated.
+    assert attn_types == [
+        GatedDeltaNet, GatedDeltaNet, GatedDeltaNet, GatedAttention,
+        GatedDeltaNet, GatedDeltaNet, GatedDeltaNet, GatedAttention,
+    ]
+
+
+def test_qwen3_next_reference_preset_is_untied():
+    with patch.object(
+        qwen3_next_module.Qwen3NextModel, "__init__", return_value=None
+    ) as init:
+        qwen3_next_module.Qwen3Next80BA3B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 151936
+    assert kwargs["embed_dim"] == 2048
+    assert kwargs["num_layers"] == 48
+    assert kwargs["num_experts"] == 512
+    assert kwargs["top_k"] == 10
+    assert kwargs["partial_rotary_factor"] == 0.25
+    assert kwargs["full_attention_interval"] == 4
+
+
+def test_kimi_linear_uses_kda_with_periodic_mla_and_dense_then_moe_layers():
+    from olm.nn.attention import KimiDeltaAttention, MultiHeadLatentAttention
+    from olm.nn.feedforward import SwiGLUFFN, SwiGLUMoEFFN
+
+    model = KimiLinearModel(
+        128, 32, 6, 4, 8, 4, 4, 16, 8, 4, 4, 4, None, 16, 16, 4, 1, 2,
+        full_attention_interval=4, first_k_dense_replace=1,
+    )
+    layers = model.blocks[1].blocks
+    attn_types = [type(layer.blocks[0].block.blocks[1]) for layer in layers]
+
+    # Layer 4 (1-indexed) hits the modulo; the final layer (6) is always MLA too.
+    assert attn_types == [
+        KimiDeltaAttention, KimiDeltaAttention, KimiDeltaAttention,
+        MultiHeadLatentAttention, KimiDeltaAttention, MultiHeadLatentAttention,
+    ]
+
+    ffns = [layer.blocks[1].block.blocks[1] for layer in layers]
+    assert isinstance(ffns[0], SwiGLUFFN)
+    assert all(isinstance(f, SwiGLUMoEFFN) for f in ffns[1:])
+    assert all(isinstance(f.router, kimi_linear_module.KimiLinearRouter) for f in ffns[1:])
+
+
+def test_kimi_linear_48b_reference_preset():
+    with patch.object(
+        kimi_linear_module.KimiLinearModel, "__init__", return_value=None
+    ) as init:
+        kimi_linear_module.KimiLinear48BA3B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 163840
+    assert kwargs["embed_dim"] == 2304
+    assert kwargs["num_layers"] == 27
+    assert kwargs["q_lora_rank"] is None
+    assert kwargs["kv_lora_rank"] == 512
+    assert kwargs["qk_rope_head_dim"] == 64
+    assert kwargs["num_experts"] == 256
+    assert kwargs["top_k"] == 8
+    assert kwargs["routed_scaling_factor"] == 2.446
+    assert kwargs["first_k_dense_replace"] == 1
 
 
 def test_gemma2_embedding_is_scaled():
@@ -479,6 +600,7 @@ def test_qwen25_1_5b_reference_config():
         (olmo3_module, "Olmo3Model", ["Olmo3_7B", "Olmo3_32B"]),
         (opt_module, "OPTModel", ["OPT125M"]),
         (minimax_module, "MiniMaxM2Model", ["MiniMaxM2"]),
+        (qwen3_next_module, "Qwen3NextModel", ["Qwen3Next80BA3B"]),
     ],
 )
 def test_named_model_presets_call_base_constructor(module, base_name, preset_names):

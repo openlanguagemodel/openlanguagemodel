@@ -7,6 +7,8 @@ from olm.models.alibaba import (
     Qwen2_5_14B,
     Qwen2_5_32B,
     Qwen2_5_72B,
+    Qwen3NextModel,
+    Qwen3Next80BA3B,
 )
 from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model, Olmo3_7B, Olmo3_32B
 from olm.models.facebook import OPTModel, OPT125M
@@ -25,6 +27,7 @@ from olm.models.meta import (
 )
 from olm.models.microsoft import Phi3Model, Phi3_5_Mini, Phi3_Small, Phi4Model, Phi4_14B
 from olm.models.minimax import MiniMaxM2Model, MiniMaxM2
+from olm.models.moonshotai import KimiLinearModel, KimiLinear48BA3B
 from olm.models.openai import GPT2Model, GPT2, GPT2Medium, GPT2Large, GPT2XL
 
 __all__ = [
@@ -51,6 +54,8 @@ __all__ = [
     "Qwen2_5_14B",
     "Qwen2_5_32B",
     "Qwen2_5_72B",
+    "Qwen3NextModel",
+    "Qwen3Next80BA3B",
     "Phi3Model",
     "Phi3_5_Mini",
     "Phi3_Small",
@@ -69,4 +74,6 @@ __all__ = [
     "Olmo3_32B",
     "OPTModel",
     "OPT125M",
+    "KimiLinearModel",
+    "KimiLinear48BA3B",
 ]
