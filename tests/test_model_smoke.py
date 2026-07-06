@@ -13,6 +13,7 @@ import olm.models.meta.llama2 as llama2_module
 import olm.models.meta.llama3 as llama3_module
 import olm.models.microsoft.phi3 as phi3_module
 import olm.models.microsoft.phi4 as phi4_module
+import olm.models.mistralai.mistral_large3 as mistral_large3_module
 import olm.models.moonshotai.kimi_linear as kimi_linear_module
 import olm.models.openai.gpt2 as gpt2_module
 from olm.models.alibaba import Qwen2Model, Qwen3NextModel
@@ -21,6 +22,7 @@ from olm.models.facebook import OPTModel
 from olm.models.google import Gemma2Model
 from olm.models.meta import Llama2Model, Llama3Model
 from olm.models.microsoft import Phi3Model, Phi4Model, Phi4_14B
+from olm.models.mistralai import MistralLarge3Model
 from olm.models.moonshotai import KimiLinearModel
 from olm.models.openai import GPT2Model
 from olm.train import Trainer
@@ -151,6 +153,12 @@ def _model_cases():
             ),
         ),
         (
+            "mistral_large3",
+            MistralLarge3Model(
+                vocab_size=128,
+                embed_dim=32,
+                num_layers=4,
+                num_heads=2,
             "qwen3_next",
             Qwen3NextModel(
                 vocab_size=128,
@@ -187,14 +195,15 @@ def _model_cases():
                 qk_nope_head_dim=4,
                 qk_rope_head_dim=4,
                 v_head_dim=4,
-                q_lora_rank=None,
+                q_lora_rank=8,
+                dense_intermediate_size=16,
                 intermediate_size=16,
                 moe_intermediate_size=16,
                 num_experts=4,
                 num_shared_experts=1,
                 top_k=2,
+                first_k_dense_replace=3,
                 full_attention_interval=4,
-                first_k_dense_replace=1,
             ),
         ),
     ]
@@ -310,6 +319,41 @@ def test_olmo_reference_vocab_size():
     assert init.call_args.kwargs["vocab_size"] == 50280
 
 
+def test_mistral_large3_uses_mla_with_dense_then_moe_layers():
+    from olm.nn.attention import MultiHeadLatentAttention
+    from olm.nn.feedforward import SwiGLUFFN, SwiGLUMoEFFN
+
+    model = MistralLarge3Model(
+        128, 32, 4, 2, 16, 8, 4, 4, 4, 8, 16, 16, 4, 1, 2, first_k_dense_replace=3
+    )
+    layers = model.blocks[1].blocks
+
+    attn = layers[0].blocks[0].block.blocks[1]
+    assert isinstance(attn, MultiHeadLatentAttention)
+
+    ffns = [layer.blocks[1].block.blocks[1] for layer in layers]
+    assert all(isinstance(f, SwiGLUFFN) for f in ffns[:3])
+    assert isinstance(ffns[3], SwiGLUMoEFFN)
+    assert ffns[3].num_shared_experts == 1
+
+
+def test_mistral_large3_reference_preset_is_untied():
+    with patch.object(
+        mistral_large3_module.MistralLarge3Model, "__init__", return_value=None
+    ) as init:
+        mistral_large3_module.MistralLarge3()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 131072
+    assert kwargs["embed_dim"] == 7168
+    assert kwargs["num_layers"] == 61
+    assert kwargs["kv_lora_rank"] == 512
+    assert kwargs["q_lora_rank"] == 1536
+    assert kwargs["qk_rope_head_dim"] == 64
+    assert kwargs["num_experts"] == 128
+    assert kwargs["top_k"] == 4
+    assert kwargs["first_k_dense_replace"] == 3
 def test_qwen3_next_alternates_linear_and_full_attention():
     from olm.nn.attention import GatedAttention, GatedDeltaNet
 
@@ -506,6 +550,7 @@ def test_qwen25_1_5b_reference_config():
         (gemma2_module, "Gemma2Model", ["Gemma2_2B", "Gemma2_9B", "Gemma2_27B"]),
         (olmo_module, "OLMoModel", ["OLMo_7B"]),
         (opt_module, "OPTModel", ["OPT125M"]),
+        (mistral_large3_module, "MistralLarge3Model", ["MistralLarge3"]),
         (qwen3_next_module, "Qwen3NextModel", ["Qwen3Next80BA3B"]),
     ],
 )

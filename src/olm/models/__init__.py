@@ -29,6 +29,7 @@ from olm.models.meta import (
     Llama3_2_3B,
 )
 from olm.models.microsoft import Phi3Model, Phi3_5_Mini, Phi3_Small, Phi4Model, Phi4_14B
+from olm.models.mistralai import MistralLarge3Model, MistralLarge3
 from olm.models.minimax import MiniMaxM2_5_Model, MiniMaxM2_5_230B
 from olm.models.nanbeige import Nanbeige4_1_Model, Nanbeige4_1_3B
 from olm.models.moonshotai import KimiLinearModel, KimiLinear48BA3B
@@ -69,6 +70,8 @@ __all__ = [
     "Phi3_Small",
     "Phi4Model",
     "Phi4_14B",
+    "MistralLarge3Model",
+    "MistralLarge3",
     "Gemma2Model",
     "Gemma2_2B",
     "Gemma2_9B",
