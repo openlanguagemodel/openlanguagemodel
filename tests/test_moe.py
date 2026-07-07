@@ -3,6 +3,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import torch
 import torch.nn as nn
 from olm.nn.feedforward import ClassicMoEFFN, GeGLUMoEFFN, SwiGLUMoEFFN
+from olm.nn.feedforward import SwiGLUFFN
+from olm.nn.moe import MoEFeedForward, MoERouter
+from olm.train.losses import SequenceLoadBalanceLoss
 
 def test_moe_ffn():
     print("Testing MoE FFNs...")
@@ -74,3 +77,72 @@ if __name__ == "__main__":
         print(f"\nTests Failed: {e}")
         import traceback
         traceback.print_exc()
+
+
+def test_canonical_moe_records_router_stats_and_backpropagates():
+    torch.manual_seed(0)
+    model = MoEFeedForward(
+        embed_dim=16,
+        expert_cls=SwiGLUFFN,
+        num_experts=4,
+        num_shared_experts=1,
+        top_k=2,
+        expert_kwargs={"hidden_dim": 32, "dropout": 0.0},
+        scoring_func="sigmoid",
+        routing_method="noaux_tc",
+        use_router_bias=True,
+        fp32_gate=True,
+    )
+    x = torch.randn(2, 5, 16)
+
+    out, router_logits = model(x)
+    stats = model.get_router_stats()
+
+    assert out.shape == x.shape
+    assert router_logits.shape == (2, 5, 4)
+    assert stats is not None
+    assert stats.top_k_indices.shape == (2, 5, 2)
+    assert stats.top_k_weights.shape == (2, 5, 2)
+    assert stats.expert_fraction.shape == (4,)
+
+    out.mean().backward()
+    assert model.router.gate.weight.grad is not None
+
+
+def test_moe_router_aux_loss_free_bias_update_moves_underused_experts_up():
+    router = MoERouter(
+        embed_dim=8,
+        num_experts=4,
+        top_k=1,
+        routing_method="noaux_tc",
+    )
+    before = router.expert_bias.detach().clone()
+    expert_fraction = torch.tensor([0.7, 0.1, 0.1, 0.1])
+
+    router.update_expert_bias_(expert_fraction, update_rate=0.1)
+
+    assert router.expert_bias[0] < before[0]
+    assert torch.all(router.expert_bias[1:] > before[1:])
+
+
+def test_sequence_load_balance_loss_supports_sigmoid_router_stats():
+    router_logits = torch.randn(2, 4, 3, requires_grad=True)
+    top_k_indices = torch.tensor(
+        [
+            [[0, 1], [1, 2], [0, 2], [1, 2]],
+            [[2, 0], [0, 1], [1, 2], [0, 2]],
+        ]
+    )
+    loss_fn = SequenceLoadBalanceLoss(
+        num_experts=3,
+        top_k=2,
+        scoring_func="sigmoid",
+        coefficient=0.01,
+    )
+
+    loss = loss_fn(router_logits, top_k_indices)
+
+    assert loss.ndim == 0
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert router_logits.grad is not None

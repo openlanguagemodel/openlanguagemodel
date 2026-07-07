@@ -1,9 +1,22 @@
+from dataclasses import dataclass
 from typing import Optional, Literal
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from olm.nn.torch_nn_wrappers import Linear
+
+
+@dataclass
+class MoERouterStats:
+    """Routing metadata used by auxiliary losses and diagnostics."""
+
+    top_k_indices: torch.Tensor
+    top_k_weights: torch.Tensor
+    router_logits: torch.Tensor
+    expert_fraction: torch.Tensor
+    mean_scores: torch.Tensor
+    metadata: dict
 
 
 class MoERouter(nn.Module):
@@ -66,6 +79,7 @@ class MoERouter(nn.Module):
             self.expert_bias = nn.Parameter(torch.zeros(num_experts))
         else:
             self.expert_bias = None
+        self.last_stats: Optional[MoERouterStats] = None
 
     def forward(
         self, x: torch.Tensor
@@ -112,4 +126,55 @@ class MoERouter(nn.Module):
         if self.routed_scaling_factor != 1.0:
             top_k_weights = top_k_weights * self.routed_scaling_factor
 
+        one_hot = torch.zeros_like(scores)
+        one_hot.scatter_(-1, top_k_indices, 1.0)
+        expert_fraction = one_hot.sum(dim=(0, 1)) / (
+            x.shape[0] * x.shape[1] * self.top_k
+        )
+        mean_scores = scores.mean(dim=(0, 1))
+
+        self.last_stats = MoERouterStats(
+            top_k_indices=top_k_indices,
+            top_k_weights=top_k_weights,
+            router_logits=router_logits,
+            expert_fraction=expert_fraction,
+            mean_scores=mean_scores,
+            metadata={
+                "num_experts": self.num_experts,
+                "top_k": self.top_k,
+                "scoring_func": self.scoring_func,
+                "routing_method": self.routing_method,
+            },
+        )
+
         return top_k_indices, top_k_weights, router_logits
+
+    @torch.no_grad()
+    def update_expert_bias_(
+        self,
+        expert_fraction: Optional[torch.Tensor] = None,
+        target_fraction: Optional[torch.Tensor] = None,
+        update_rate: float = 1e-3,
+    ) -> None:
+        """
+        Apply an auxiliary-loss-free expert-bias update.
+
+        Over-used experts receive a lower bias; under-used experts receive a
+        higher bias. This mirrors the mechanism used by loss-free balancing
+        methods while keeping the update explicit and opt-in.
+        """
+        if self.expert_bias is None:
+            raise ValueError("Expert bias updates require routing_method='noaux_tc'")
+
+        if expert_fraction is None:
+            if self.last_stats is None:
+                raise ValueError("No router stats available for bias update")
+            expert_fraction = self.last_stats.expert_fraction
+
+        expert_fraction = expert_fraction.to(self.expert_bias.device)
+        if target_fraction is None:
+            target_fraction = torch.full_like(expert_fraction, 1.0 / self.num_experts)
+        else:
+            target_fraction = target_fraction.to(self.expert_bias.device)
+
+        self.expert_bias.add_(update_rate * (target_fraction - expert_fraction))
