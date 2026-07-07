@@ -1,11 +1,13 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import IterableDataset, TensorDataset
 
 from olm.data.datasets import DataLoader
 from olm.nn.blocks import LM
-from olm.train import Trainer
+from olm.train import LMOutput, Trainer
 from olm.train.callbacks import ValidationCallback
 from olm.train.losses.cross_entropy import CrossEntropyLoss
+from olm.train.losses.mtp import MTPLoss
 from olm.train.optim import AdamW
 from olm.train.trainer import TrainerCallback
 
@@ -18,6 +20,48 @@ class FiniteIterablePairs(IterableDataset):
     def __iter__(self):
         for x, y in zip(self.input_ids, self.labels):
             yield x, y
+
+
+class StructuredOutputToyModel(nn.Module):
+    def __init__(self, vocab_size=16, embed_dim=8, output_mode="lm_output"):
+        super().__init__()
+        self.output_mode = output_mode
+        self.embed = nn.Embedding(vocab_size, embed_dim)
+        self.proj = nn.Linear(embed_dim, vocab_size)
+        self.aux_scale = nn.Parameter(torch.tensor(0.01))
+
+    def forward(self, input_ids):
+        logits = self.proj(self.embed(input_ids))
+        aux_loss = self.aux_scale.square()
+        if self.output_mode == "dict":
+            return {"logits": logits, "aux_losses": {"toy": aux_loss}}
+        return LMOutput(logits=logits, aux_losses=[aux_loss])
+
+
+class MTPOutputToyModel(nn.Module):
+    def __init__(self, vocab_size=16, embed_dim=8):
+        super().__init__()
+        self.embed = nn.Embedding(vocab_size, embed_dim)
+        self.main = nn.Linear(embed_dim, vocab_size)
+        self.future = nn.Linear(embed_dim, vocab_size)
+
+    def forward(self, input_ids):
+        hidden = self.embed(input_ids)
+        logits = self.main(hidden)
+        mtp_logits = [self.future(hidden[:, :-2])]
+        return LMOutput(logits=logits, mtp_logits=mtp_logits)
+
+
+def _toy_loader(vocab_size=16, context_length=6, samples=4):
+    input_ids = torch.randint(0, vocab_size, (samples, context_length))
+    labels = torch.roll(input_ids, shifts=-1, dims=1)
+    return DataLoader(
+        TensorDataset(input_ids, labels),
+        batch_size=2,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=False,
+    )
 
 
 def test_trainer_runs_tiny_lm_for_two_steps():
@@ -61,6 +105,73 @@ def test_trainer_runs_tiny_lm_for_two_steps():
 
     assert len(losses) == 2
     assert all(torch.isfinite(torch.tensor(losses)))
+
+
+def test_trainer_accepts_lm_output_with_aux_losses():
+    torch.manual_seed(0)
+    loader = _toy_loader()
+    model = StructuredOutputToyModel(output_mode="lm_output")
+
+    trainer = Trainer(
+        model,
+        torch.optim.AdamW,
+        loader,
+        device="cpu",
+        context_length=6,
+        use_amp=False,
+        learning_rate=1e-3,
+        use_warmup_cosine=False,
+    )
+
+    losses = trainer.train(epochs=1, max_steps=1, log_interval=100)
+
+    assert len(losses) == 1
+    assert torch.isfinite(torch.tensor(losses[0]))
+
+
+def test_trainer_accepts_dict_output_with_aux_losses():
+    torch.manual_seed(0)
+    loader = _toy_loader()
+    model = StructuredOutputToyModel(output_mode="dict")
+
+    trainer = Trainer(
+        model,
+        torch.optim.AdamW,
+        loader,
+        device="cpu",
+        context_length=6,
+        use_amp=False,
+        learning_rate=1e-3,
+        use_warmup_cosine=False,
+    )
+
+    losses = trainer.train(epochs=1, max_steps=1, log_interval=100)
+
+    assert len(losses) == 1
+    assert torch.isfinite(torch.tensor(losses[0]))
+
+
+def test_trainer_can_add_mtp_loss_from_structured_output():
+    torch.manual_seed(0)
+    loader = _toy_loader()
+    model = MTPOutputToyModel()
+
+    trainer = Trainer(
+        model,
+        torch.optim.AdamW,
+        loader,
+        device="cpu",
+        context_length=6,
+        use_amp=False,
+        learning_rate=1e-3,
+        use_warmup_cosine=False,
+        mtp_loss=MTPLoss(num_heads=1),
+    )
+
+    losses = trainer.train(epochs=1, max_steps=1, log_interval=100)
+
+    assert len(losses) == 1
+    assert torch.isfinite(torch.tensor(losses[0]))
 
 
 def test_trainer_steps_on_partial_gradient_accumulation():

@@ -12,6 +12,7 @@ from olm.data.datasets import DataLoader
 from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.train.losses.base import LossBase
 from olm.train.schedulers.warmup import WarmupCosineScheduler
+from olm.train.output import LMOutput, as_lm_output
 
 
 class TrainerCallback:
@@ -98,6 +99,7 @@ class Trainer:
         grad_accum_steps: int = 1,
         use_amp: bool = True,
         loss: Type[LossBase] = CrossEntropyLoss,
+        mtp_loss: Optional[Union[LossBase, Type[LossBase]]] = None,
         callbacks: Optional[List[TrainerCallback]] = None,
         scheduler: Optional[Any] = None,
         grad_clip_norm: Optional[float] = None,
@@ -142,7 +144,8 @@ class Trainer:
         self.scaler = GradScaler(
             self.device_type, enabled=use_amp and self.device_type == "cuda"
         )
-        self.loss = loss()
+        self.loss = loss() if isinstance(loss, type) else loss
+        self.mtp_loss = mtp_loss() if isinstance(mtp_loss, type) else mtp_loss
         self.losses = []
         self.callbacks = callbacks or []
         self.grad_clip_norm = grad_clip_norm
@@ -176,6 +179,46 @@ class Trainer:
 
         # Set up scheduler (will be finalized in train() if needed)
         self.scheduler = scheduler
+
+    def _sum_aux_losses(
+        self,
+        aux_losses: Optional[
+            torch.Tensor | List[torch.Tensor] | Dict[str, torch.Tensor]
+        ],
+        device: torch.device,
+    ) -> torch.Tensor:
+        if aux_losses is None:
+            return torch.zeros((), device=device)
+
+        if torch.is_tensor(aux_losses):
+            return aux_losses.to(device)
+
+        if isinstance(aux_losses, dict):
+            losses = list(aux_losses.values())
+        else:
+            losses = list(aux_losses)
+
+        if not losses:
+            return torch.zeros((), device=device)
+
+        total = torch.zeros((), device=device)
+        for loss in losses:
+            total = total + loss.to(device)
+        return total
+
+    def _compute_model_loss(
+        self,
+        model_output: torch.Tensor | LMOutput | Dict[str, Any],
+        labels: torch.Tensor,
+    ) -> tuple[torch.Tensor, LMOutput]:
+        output = as_lm_output(model_output)
+        loss = self.loss(output.logits, labels)
+
+        if output.mtp_logits is not None and self.mtp_loss is not None:
+            loss = loss + self.mtp_loss(output.mtp_logits, labels)
+
+        loss = loss + self._sum_aux_losses(output.aux_losses, loss.device)
+        return loss, output
 
     def _configure_optimizer(
         self,
@@ -408,8 +451,8 @@ class Trainer:
                 accumulated_tokens += batch_tokens
 
                 with autocast(self.device_type, enabled=self.use_amp):
-                    logits = self.model(x)  # (B, T, V)
-                    loss = self.loss(logits, y)
+                    model_output = self.model(x)
+                    loss, _ = self._compute_model_loss(model_output, y)
                     loss_val = loss.item()
                     loss = loss / accumulation_target
 
