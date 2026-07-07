@@ -37,6 +37,16 @@ from olm.models.moonshotai import KimiLinearModel, KimiLinear48BA3B
 from olm.models.openai import GPT2Model, GPT2, GPT2Medium, GPT2Large, GPT2XL
 from olm.models.sarvam import Sarvam30B_Model, Sarvam30B, Sarvam105B_Model, Sarvam105B
 from olm.models.stepfun import Step3_5_Flash_Model, Step3_5_Flash_196B
+from olm.models.builders import (
+    ParallelTransformerBlock,
+    PreNormTransformerBlock,
+    build_dense_transformer_block,
+    build_global_nope_block,
+    build_local_swa_block,
+    build_moe_transformer_block,
+    dense_first_moe_schedule,
+    local_global_attention_schedule,
+)
 
 __all__ = [
     "GPT2Model",
@@ -100,4 +110,12 @@ __all__ = [
     "Sarvam105B",
     "KimiLinearModel",
     "KimiLinear48BA3B",
+    "ParallelTransformerBlock",
+    "PreNormTransformerBlock",
+    "build_dense_transformer_block",
+    "build_global_nope_block",
+    "build_local_swa_block",
+    "build_moe_transformer_block",
+    "dense_first_moe_schedule",
+    "local_global_attention_schedule",
 ]
