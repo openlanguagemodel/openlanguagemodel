@@ -5,7 +5,11 @@ from typing import Optional
 
 from olm.nn.torch_nn_wrappers import Linear
 from olm.nn.attention.base import AttentionwithRoPEBase
-from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
+from olm.nn.attention.masks import attention_mask_to_bool
+from olm.nn.embeddings.positional.rope import (
+    PartialRotaryPositionalEmbedding,
+    RotaryPositionalEmbedding,
+)
 from olm.nn.norms import RMSNorm
 
 
@@ -48,6 +52,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         rms_norm_eps: float = 1e-6,
         use_bias: bool = False,
         qkv_bias: bool = False,
+        use_rope: bool = True,
+        partial_rotary_factor: float = 1.0,
+        use_attention_sink: bool = False,
     ):
         nn.Module.__init__(self)
         self.head_dim = head_dim or embed_dim // num_heads
@@ -59,6 +66,14 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         self.scale = self.head_dim ** -0.5
         self.dropout_p = dropout
         self.max_seq_len = max_seq_len
+        self.use_rope = use_rope
+        self.use_attention_sink = use_attention_sink
+
+        if not 0.0 < partial_rotary_factor <= 1.0:
+            raise ValueError(
+                "partial_rotary_factor must be in (0.0, 1.0], "
+                f"got {partial_rotary_factor}"
+            )
 
         self.q_dim = num_heads * self.head_dim
         self.kv_dim = num_kv_heads * self.head_dim
@@ -73,7 +88,25 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
             self.q_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
             self.k_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
 
-        self.rope = RotaryPositionalEmbedding(self.head_dim, max_seq_len, base=rope_theta)
+        if use_rope:
+            if partial_rotary_factor < 1.0:
+                self.rope = PartialRotaryPositionalEmbedding(
+                    self.head_dim,
+                    rotary_percentage=partial_rotary_factor,
+                    base=rope_theta,
+                    max_seq_len=max_seq_len,
+                )
+            else:
+                self.rope = RotaryPositionalEmbedding(
+                    self.head_dim, max_seq_len, base=rope_theta
+                )
+        else:
+            self.rope = None
+
+        if use_attention_sink:
+            self.attention_sink = nn.Parameter(torch.zeros(num_heads))
+        else:
+            self.register_parameter("attention_sink", None)
 
     def _build_sliding_window_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
         """Build a causal sliding-window boolean mask ``[seq_len, seq_len]``."""
@@ -86,9 +119,29 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
     def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         N = q.shape[2]
         sw_mask = self._build_sliding_window_mask(N, q.device)
+        attn_mask = sw_mask
+
+        if mask is not None:
+            user_mask = attention_mask_to_bool(mask, device=q.device)
+            attn_mask = user_mask & sw_mask
 
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
-        attn_scores = attn_scores.masked_fill(~sw_mask, float("-inf"))
+        attn_scores = attn_scores.masked_fill(~attn_mask, float("-inf"))
+
+        if self.use_attention_sink:
+            sink_scores = self.attention_sink.view(1, self.num_heads, 1, 1)
+            sink_scores = sink_scores.expand(q.size(0), self.num_heads, N, 1)
+            attn_scores = torch.cat([attn_scores, sink_scores], dim=-1)
+            sink_values = torch.zeros(
+                v.size(0),
+                self.num_heads,
+                1,
+                self.head_dim,
+                dtype=v.dtype,
+                device=v.device,
+            )
+            v = torch.cat([v, sink_values], dim=-2)
+
         attn_probs = F.softmax(attn_scores, dim=-1)
         attn_probs = F.dropout(attn_probs, p=self.dropout_p, training=self.training)
 
@@ -117,8 +170,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
             q = self.q_norm(q)
             k = self.k_norm(k)
 
-        q = self.rope(q)
-        k = self.rope(k)
+        if self.rope is not None:
+            q = self.rope(q)
+            k = self.rope(k)
 
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
