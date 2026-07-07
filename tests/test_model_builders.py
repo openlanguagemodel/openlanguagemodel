@@ -1,6 +1,6 @@
 import torch
 
-from olm.models.builders import (
+from builders import (
     build_global_nope_block,
     build_local_swa_block,
     build_moe_transformer_block,
