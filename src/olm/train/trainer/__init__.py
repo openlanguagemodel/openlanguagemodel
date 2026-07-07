@@ -2,6 +2,7 @@ from olm.train.trainer.trainer import Trainer, TrainerCallback
 from olm.train.trainer.ddp_trainer import DDPTrainer
 from olm.train.trainer.fsdp_trainer import FSDPTrainer
 from olm.train.trainer.auto_trainer import AutoTrainer, auto_trainer
+from olm.train.output import LMOutput, as_lm_output
 from olm.train.callbacks import (
     ValidationCallback,
     CheckpointCallback,
@@ -18,6 +19,8 @@ __all__ = [
     "FSDPTrainer",
     "AutoTrainer",
     "auto_trainer",
+    "LMOutput",
+    "as_lm_output",
     "ValidationCallback",
     "CheckpointCallback",
     "LRMonitorCallback",

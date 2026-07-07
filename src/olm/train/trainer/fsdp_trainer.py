@@ -111,6 +111,7 @@ class FSDPTrainer(Trainer):
         grad_accum_steps: int = 1,
         use_amp: bool = True,
         loss: Type[LossBase] = CrossEntropyLoss,
+        mtp_loss: Optional[Union[LossBase, Type[LossBase]]] = None,
         callbacks: Optional[List[TrainerCallback]] = None,
         scheduler: Optional[Any] = None,
         grad_clip_norm: Optional[float] = None,
@@ -159,6 +160,7 @@ class FSDPTrainer(Trainer):
             grad_accum_steps=grad_accum_steps,
             use_amp=use_amp,
             loss=loss,
+            mtp_loss=mtp_loss,
             callbacks=callbacks,
             scheduler=scheduler,
             grad_clip_norm=grad_clip_norm,
@@ -414,8 +416,8 @@ class FSDPTrainer(Trainer):
                 # FSDP automatically handles gradient synchronization
                 # For gradient accumulation, we still accumulate normally
                 with torch.amp.autocast(self.device_type, enabled=self.use_amp):
-                    logits = self.model(x)
-                    loss = self.loss(logits, y)
+                    model_output = self.model(x)
+                    loss, _ = self._compute_model_loss(model_output, y)
                     loss_val = loss.item()
                     loss = loss / accumulation_target
 

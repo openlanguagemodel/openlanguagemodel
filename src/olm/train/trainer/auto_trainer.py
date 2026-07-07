@@ -38,6 +38,7 @@ def AutoTrainer(
     grad_accum_steps: int = 1,
     use_amp: bool = True,
     loss: Type[LossBase] = CrossEntropyLoss,
+    mtp_loss: Optional[Union[LossBase, Type[LossBase]]] = None,
     callbacks: Optional[List[TrainerCallback]] = None,
     scheduler: Optional[Any] = None,
     grad_clip_norm: Optional[float] = None,
@@ -91,6 +92,7 @@ def AutoTrainer(
         grad_accum_steps: Gradient accumulation steps.
         use_amp: Use automatic mixed precision.
         loss: Loss function class.
+        mtp_loss: Optional MTP auxiliary loss instance or class.
         callbacks: Training callbacks.
         scheduler: Learning rate scheduler.
         grad_clip_norm: Gradient clipping threshold.
@@ -235,6 +237,7 @@ def AutoTrainer(
             grad_accum_steps=grad_accum_steps,
             use_amp=use_amp and device_config.device_type == "cuda",
             loss=loss,
+            mtp_loss=mtp_loss,
             callbacks=callbacks,
             scheduler=scheduler,
             grad_clip_norm=grad_clip_norm,
@@ -260,6 +263,7 @@ def AutoTrainer(
             grad_accum_steps=grad_accum_steps,
             use_amp=use_amp,
             loss=loss,
+            mtp_loss=mtp_loss,
             callbacks=callbacks,
             scheduler=scheduler,
             grad_clip_norm=grad_clip_norm,
@@ -304,6 +308,7 @@ def AutoTrainer(
             grad_accum_steps=grad_accum_steps,
             use_amp=use_amp,
             loss=loss,
+            mtp_loss=mtp_loss,
             callbacks=callbacks,
             scheduler=scheduler,
             grad_clip_norm=grad_clip_norm,

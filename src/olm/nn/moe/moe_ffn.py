@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from olm.nn.feedforward.base import FeedForwardBase
-from olm.nn.moe.router import MoERouter
+from olm.nn.moe.router import MoERouter, MoERouterStats
 
 
 class MoEFeedForward(FeedForwardBase):
@@ -49,6 +49,7 @@ class MoEFeedForward(FeedForwardBase):
         self.num_experts = num_experts
         self.num_shared_experts = num_shared_experts
         self.top_k = top_k
+        self.last_router_stats: Optional[MoERouterStats] = None
 
         expert_kwargs = expert_kwargs or {}
 
@@ -96,6 +97,7 @@ class MoEFeedForward(FeedForwardBase):
                 shared_output = shared_output + expert(x)
 
         top_k_indices, top_k_weights, router_logits = self.router(x)
+        self.last_router_stats = self.router.last_stats
         top_k_indices_flat = top_k_indices.view(-1, self.top_k)
         top_k_weights_flat = top_k_weights.view(-1, self.top_k)
 
@@ -120,3 +122,7 @@ class MoEFeedForward(FeedForwardBase):
         final_output = final_output + shared_output
 
         return final_output, router_logits
+
+    def get_router_stats(self) -> Optional[MoERouterStats]:
+        """Return routing stats from the most recent forward pass."""
+        return self.last_router_stats

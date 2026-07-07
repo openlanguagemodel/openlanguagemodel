@@ -13,6 +13,7 @@ from olm.train import optim
 from olm.train import schedulers
 from olm.train import losses
 from olm.train import device
+from olm.train.output import LMOutput, as_lm_output
 
 # Re-export common components
 from olm.train.callbacks import (
@@ -57,6 +58,8 @@ __all__ = [
     "schedulers",
     "losses",
     "device",
+    "LMOutput",
+    "as_lm_output",
     # Callbacks
     "CheckpointCallback",
     "ValidationCallback",
