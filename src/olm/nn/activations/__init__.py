@@ -6,6 +6,7 @@ from .base import ActivationBase
 from .sigmoid import Sigmoid
 from .tanh import Tanh
 from .relu import ReLU
+from .relu_squared import ReLUSquared
 from .leaky_relu import LeakyReLU
 from .gelu import GELU
 from .silu import SiLU, Swish

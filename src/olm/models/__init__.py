@@ -34,6 +34,7 @@ from olm.models.mistralai import MistralLarge3Model, MistralLarge3
 from olm.models.minimax import MiniMaxM2_5_Model, MiniMaxM2_5_230B
 from olm.models.nanbeige import Nanbeige4_1_Model, Nanbeige4_1_3B
 from olm.models.moonshotai import KimiLinearModel, KimiLinear48BA3B
+from olm.models.nvidia import NemotronHModel, NemotronNano30BA3B, NemotronSuper120BA12B
 from olm.models.openai import GPT2Model, GPT2, GPT2Medium, GPT2Large, GPT2XL
 from olm.models.sarvam import Sarvam30B_Model, Sarvam30B, Sarvam105B_Model, Sarvam105B
 from olm.models.stepfun import Step3_5_Flash_Model, Step3_5_Flash_196B
@@ -99,5 +100,8 @@ __all__ = [
     "Sarvam105B_Model",
     "Sarvam105B",
     "KimiLinearModel",
-    "KimiLinear48BA3B", 
+    "KimiLinear48BA3B",
+    "NemotronHModel",
+    "NemotronNano30BA3B",
+    "NemotronSuper120BA12B",
 ]

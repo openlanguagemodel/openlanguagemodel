@@ -10,6 +10,7 @@ from .gated import GatedAttention
 from .gated_deltanet import GatedDeltaNet
 from .lightning import LightningAttention
 from .kda import KimiDeltaAttention
+from .mamba2 import Mamba2Mixer
 
 __all__ = [
     "MultiHeadAttention", "MultiHeadAttentionwithRoPE",
@@ -21,4 +22,5 @@ __all__ = [
     "GatedAttention",
     "GatedDeltaNet", "LightningAttention",
     "KimiDeltaAttention",
+    "Mamba2Mixer",
 ]

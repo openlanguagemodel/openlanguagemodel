@@ -15,14 +15,12 @@ import olm.models.meta.llama3 as llama3_module
 import olm.models.microsoft.phi3 as phi3_module
 import olm.models.microsoft.phi4 as phi4_module
 import olm.models.minimax.minimax_m2 as minimax_module
-import olm.models.openai.gpt2 as gpt2_module
-from olm.models.alibaba import Qwen2Model
-from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
 import olm.models.mistralai.mistral_large3 as mistral_large3_module
 import olm.models.moonshotai.kimi_linear as kimi_linear_module
+import olm.models.nvidia.nemotron as nemotron_module
 import olm.models.openai.gpt2 as gpt2_module
 from olm.models.alibaba import Qwen2Model, Qwen3NextModel
-from olm.models.allenai import OLMoModel, OLMo_7B
+from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
 from olm.models.facebook import OPTModel
 from olm.models.google import Gemma2Model
 from olm.models.meta import Llama2Model, Llama3Model
@@ -30,6 +28,7 @@ from olm.models.microsoft import Phi3Model, Phi4Model, Phi4_14B
 from olm.models.minimax import MiniMaxM2Model
 from olm.models.mistralai import MistralLarge3Model
 from olm.models.moonshotai import KimiLinearModel
+from olm.models.nvidia import NemotronHModel
 from olm.models.openai import GPT2Model
 from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
 from olm.train import Trainer
@@ -203,8 +202,16 @@ def _model_cases():
                 num_kv_heads=2,
                 head_dim=8,
                 max_seq_len=16,
-                rms_norm_eps=1e-6,
-                sliding_window=4,
+                linear_num_key_heads=4,
+                linear_num_value_heads=4,
+                linear_key_head_dim=8,
+                linear_value_head_dim=8,
+                linear_conv_kernel_size=4,
+                moe_intermediate_size=16,
+                num_experts=4,
+                num_shared_experts=1,
+                top_k=2,
+                full_attention_interval=4,
             ),
         ),
         (
@@ -240,15 +247,62 @@ def _model_cases():
                 qk_nope_head_dim=4,
                 qk_rope_head_dim=4,
                 v_head_dim=4,
-                q_lora_rank=8,
-                dense_intermediate_size=16,
+                q_lora_rank=None,
                 intermediate_size=16,
                 moe_intermediate_size=16,
                 num_experts=4,
                 num_shared_experts=1,
                 top_k=2,
-                first_k_dense_replace=3,
                 full_attention_interval=4,
+                first_k_dense_replace=1,
+            ),
+        ),
+        (
+            "nemotron_h_plain_moe",
+            NemotronHModel(
+                vocab_size=128,
+                embed_dim=32,
+                hybrid_override_pattern="MEMEM*E",
+                num_heads=4,
+                num_kv_heads=2,
+                head_dim=8,
+                max_seq_len=16,
+                mamba_num_heads=4,
+                mamba_head_dim=8,
+                ssm_state_size=16,
+                n_groups=1,
+                conv_kernel_size=4,
+                num_experts=4,
+                num_shared_experts=1,
+                top_k=2,
+                moe_intermediate_size=16,
+                moe_shared_expert_intermediate_size=32,
+                routed_scaling_factor=2.5,
+                moe_latent_size=None,
+            ),
+        ),
+        (
+            "nemotron_h_latent_moe",
+            NemotronHModel(
+                vocab_size=128,
+                embed_dim=32,
+                hybrid_override_pattern="MEMEM*E",
+                num_heads=4,
+                num_kv_heads=2,
+                head_dim=8,
+                max_seq_len=16,
+                mamba_num_heads=4,
+                mamba_head_dim=8,
+                ssm_state_size=16,
+                n_groups=1,
+                conv_kernel_size=4,
+                num_experts=4,
+                num_shared_experts=1,
+                top_k=2,
+                moe_intermediate_size=16,
+                moe_shared_expert_intermediate_size=32,
+                routed_scaling_factor=5.0,
+                moe_latent_size=8,
             ),
         ),
     ]
@@ -364,6 +418,77 @@ def test_olmo_reference_vocab_size():
     assert init.call_args.kwargs["vocab_size"] == 50280
 
 
+def test_nemotron_h_layers_follow_hybrid_override_pattern():
+    from olm.nn.attention import GroupedQueryAttention, Mamba2Mixer
+    from olm.nn.feedforward import LatentMoEFFN
+    from olm.models.nvidia.nemotron import NemotronMoEFFN
+
+    model = NemotronHModel(
+        128, 32, "MEMEM*E", 4, 2, 8, 16, 4, 8, 16, 1, 4, 4, 1, 2, 16, 32, 2.5,
+        moe_latent_size=None,
+    )
+    layers = model.blocks[1].blocks
+    mixer_types = [type(layer.block.blocks[1]) for layer in layers]
+    assert mixer_types == [
+        Mamba2Mixer, NemotronMoEFFN, Mamba2Mixer, NemotronMoEFFN,
+        Mamba2Mixer, GroupedQueryAttention, NemotronMoEFFN,
+    ]
+
+    latent_model = NemotronHModel(
+        128, 32, "MEMEM*E", 4, 2, 8, 16, 4, 8, 16, 1, 4, 4, 1, 2, 16, 32, 5.0,
+        moe_latent_size=8,
+    )
+    latent_mixer_types = [
+        type(layer.block.blocks[1]) for layer in latent_model.blocks[1].blocks
+    ]
+    assert latent_mixer_types.count(LatentMoEFFN) == 3
+
+
+def test_nemotron_h_rejects_unknown_pattern_character():
+    with pytest.raises(ValueError):
+        NemotronHModel(
+            128, 32, "X", 4, 2, 8, 16, 4, 8, 16, 1, 4, 4, 1, 2, 16, 32, 2.5,
+        )
+
+
+def test_nemotron_nano_reference_preset():
+    with patch.object(
+        nemotron_module.NemotronHModel, "__init__", return_value=None
+    ) as init:
+        nemotron_module.NemotronNano30BA3B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 131072
+    assert kwargs["embed_dim"] == 2688
+    assert len(kwargs["hybrid_override_pattern"]) == 52
+    assert kwargs["hybrid_override_pattern"].count("M") == 23
+    assert kwargs["hybrid_override_pattern"].count("*") == 6
+    assert kwargs["num_experts"] == 128
+    assert kwargs["top_k"] == 6
+    assert kwargs["moe_latent_size"] is None
+    assert kwargs["routed_scaling_factor"] == 2.5
+
+
+def test_nemotron_super_reference_preset():
+    with patch.object(
+        nemotron_module.NemotronHModel, "__init__", return_value=None
+    ) as init:
+        nemotron_module.NemotronSuper120BA12B()
+
+    kwargs = init.call_args.kwargs
+    assert kwargs["tie_weights"] is False
+    assert kwargs["vocab_size"] == 131072
+    assert kwargs["embed_dim"] == 4096
+    assert len(kwargs["hybrid_override_pattern"]) == 88
+    assert kwargs["hybrid_override_pattern"].count("M") == 40
+    assert kwargs["hybrid_override_pattern"].count("*") == 8
+    assert kwargs["num_experts"] == 512
+    assert kwargs["top_k"] == 22
+    assert kwargs["moe_latent_size"] == 1024
+    assert kwargs["routed_scaling_factor"] == 5.0
+
+
 def test_mistral_large3_uses_mla_with_dense_then_moe_layers():
     from olm.nn.attention import MultiHeadLatentAttention
     from olm.nn.feedforward import SwiGLUFFN, SwiGLUMoEFFN
@@ -399,6 +524,8 @@ def test_mistral_large3_reference_preset_is_untied():
     assert kwargs["num_experts"] == 128
     assert kwargs["top_k"] == 4
     assert kwargs["first_k_dense_replace"] == 3
+
+
 def test_qwen3_next_alternates_linear_and_full_attention():
     from olm.nn.attention import GatedAttention, GatedDeltaNet
 
