@@ -1,0 +1,40 @@
+{
+  "baseline_1gpu_tokens_per_second": 17785.154321557486,
+  "framework": "olm",
+  "rows": [
+    {
+      "gpu_count": 1,
+      "mean_step_time_ms": 114.71243419647217,
+      "mean_tokens_per_second": 17785.154321557486,
+      "peak_memory_gb_per_gpu": [
+        9.060877824
+      ],
+      "replicate_count": 3,
+      "scaling_efficiency": 1.0,
+      "std_tokens_per_second": 103.93392512849303
+    },
+    {
+      "gpu_count": 2,
+      "mean_step_time_ms": 124.32555931091309,
+      "mean_tokens_per_second": 32426.106904010314,
+      "peak_memory_gb_per_gpu": [
+        10.465641984
+      ],
+      "replicate_count": 3,
+      "scaling_efficiency": 0.9116060034606067,
+      "std_tokens_per_second": 450.66206538324445
+    },
+    {
+      "gpu_count": 4,
+      "mean_step_time_ms": 128.08915092468263,
+      "mean_tokens_per_second": 64427.47702036097,
+      "peak_memory_gb_per_gpu": [
+        10.465641984
+      ],
+      "replicate_count": 3,
+      "scaling_efficiency": 0.9056356196789935,
+      "std_tokens_per_second": 418.72458691161023
+    }
+  ],
+  "run_count": 9
+}
