@@ -60,6 +60,11 @@ dev = [
     "build",
     "twine",
 ]
+benchmark = [
+    "pytest>=7.0.0",
+    "pyyaml>=6.0",
+    "jsonschema>=4.0.0",
+]
 wandb = [
     "wandb>=0.16.0",
 ]
@@ -95,7 +100,7 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 norecursedirs = [
     ".git",
     ".venv",
@@ -103,4 +108,8 @@ norecursedirs = [
     "dist",
     "website",
     "claude_bkp",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "parity: Hugging Face numerical parity tests",
 ]

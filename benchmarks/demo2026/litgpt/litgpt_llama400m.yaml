@@ -1,0 +1,30 @@
+# Matched LitGPT config for llama400m weak-scaling comparison.
+# Must stay in sync with benchmarks/demo2026/configs/scaling/llama400m.yaml
+name: llama400m_litgpt
+framework: litgpt
+litgpt_pin: "litgpt>=0.5.0"
+model:
+  vocab_size: 32000
+  n_layer: 28
+  n_embd: 1024
+  n_head: 16
+  n_query_groups: 4
+  intermediate_size: 2816
+  norm_eps: 1.0e-5
+  rope_base: 500000.0
+  tie_word_embeddings: true
+training:
+  sequence_length: 2048
+  local_batch_size: 2
+  grad_accum_steps: 1
+  precision: bf16
+  optimizer: adamw
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  fused_optimizer: false
+  attention_backend: sdpa
+  compile: false
+  warmup_steps: 50
+  measured_steps: 200
+  synthetic_ring_size: 64
+  seed: 42

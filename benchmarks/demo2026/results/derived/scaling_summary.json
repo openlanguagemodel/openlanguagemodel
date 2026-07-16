@@ -1,0 +1,18 @@
+{
+  "baseline_1gpu_tokens_per_second": 682.0913920371135,
+  "framework": "olm",
+  "rows": [
+    {
+      "gpu_count": 1,
+      "mean_step_time_ms": 6005.060389000088,
+      "mean_tokens_per_second": 682.0913920371135,
+      "peak_memory_gb_per_gpu": [
+        0.0
+      ],
+      "replicate_count": 1,
+      "scaling_efficiency": 1.0,
+      "std_tokens_per_second": 0.0
+    }
+  ],
+  "run_count": 1
+}

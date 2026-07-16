@@ -1,5 +1,6 @@
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
+from olm.nn.activations import GELU
 from olm.nn.attention import FlashAttention
 from olm.nn.feedforward import ClassicFFN
 from olm.nn.norms import LayerNorm
@@ -14,6 +15,9 @@ class GPT2Block(Block):
         x = x + Attn(LN(x))
         x = x + FFN(LN(x))
 
+    The FFN uses the tanh-approximate GELU ("gelu_new"), matching the
+    reference GPT-2 implementation.
+
     Args:
         embed_dim (int): Model dimension.
         num_heads (int): Number of attention heads.
@@ -27,7 +31,11 @@ class GPT2Block(Block):
             ])),
             Residual(Block([
                 LayerNorm(embed_dim),
-                ClassicFFN(embed_dim, dropout=dropout)
+                ClassicFFN(
+                    embed_dim,
+                    activation_fn=GELU(approximate="tanh"),
+                    dropout=dropout,
+                )
             ]))
         ])
 

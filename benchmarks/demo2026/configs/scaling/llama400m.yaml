@@ -1,0 +1,34 @@
+# Measurement-grade ~400M Llama-style weak-scaling configuration.
+# Parameter count is computed at launch and recorded; do not hand-edit it.
+name: llama400m
+framework: olm
+model:
+  vocab_size: 32000
+  embed_dim: 1024
+  intermediate_size: 2816
+  num_layers: 28
+  num_heads: 16
+  num_kv_heads: 4
+  max_seq_len: 2048
+  rope_theta: 500000.0
+  dropout: 0.0
+  tie_weights: true
+training:
+  sequence_length: 2048
+  local_batch_size: 2
+  grad_accum_steps: 1
+  precision: bf16
+  optimizer: adamw
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  fused_optimizer: false
+  attention_backend: sdpa
+  compile: false
+  warmup_steps: 50
+  measured_steps: 200
+  synthetic_ring_size: 64
+  seed: 42
+interconnect: nvlink
+gpu_model_expected: NVIDIA H100
+replicates: [0, 1, 2]
+gpu_counts: [1, 2, 4, 8]

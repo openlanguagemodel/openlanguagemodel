@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OLM vs Hugging Face numerical parity result",
+  "type": "object",
+  "required": [
+    "family",
+    "olm_commit",
+    "reference_library_version",
+    "config",
+    "parameter_count_olm",
+    "parameter_count_reference",
+    "input_seed",
+    "max_logit_absolute_error",
+    "mean_logit_absolute_error",
+    "loss_absolute_error",
+    "embedding_gradient_cosine",
+    "early_layer_gradient_cosine",
+    "late_layer_gradient_cosine",
+    "status",
+    "environment"
+  ],
+  "properties": {
+    "family": {"type": "string", "enum": ["gpt2", "llama3", "qwen2"]},
+    "olm_commit": {"type": ["string", "null"]},
+    "reference_library_version": {"type": "string"},
+    "config": {"type": "object"},
+    "parameter_count_olm": {"type": "integer", "minimum": 0},
+    "parameter_count_reference": {"type": "integer", "minimum": 0},
+    "input_seed": {"type": "integer"},
+    "batch_shape": {"type": "array", "items": {"type": "integer"}},
+    "device": {"type": "string"},
+    "dtype": {"type": "string"},
+    "deterministic_algorithms": {"type": "boolean"},
+    "max_logit_absolute_error": {"type": "number"},
+    "mean_logit_absolute_error": {"type": "number"},
+    "loss_absolute_error": {"type": "number"},
+    "loss_olm": {"type": "number"},
+    "loss_reference": {"type": "number"},
+    "embedding_gradient_cosine": {"type": "number"},
+    "early_layer_gradient_cosine": {"type": "number"},
+    "late_layer_gradient_cosine": {"type": "number"},
+    "early_layer_parameter": {"type": "string"},
+    "late_layer_parameter": {"type": "string"},
+    "gradient_details": {"type": "object"},
+    "status": {
+      "type": "string",
+      "enum": ["complete", "discrepancy", "bug_fixed", "error"]
+    },
+    "notes": {"type": "string"},
+    "environment": {"type": "object"}
+  }
+}

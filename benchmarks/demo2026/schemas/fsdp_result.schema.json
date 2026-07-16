@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FSDP end-to-end execution / checkpoint-resume smoke result",
+  "type": "object",
+  "required": [
+    "model",
+    "parameters",
+    "gpu_count",
+    "steps",
+    "tokens_per_second",
+    "peak_memory_gb_per_gpu",
+    "loss_trace",
+    "checkpoint_save_ok",
+    "checkpoint_resume_ok",
+    "environment"
+  ],
+  "properties": {
+    "model": {"type": "string"},
+    "parameters": {"type": "integer"},
+    "gpu_count": {"type": "integer"},
+    "precision": {"type": "string"},
+    "sequence_length": {"type": "integer"},
+    "local_batch_size": {"type": "integer"},
+    "steps": {"type": "integer"},
+    "tokens_per_second": {"type": "number"},
+    "peak_memory_gb_per_gpu": {"type": "array", "items": {"type": "number"}},
+    "loss_trace": {"type": "array", "items": {"type": "number"}},
+    "checkpoint_save_ok": {"type": "boolean"},
+    "checkpoint_save_seconds": {"type": ["number", "null"]},
+    "checkpoint_resume_ok": {"type": "boolean"},
+    "resume_loss_trace": {"type": "array", "items": {"type": "number"}},
+    "command": {"type": "string"},
+    "config": {"type": "object"},
+    "environment": {"type": "object"}
+  }
+}

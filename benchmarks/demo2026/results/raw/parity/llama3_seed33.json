@@ -1,0 +1,82 @@
+{
+  "batch_shape": [
+    4,
+    32
+  ],
+  "config": {
+    "dropout": 0.0,
+    "embed_dim": 64,
+    "intermediate_size": 176,
+    "max_seq_len": 64,
+    "num_heads": 4,
+    "num_kv_heads": 2,
+    "num_layers": 4,
+    "rope_theta": 500000.0,
+    "tie_weights": true,
+    "vocab_size": 257
+  },
+  "deterministic_algorithms": true,
+  "device": "cpu",
+  "dtype": "float32",
+  "early_layer_gradient_cosine": 0.9999999999998908,
+  "early_layer_parameter": "blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight",
+  "embedding_gradient_cosine": 0.9999999999999455,
+  "environment": {
+    "cuda_available": false,
+    "cuda_version": null,
+    "cudnn_version": null,
+    "driver_version": null,
+    "env_vars": {},
+    "git_dirty": true,
+    "gpu_count": 0,
+    "gpu_models": [],
+    "hostname": "MacBook-Pro-4.local",
+    "litgpt_version": null,
+    "nccl_version": null,
+    "numpy_version": "2.4.6",
+    "olm_commit": "0f35faf898c91db6dc6ea1dc11af32b113962227",
+    "olm_version": "2.2.0",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python_version": "3.12.13 (main, Mar  3 2026, 12:39:30) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "timestamp_utc": "2026-07-16T07:07:01.898070+00:00",
+    "torch_version": "2.12.1",
+    "transformers_version": "5.12.1"
+  },
+  "family": "llama3",
+  "gradient_details": {
+    "early": {
+      "cosine": 0.9999999999998908,
+      "max_absolute_error": 1.4551915228366852e-10,
+      "olm_grad_norm": 0.0048065200912895175,
+      "olm_parameter": "blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight",
+      "reference_grad_norm": 0.004806520043736031
+    },
+    "embedding": {
+      "cosine": 0.9999999999999455,
+      "max_absolute_error": 4.470348358154297e-08,
+      "olm_grad_norm": 1.0295103854695653,
+      "olm_parameter": "blocks.0.embedding.weight",
+      "reference_grad_norm": 1.0295103888268002
+    },
+    "late": {
+      "cosine": 0.9999999999998737,
+      "max_absolute_error": 2.3501343093812466e-09,
+      "olm_grad_norm": 0.10101849126779013,
+      "olm_parameter": "blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight",
+      "reference_grad_norm": 0.10101848999680098
+    }
+  },
+  "input_seed": 33,
+  "late_layer_gradient_cosine": 0.9999999999998737,
+  "late_layer_parameter": "blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight",
+  "loss_absolute_error": 0.0,
+  "loss_olm": 5.561886310577393,
+  "loss_reference": 5.561886310577393,
+  "max_logit_absolute_error": 2.682209014892578e-07,
+  "mean_logit_absolute_error": 3.5521459551546286e-08,
+  "olm_commit": "0f35faf898c91db6dc6ea1dc11af32b113962227",
+  "parameter_count_olm": 201344,
+  "parameter_count_reference": 201344,
+  "reference_library_version": "5.12.1",
+  "status": "complete"
+}

@@ -1,0 +1,28 @@
+# Tiny Llama-3-style parity configuration.
+# Compared against transformers.LlamaForCausalLM built from LlamaConfig with
+# NO rope_scaling (standard RoPE), matching OLM's implementation note in
+# src/olm/models/meta/llama3.py.
+family: llama3
+model:
+  vocab_size: 257
+  embed_dim: 64
+  intermediate_size: 176
+  num_layers: 4
+  num_heads: 4
+  num_kv_heads: 2
+  max_seq_len: 64
+  rope_theta: 500000.0
+  dropout: 0.0
+  tie_weights: true
+hf:
+  rms_norm_eps: 1.0e-5    # matches RMSNorm(eps=1e-5) in Llama3Block
+  attention_bias: false
+  mlp_bias: false
+batch:
+  batch_size: 4
+  seq_len: 32
+seeds: [11, 22, 33]
+gradient_probes:
+  embedding: blocks.0.embedding.weight
+  early: blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight
+  late: blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight

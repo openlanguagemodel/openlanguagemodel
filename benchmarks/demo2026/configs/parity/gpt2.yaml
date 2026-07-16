@@ -1,0 +1,24 @@
+# Tiny GPT-2 parity configuration.
+# The Hugging Face model is constructed from GPT2Config with matching values,
+# randomly initialized, and its weights are copied into the OLM model.
+family: gpt2
+model:
+  vocab_size: 257
+  embed_dim: 64
+  num_layers: 4
+  num_heads: 4
+  max_seq_len: 64
+  dropout: 0.0
+hf:
+  activation_function: gelu_new   # GPT-2 reference activation (tanh approximation)
+  layer_norm_epsilon: 1.0e-5
+batch:
+  batch_size: 4
+  seq_len: 32
+seeds: [11, 22, 33]
+# Parameter grouped-gradient probes: early = first transformer layer,
+# late = last transformer layer. Names are OLM parameter paths.
+gradient_probes:
+  embedding: blocks.0.blocks.0.embedding.weight
+  early: blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight
+  late: blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight

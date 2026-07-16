@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OLM breadth validation result (families and presets)",
+  "type": "object",
+  "required": ["olm_commit", "environment", "families", "presets", "summary"],
+  "properties": {
+    "olm_commit": {"type": ["string", "null"]},
+    "environment": {"type": "object"},
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["family", "checks"],
+        "properties": {
+          "family": {"type": "string"},
+          "checks": {
+            "type": "object",
+            "properties": {
+              "reduced_forward_smoke": {"type": "string"},
+              "reduced_param_count_matches_formula": {"type": "string"},
+              "tied_embedding_behavior": {"type": "string"},
+              "checkpoint_roundtrip_bitwise": {"type": "string"}
+            }
+          },
+          "reduced_config": {"type": "object"},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "presets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["family", "preset", "checks"],
+        "properties": {
+          "family": {"type": "string"},
+          "preset": {"type": "string"},
+          "checks": {
+            "type": "object",
+            "properties": {
+              "constructor_config_matches_manifest": {"type": "string"},
+              "formula_param_count": {"type": ["integer", "null"]},
+              "formula_param_count_in_expected_range": {"type": "string"},
+              "tie_setting_matches_manifest": {"type": "string"}
+            }
+          },
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "n_families": {"type": "integer"},
+        "n_presets": {"type": "integer"},
+        "n_failed_checks": {"type": "integer"}
+      }
+    }
+  }
+}
