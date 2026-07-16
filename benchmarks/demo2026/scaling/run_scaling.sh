@@ -15,9 +15,24 @@ if [[ ! -x "$PYTHON" ]]; then
   PYTHON="python"
 fi
 
+cleanup_gpus() {
+  # Drop any leftover torchrun/python workers from a prior failed rank.
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    nvidia-smi --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null \
+      | awk 'NF' | sort -u | while read -r pid; do
+          if [[ -n "$pid" ]] && [[ "$pid" != "pid" ]]; then
+            kill -9 "$pid" 2>/dev/null || true
+          fi
+        done
+    sleep 2
+    nvidia-smi --query-gpu=index,memory.used,memory.free --format=csv
+  fi
+}
+
 for REP in 0 1 2; do
   for N in 1 2 4 6; do
   echo "=== OLM scaling: ${N} GPU(s), replicate ${REP} ==="
+  cleanup_gpus
   if [[ "$N" -eq 1 ]]; then
     "$PYTHON" -m benchmarks.demo2026.scaling.run_olm \
       --config "$CONFIG" \
@@ -25,7 +40,7 @@ for REP in 0 1 2; do
       --replicate "$REP" \
       --output "$OUT"
   else
-    torchrun --nproc_per_node="$N" -m benchmarks.demo2026.scaling.run_olm \
+    torchrun --standalone --nproc_per_node="$N" -m benchmarks.demo2026.scaling.run_olm \
       --config "$CONFIG" \
       --gpu-count "$N" \
       --replicate "$REP" \

@@ -168,14 +168,11 @@ def train_loop(
 
 
 def peak_memory_gb() -> List[float]:
+    """Report peak allocated memory on this rank's device only."""
     if not torch.cuda.is_available():
         return [0.0]
-    world = get_world_size()
     local = get_local_rank()
-    peaks = [torch.cuda.max_memory_allocated(i) / 1e9 for i in range(torch.cuda.device_count())]
-    if world == 1:
-        return [peaks[local]]
-    return peaks
+    return [torch.cuda.max_memory_allocated(local) / 1e9]
 
 
 def run_benchmark(args: argparse.Namespace) -> Dict[str, Any]:
@@ -185,20 +182,22 @@ def run_benchmark(args: argparse.Namespace) -> Dict[str, Any]:
     model_cfg = cfg["model"]
 
     requested_gpus = args.gpu_count
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+    # Bind CUDA device BEFORE process-group init so every rank stays on its GPU.
+    if torch.cuda.is_available():
+        torch.cuda.set_device(local_rank)
+        device = torch.device(f"cuda:{local_rank}")
+    else:
+        device = torch.device("cpu")
+
     setup_distributed()
     world_size = get_world_size()
-    local_rank = get_local_rank()
 
     if world_size != requested_gpus:
         raise RuntimeError(
             f"WORLD_SIZE={world_size} does not match --gpu-count={requested_gpus}"
         )
-
-    if torch.cuda.is_available():
-        device = torch.device(f"cuda:{local_rank}")
-        torch.cuda.set_device(device)
-    else:
-        device = torch.device("cpu")
 
     configure_sdpa(train_cfg.get("attention_backend", "sdpa"))
 

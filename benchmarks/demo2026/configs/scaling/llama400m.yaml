@@ -15,7 +15,8 @@ model:
   tie_weights: true
 training:
   sequence_length: 2048
-  local_batch_size: 2
+  # batch=1 keeps activation memory safe at seq=2048 on A100; weak scaling still holds
+  local_batch_size: 1
   grad_accum_steps: 1
   precision: bf16
   optimizer: adamw

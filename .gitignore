@@ -200,3 +200,10 @@ website/tsconfig.tsbuildinfo
 # Keep website source helpers visible despite the Python template's broad lib/ rule.
 !website/app/lib/
 !website/app/lib/**
+
+# Demo benchmark run artifacts (generated; keep directory placeholders)
+benchmarks/demo2026/results/**
+!benchmarks/demo2026/results/raw/
+!benchmarks/demo2026/results/raw/.gitkeep
+!benchmarks/demo2026/results/derived/
+!benchmarks/demo2026/results/derived/.gitkeep

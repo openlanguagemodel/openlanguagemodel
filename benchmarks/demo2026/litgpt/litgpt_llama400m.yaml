@@ -15,7 +15,7 @@ model:
   tie_word_embeddings: true
 training:
   sequence_length: 2048
-  local_batch_size: 2
+  local_batch_size: 1
   grad_accum_steps: 1
   precision: bf16
   optimizer: adamw
