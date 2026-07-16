@@ -29,6 +29,6 @@ training:
   synthetic_ring_size: 64
   seed: 42
 interconnect: nvlink
-gpu_model_expected: NVIDIA H100
+gpu_model_expected: NVIDIA A100-SXM4-80GB
 replicates: [0, 1, 2]
-gpu_counts: [1, 2, 4, 8]
+gpu_counts: [1, 2, 4, 6]

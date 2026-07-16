@@ -31,7 +31,7 @@ The validator refuses comparison when any of these differ:
 - attention backend selection, `torch.compile` flag
 - synthetic ring seed and staging
 
-## Runs (1 GPU and 8 GPU only)
+## Runs (1 GPU and 6 GPU only)
 
 ```bash
 # 1 GPU
@@ -40,10 +40,10 @@ python -m benchmarks.demo2026.litgpt.run_litgpt \
   --gpu-count 1 --replicate 0 \
   --output benchmarks/demo2026/results/raw/litgpt
 
-# 8 GPU
-torchrun --nproc_per_node=8 -m benchmarks.demo2026.litgpt.run_litgpt \
+# 6 GPU
+torchrun --nproc_per_node=6 -m benchmarks.demo2026.litgpt.run_litgpt \
   --config benchmarks/demo2026/litgpt/litgpt_llama400m.yaml \
-  --gpu-count 8 --replicate 0 \
+  --gpu-count 6 --replicate 0 \
   --output benchmarks/demo2026/results/raw/litgpt
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Weak-scaling matrix: 1/2/4/8 GPUs × 3 replicates.
-# Requires a single NVLink node with at least 8 GPUs for the full matrix.
+# Weak-scaling matrix: 1/2/4/6 GPUs × 3 replicates.
+# Requires a single NVLink node with at least 6 A100 SXM GPUs.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -16,7 +16,7 @@ if [[ ! -x "$PYTHON" ]]; then
 fi
 
 for REP in 0 1 2; do
-  for N in 1 2 4 8; do
+  for N in 1 2 4 6; do
   echo "=== OLM scaling: ${N} GPU(s), replicate ${REP} ==="
   if [[ "$N" -eq 1 ]]; then
     "$PYTHON" -m benchmarks.demo2026.scaling.run_olm \

@@ -46,7 +46,7 @@ def main() -> int:
     )
     print(
         "For now, use validate_pair.py to confirm static fairness, then run "
-        "LitGPT's official pretrain recipe on the H100 node.",
+        "LitGPT's official pretrain recipe on the A100 SXM node.",
         file=sys.stderr,
     )
     return 0

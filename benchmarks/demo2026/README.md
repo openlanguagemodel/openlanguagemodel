@@ -12,7 +12,7 @@ AACL-IJCNLP 2026 OpenLanguageModel system demonstration.
    construction, parameter-formula, tying, reduced forward-smoke, and
    checkpoint round-trip checks.
 3. **Throughput / scaling** — weak scaling of a ~400M Llama-style model on
-   1/2/4/8 H100s (single NVLink node), with an optional matched LitGPT baseline
+   1/2/4/6 A100 SXM GPUs (single NVLink node), with an optional matched LitGPT baseline
    and an optional 7B FSDP execution smoke test.
 
 Tolerances are **not** chosen in advance. Raw errors are recorded; regression
@@ -57,7 +57,7 @@ pytest tests/test_model_breadth.py tests/test_model_smoke.py \
   tests/test_tied_embeddings.py tests/test_save_load.py -q
 ```
 
-### 3. OLM scaling (H100 node)
+### 3. OLM scaling (6× A100 SXM node)
 
 Dry-run (1 GPU, short):
 
@@ -126,6 +126,6 @@ python -m benchmarks.demo2026.report \
 |------------|----------|-------------------|
 | Parity (3 families × 3 seeds) | CPU | ~1–3 min |
 | Breadth | CPU | ~2–5 min |
-| Scaling 1/2/4/8 × 3 reps | 8×H100 NVLink | hours (node-dependent) |
-| LitGPT 1+8 × 3 | same node | hours if attempted |
-| FSDP 7B smoke | 8×H100 | tens of minutes |
+| Scaling 1/2/4/6 × 3 reps | 6×A100 SXM NVLink | hours (node-dependent) |
+| LitGPT 1+6 × 3 | same node | hours if attempted |
+| FSDP 7B smoke | 6×A100 SXM | tens of minutes |
