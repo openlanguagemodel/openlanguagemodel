@@ -1,0 +1,78 @@
+{
+  "batch_shape": [
+    4,
+    32
+  ],
+  "config": {
+    "dropout": 0.0,
+    "embed_dim": 64,
+    "max_seq_len": 64,
+    "num_heads": 4,
+    "num_layers": 4,
+    "vocab_size": 257
+  },
+  "deterministic_algorithms": true,
+  "device": "cpu",
+  "dtype": "float32",
+  "early_layer_gradient_cosine": 0.9999999999998145,
+  "early_layer_parameter": "blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight",
+  "embedding_gradient_cosine": 0.9999999999999093,
+  "environment": {
+    "cuda_available": false,
+    "cuda_version": null,
+    "cudnn_version": null,
+    "driver_version": null,
+    "env_vars": {},
+    "git_dirty": false,
+    "gpu_count": 0,
+    "gpu_models": [],
+    "hostname": "MacBook-Pro-4.local",
+    "litgpt_version": null,
+    "nccl_version": null,
+    "numpy_version": "2.5.1",
+    "olm_commit": "575942c5ac26717a23b80aff78bd64b27159adca",
+    "olm_version": "2.2.0",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "python_version": "3.12.13 (main, Mar  3 2026, 12:39:30) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "timestamp_utc": "2026-07-16T07:51:03.468700+00:00",
+    "torch_version": "2.13.0",
+    "transformers_version": "5.14.0"
+  },
+  "family": "gpt2",
+  "gradient_details": {
+    "early": {
+      "cosine": 0.9999999999998145,
+      "max_absolute_error": 1.7462298274040222e-10,
+      "olm_grad_norm": 0.004610579017065087,
+      "olm_parameter": "blocks.1.stack.0.blocks.0.block.blocks.1.q_proj.weight",
+      "reference_grad_norm": 0.004610579268158157
+    },
+    "embedding": {
+      "cosine": 0.9999999999999093,
+      "max_absolute_error": 2.0489096641540527e-08,
+      "olm_grad_norm": 0.894234662809477,
+      "olm_parameter": "blocks.0.blocks.0.embedding.weight",
+      "reference_grad_norm": 0.8942346711316654
+    },
+    "late": {
+      "cosine": 0.9999999999998901,
+      "max_absolute_error": 6.984919309616089e-09,
+      "olm_grad_norm": 0.291047293193567,
+      "olm_parameter": "blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight",
+      "reference_grad_norm": 0.29104729204107244
+    }
+  },
+  "input_seed": 33,
+  "late_layer_gradient_cosine": 0.9999999999998901,
+  "late_layer_parameter": "blocks.1.stack.3.blocks.1.block.blocks.1.up_proj.weight",
+  "loss_absolute_error": 0.0,
+  "loss_olm": 5.573663234710693,
+  "loss_reference": 5.573663234710693,
+  "max_logit_absolute_error": 2.980232238769531e-07,
+  "mean_logit_absolute_error": 4.9536225787960575e-08,
+  "olm_commit": "575942c5ac26717a23b80aff78bd64b27159adca",
+  "parameter_count_olm": 220608,
+  "parameter_count_reference": 220608,
+  "reference_library_version": "5.14.0",
+  "status": "complete"
+}
