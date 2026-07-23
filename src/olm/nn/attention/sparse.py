@@ -24,12 +24,21 @@ Backends:
 
 - ``"flex"`` : FlexAttention + BlockMask. True block-sparsity, the fast path.
   Requires PyTorch >= 2.5. Best speed when ``compile=True`` (compiles the
-  flex kernel with ``torch.compile``).
+  flex kernel with ``torch.compile``). FlexAttention's backward pass is only
+  supported on CUDA in the PyTorch versions this repo targets -- forward
+  runs fine on CPU, but ``.backward()`` raises ``NotImplementedError``.
+  Requesting ``backend="flex"`` explicitly on a non-CUDA device therefore
+  raises a clear error at call time instead of failing deep in backward.
 - ``"sdpa"`` : dense fallback. Builds the boolean keep-mask and routes through
   ``F.scaled_dot_product_attention``. Numerically identical, but O(N^2). Used
-  automatically when FlexAttention is unavailable or when a per-batch padding
+  automatically when FlexAttention is unavailable, when running on a
+  non-CUDA device (under ``backend="auto"``), or when a per-batch padding
   ``mask`` is supplied (which FlexAttention cannot express through a static
   BlockMask).
+
+Backend resolution is device-aware and decided per forward call (not once at
+construction time), since a module's device isn't fixed until its first
+forward and can change afterwards via ``.to(...)``.
 
 References:
 - "Generating Long Sequences with Sparse Transformers" (Child et al., 2019)
@@ -178,10 +187,10 @@ class _SparseAttentionMixin:
         self.block_size = block_size
         self.dropout_p = dropout
 
-        resolved = "flex" if backend == "auto" else backend
-        if resolved == "flex" and not _HAS_FLEX:
-            resolved = "sdpa"
-        self.backend = resolved
+        # The requested backend. Resolved to a concrete "flex"/"sdpa" choice
+        # per forward call in `_resolve_backend`, since the right choice
+        # depends on the input's device, not just what's importable.
+        self.backend = backend
 
         self._mask_mod = build_sparse_mask_mod(
             pattern=pattern,
@@ -284,6 +293,47 @@ class _SparseAttentionMixin:
         return out
 
     # -- Dispatch ----------------------------------------------------------
+    def _resolve_backend(self, device: torch.device) -> str:
+        """
+        Resolve the requested backend to a concrete "flex" or "sdpa" choice
+        for the given device.
+
+        FlexAttention's backward pass is only implemented for CUDA in the
+        PyTorch versions this repo targets: forward runs fine on CPU, but
+        ``.backward()`` raises ``NotImplementedError: FlexAttention does not
+        support backward on CPU``. This must be resolved per call (not once
+        at construction) because a module's device isn't fixed until its
+        first forward and can change afterwards via ``.to(...)``.
+        """
+        is_cuda = device.type == "cuda"
+
+        if self.backend == "sdpa":
+            return "sdpa"
+
+        if self.backend == "flex":
+            if not _HAS_FLEX:
+                raise RuntimeError(
+                    "backend='flex' was requested but FlexAttention is "
+                    "unavailable (requires PyTorch >= 2.5)."
+                )
+            if not is_cuda:
+                raise RuntimeError(
+                    f"backend='flex' was requested on device {device!r}, but "
+                    "FlexAttention's backward pass is only supported on CUDA "
+                    "in this PyTorch version (forward runs fine on CPU, but "
+                    ".backward() raises NotImplementedError there). Use "
+                    "backend='sdpa' or backend='auto' for a CPU-safe dense "
+                    "fallback."
+                )
+            return "flex"
+
+        # backend == "auto": FlexAttention only where its backward path is
+        # known to work (CUDA); dense SDPA everywhere else (CPU, MPS, ...)
+        # so training doesn't break on non-CUDA devices.
+        if _HAS_FLEX and is_cuda:
+            return "flex"
+        return "sdpa"
+
     def _sparse_compute(self, q, k, v, mask: Optional[torch.Tensor]) -> torch.Tensor:
         """
         Routes the computation to the FlexAttention or dense backend.
@@ -293,7 +343,8 @@ class _SparseAttentionMixin:
         supplied the call falls back to the dense path (still correct, just
         O(N^2)).
         """
-        if self.backend == "flex" and mask is None:
+        effective_backend = self._resolve_backend(q.device)
+        if effective_backend == "flex" and mask is None:
             return self._flex_attention(q, k, v)
         return self._dense_attention(q, k, v, mask)
 
@@ -345,7 +396,10 @@ class SparseAttention(_SparseAttentionMixin, AttentionBase):
         block_size: FlexAttention block granularity; sparsity is resolved per
             block so the effective window rounds up to a multiple of this
             (default: 128)
-        backend: Compute backend: "auto" (flex if available else sdpa), "flex",
+        backend: Compute backend: "auto" (flex on CUDA if available, sdpa
+            otherwise -- resolved per forward call from the input's device),
+            "flex" (raises if unavailable or if the input is on a non-CUDA
+            device, since FlexAttention's backward pass is CPU-unsupported),
             or "sdpa" (default: "auto")
         compile: If True, compiles the FlexAttention kernel with torch.compile for
             maximum throughput; recommended on CUDA (default: False)
@@ -460,7 +514,10 @@ class SparseAttentionwithRoPE(_SparseAttentionMixin, AttentionwithRoPEBase):
         block_size: FlexAttention block granularity; sparsity is resolved per
             block so the effective window rounds up to a multiple of this
             (default: 128)
-        backend: Compute backend: "auto" (flex if available else sdpa), "flex",
+        backend: Compute backend: "auto" (flex on CUDA if available, sdpa
+            otherwise -- resolved per forward call from the input's device),
+            "flex" (raises if unavailable or if the input is on a non-CUDA
+            device, since FlexAttention's backward pass is CPU-unsupported),
             or "sdpa" (default: "auto")
         compile: If True, compiles the FlexAttention kernel with torch.compile for
             maximum throughput; recommended on CUDA (default: False)
