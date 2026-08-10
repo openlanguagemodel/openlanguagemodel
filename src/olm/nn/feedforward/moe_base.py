@@ -10,14 +10,31 @@ from olm.nn.torch_nn_wrappers import Linear
 class MoERouter(nn.Module):
     """
     Router for Mixture of Experts.
-    
+
     Routes input tokens to the top-k experts based on learned gate logits.
+
+    Args:
+        embed_dim (int): Dimension the router operates on.
+        num_experts (int): Total number of routable experts.
+        top_k (int): Number of experts each token is routed to.
+        routed_scaling_factor (float, optional): Multiplier applied to the
+            re-normalized top-k weights. Several MoE models (DeepSeek-V3,
+            Sarvam, Nemotron-H) scale the routed branch by a constant so it
+            keeps parity with an always-active shared expert. Defaults to 1.0
+            (no scaling).
     """
-    def __init__(self, embed_dim: int, num_experts: int, top_k: int = 2):
+    def __init__(
+        self,
+        embed_dim: int,
+        num_experts: int,
+        top_k: int = 2,
+        routed_scaling_factor: float = 1.0,
+    ):
         super().__init__()
         self.gate = Linear(embed_dim, num_experts, bias=False)
         self.top_k = top_k
         self.num_experts = num_experts
+        self.routed_scaling_factor = routed_scaling_factor
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -32,35 +49,42 @@ class MoERouter(nn.Module):
         """
         # x: (batch_size, seq_len, embed_dim)
         logits = self.gate(x) # (batch, seq, num_experts)
-        
+
         # Calculate routing weights
         weights = F.softmax(logits, dim=-1)
-        
+
         # Select top-k experts
         top_k_weights, top_k_indices = torch.topk(weights, self.top_k, dim=-1)
-        
+
         # Re-normalize weights
         top_k_weights = top_k_weights / top_k_weights.sum(dim=-1, keepdim=True)
-        
+
+        if self.routed_scaling_factor != 1.0:
+            top_k_weights = top_k_weights * self.routed_scaling_factor
+
         return top_k_indices, top_k_weights
 
 class MoEFeedForwardBase(FeedForwardBase):
     """
     Base class for Mixture of Experts FeedForward networks.
-    
+
     Supports:
-    - Top-K routing
-    - Shared experts (always active)
+    - Top-K routing (optionally with a constant routed scaling factor)
+    - Shared experts (always active), which may use their own width and
+      their own dimension
     - Dynamic expert instantiation
     """
     def __init__(
-        self, 
-        embed_dim: int, 
+        self,
+        embed_dim: int,
         expert_cls: Type[nn.Module],
         num_experts: int = 8,
         num_shared_experts: int = 0,
         top_k: int = 2,
         expert_kwargs: dict = None,
+        shared_expert_kwargs: dict = None,
+        shared_embed_dim: int = None,
+        routed_scaling_factor: float = 1.0,
         **kwargs
     ):
         """
@@ -71,6 +95,15 @@ class MoEFeedForwardBase(FeedForwardBase):
             num_shared_experts: Number of shared experts that process every token.
             top_k: Number of experts to route to for each token.
             expert_kwargs: Arguments to pass to the expert constructor.
+            shared_expert_kwargs: Arguments for the shared-expert constructor.
+                Defaults to ``expert_kwargs``. Models whose shared experts are
+                wider than their routed experts (e.g. Nemotron-H) override
+                ``hidden_dim`` here.
+            shared_embed_dim: Dimension the shared experts operate on. Defaults
+                to ``embed_dim``. Differs only when routing happens in a
+                compressed space while the shared branch stays full-width
+                (see ``LatentMoEFFN``).
+            routed_scaling_factor: Constant multiplier on the routing weights.
             **kwargs: Additional arguments passed to FeedForwardBase.
         """
         super().__init__(embed_dim)
@@ -78,28 +111,54 @@ class MoEFeedForwardBase(FeedForwardBase):
         self.num_shared_experts = num_shared_experts
         self.top_k = top_k
         self.expert_kwargs = expert_kwargs or {}
-        
+        self.shared_expert_kwargs = (
+            self.expert_kwargs if shared_expert_kwargs is None else shared_expert_kwargs
+        )
+        self.shared_embed_dim = embed_dim if shared_embed_dim is None else shared_embed_dim
+
         # Initialize Router
-        self.router = MoERouter(embed_dim, num_experts, top_k)
-        
+        self.router = MoERouter(embed_dim, num_experts, top_k, routed_scaling_factor)
+
         # Initialize Routable Experts
         self.experts = nn.ModuleList([
-            expert_cls(embed_dim, **self.expert_kwargs) 
+            expert_cls(embed_dim, **self.expert_kwargs)
             for _ in range(num_experts)
         ])
-        
+
         # Initialize Shared Experts (if any)
         if num_shared_experts > 0:
             self.shared_experts = nn.ModuleList([
-                expert_cls(embed_dim, **self.expert_kwargs)
+                expert_cls(self.shared_embed_dim, **self.shared_expert_kwargs)
                 for _ in range(num_shared_experts)
             ])
         else:
             self.shared_experts = None
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def compute_shared(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with MoE routing.
+        Sum of the always-active shared experts.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, shared_embed_dim]``.
+
+        Returns:
+            torch.Tensor: Same shape as ``x``; zeros when there are no shared experts.
+        """
+        if self.shared_experts is None:
+            return torch.zeros_like(x)
+
+        shared_output = torch.zeros_like(x)
+        for expert in self.shared_experts:
+            shared_output = shared_output + expert(x)
+        return shared_output
+
+    def compute_routed(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Route each token to its top-k experts and combine their outputs.
+
+        Split out from ``forward`` so subclasses can wrap the routed branch on
+        its own -- e.g. running it inside a compressed latent space while the
+        shared branch stays at full width.
 
         Args:
             x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
@@ -107,24 +166,17 @@ class MoEFeedForwardBase(FeedForwardBase):
         Returns:
             torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
         """
-        identity = x
         batch_size, seq_len, embed_dim = x.shape
         x_flat = x.view(-1, embed_dim) # (batch * seq, embed_dim)
-        
-        # 1. Compute Shared Experts Output
-        shared_output = 0
-        if self.shared_experts is not None:
-            for expert in self.shared_experts:
-                shared_output = shared_output + expert(x)
-        
-        # 2. Route to Experts
+
+        # Route to Experts
         top_k_indices, top_k_weights = self.router(x) # (batch, seq, top_k)
-        
+
         # Flatten for processing
         top_k_indices = top_k_indices.view(-1, self.top_k) # (batch * seq, top_k)
         top_k_weights = top_k_weights.view(-1, self.top_k) # (batch * seq, top_k)
         
-        # 3. Process with Experts
+        # Process with Experts
         # Current implementation: Loop over all experts (naive but correct)
         # For optimized implementations, we would group tokens by expert.
         
@@ -172,10 +224,16 @@ class MoEFeedForwardBase(FeedForwardBase):
                 # Instead of scatter, we can just index since we have boolean mask
                 final_output[token_mask] += expert_out * selected_weights
 
-        final_output = final_output.view(batch_size, seq_len, embed_dim)
-        
-        # 4. Combine
-        if self.shared_experts is not None:
-            final_output = final_output + shared_output
-            
-        return final_output
+        return final_output.view(batch_size, seq_len, embed_dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass with MoE routing.
+
+        Args:
+            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+
+        Returns:
+            torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
+        """
+        return self.compute_routed(x) + self.compute_shared(x)

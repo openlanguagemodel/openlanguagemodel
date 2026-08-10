@@ -146,3 +146,83 @@ def test_sequence_load_balance_loss_supports_sigmoid_router_stats():
     assert torch.isfinite(loss)
     loss.backward()
     assert router_logits.grad is not None
+
+
+def test_moe_ffn_shared_experts_can_be_wider_than_routed_experts():
+    model = ClassicMoEFFN(
+        embed_dim=32,
+        num_experts=4,
+        num_shared_experts=1,
+        top_k=2,
+        hidden_dim=16,
+        shared_hidden_dim=64,
+        bias=False,
+    )
+
+    assert model.experts[0].hidden_dim == 16
+    assert model.shared_experts[0].hidden_dim == 64
+
+    x = torch.randn(2, 5, 32)
+    assert model(x).shape == x.shape
+
+
+def test_moe_router_applies_routed_scaling_factor():
+    model = ClassicMoEFFN(
+        embed_dim=32, num_experts=4, top_k=2, hidden_dim=16, bias=False
+    )
+    x = torch.randn(2, 5, 32)
+
+    model.router.routed_scaling_factor = 1.0
+    baseline = model.compute_routed(x)
+    model.router.routed_scaling_factor = 2.5
+    scaled = model.compute_routed(x)
+
+    assert torch.allclose(scaled, 2.5 * baseline, atol=1e-5)
+
+
+def test_latent_moe_routes_in_latent_space_with_full_width_shared_experts():
+    from olm.nn.feedforward import LatentMoEFFN
+    from olm.nn.feedforward.moe_base import MoEFeedForwardBase
+
+    model = LatentMoEFFN(
+        embed_dim=32,
+        latent_dim=8,
+        num_experts=4,
+        num_shared_experts=1,
+        top_k=2,
+        hidden_dim=16,
+        shared_hidden_dim=64,
+        bias=False,
+        routed_scaling_factor=5.0,
+    )
+
+    assert isinstance(model, MoEFeedForwardBase)
+    # Router and routed experts live in the bottleneck...
+    assert model.router.gate.in_features == 8
+    assert model.experts[0].embed_dim == 8
+    # ...while the shared experts stay at full model width.
+    assert model.shared_experts[0].embed_dim == 32
+    assert model.shared_experts[0].hidden_dim == 64
+    assert model.embed_dim == 32
+
+    x = torch.randn(2, 5, 32)
+    out = model(x)
+    assert out.shape == x.shape
+    out.sum().backward()
+    assert model.down_proj.weight.grad is not None
+    assert model.up_proj.weight.grad is not None
+
+
+def test_mamba2_mixer_fills_the_attention_base_role():
+    import pytest
+    from olm.nn.attention import Mamba2Mixer
+    from olm.nn.attention.base import AttentionBase
+
+    mixer = Mamba2Mixer(32, num_heads=4, head_dim=8, state_size=16, n_groups=1)
+    assert isinstance(mixer, AttentionBase)
+
+    x = torch.randn(2, 5, 32)
+    assert mixer(x).shape == x.shape
+
+    with pytest.raises(NotImplementedError):
+        mixer.compute_attention(x, x, x)

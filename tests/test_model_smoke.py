@@ -537,8 +537,7 @@ def test_olmo_reference_vocab_size():
 
 def test_nemotron_h_layers_follow_hybrid_override_pattern():
     from olm.nn.attention import GroupedQueryAttention, Mamba2Mixer
-    from olm.nn.feedforward import LatentMoEFFN
-    from olm.models.nvidia.nemotron import NemotronMoEFFN
+    from olm.nn.feedforward import ClassicMoEFFN, LatentMoEFFN
 
     model = NemotronHModel(
         128, 32, "MEMEM*E", 4, 2, 8, 16, 4, 8, 16, 1, 4, 4, 1, 2, 16, 32, 2.5,
@@ -547,8 +546,8 @@ def test_nemotron_h_layers_follow_hybrid_override_pattern():
     layers = model.blocks[1].blocks
     mixer_types = [type(layer.block.blocks[1]) for layer in layers]
     assert mixer_types == [
-        Mamba2Mixer, NemotronMoEFFN, Mamba2Mixer, NemotronMoEFFN,
-        Mamba2Mixer, GroupedQueryAttention, NemotronMoEFFN,
+        Mamba2Mixer, ClassicMoEFFN, Mamba2Mixer, ClassicMoEFFN,
+        Mamba2Mixer, GroupedQueryAttention, ClassicMoEFFN,
     ]
 
     latent_model = NemotronHModel(

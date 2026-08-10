@@ -1,13 +1,16 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from olm.nn.attention.base import AttentionBase
 from olm.nn.torch_nn_wrappers import Linear
 from olm.nn.blocks.causal_conv1d import CausalConv1d
 from olm.nn.norms import RMSNorm
 
 
-class Mamba2Mixer(nn.Module):
+class Mamba2Mixer(AttentionBase):
     """
     Mamba-2 selective state-space mixer (SSD).
 
@@ -25,6 +28,11 @@ class Mamba2Mixer(nn.Module):
     output projection. Used by the Nemotron-H / Nemotron 3 family as the
     linear-time alternative to attention.
 
+    Like ``GatedDeltaNet``, this is a token mixer rather than a dot-product
+    attention: it has no separate Q/K/V projections, so it fills the
+    ``AttentionBase`` role through ``forward`` and leaves ``compute_attention``
+    unimplemented.
+
     Reference: "Transformers are SSMs: Generalized Models and Efficient
     Algorithms Through Structured State Space Duality" (Mamba-2), arXiv:2405.21060
 
@@ -38,6 +46,7 @@ class Mamba2Mixer(nn.Module):
         time_step_floor: Minimum value ``dt`` is clamped to for stability.
         rms_norm_eps: Epsilon for the pre-output-projection RMSNorm.
         bias: Whether to use bias in the in/out projections.
+        dropout: Dropout probability applied to the output.
     """
 
     def __init__(
@@ -51,10 +60,18 @@ class Mamba2Mixer(nn.Module):
         time_step_floor: float = 1e-4,
         rms_norm_eps: float = 1e-5,
         bias: bool = False,
+        dropout: float = 0.0,
     ):
-        super().__init__()
+        # AttentionBase.__init__ builds square Q/K/V projections and requires
+        # embed_dim to be divisible by num_heads. Neither holds for an SSM
+        # mixer, whose inner width is num_heads * head_dim, so set up the
+        # shared attributes directly (same approach as GatedDeltaNet).
+        nn.Module.__init__(self)
+        self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.head_dim = head_dim
+        self.scale = head_dim ** -0.5
+        self.dropout = nn.Dropout(dropout)
         self.state_size = state_size
         self.n_groups = n_groups
         self.time_step_floor = time_step_floor
@@ -77,7 +94,23 @@ class Mamba2Mixer(nn.Module):
         self.norm = RMSNorm(self.d_inner, eps=rms_norm_eps)
         self.out_proj = Linear(self.d_inner, embed_dim, bias=bias)
 
-    def forward(self, x: torch.Tensor, mask=None) -> torch.Tensor:
+    def compute_attention(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        v: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Not applicable -- Mamba-2 mixes tokens with a recurrent state scan
+        rather than query/key/value attention. The full flow lives in
+        ``forward``.
+        """
+        raise NotImplementedError(
+            "Use forward() directly; Mamba-2 uses a recurrent state scan"
+        )
+
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Sequential-scan forward (for prefill / training).
 
@@ -143,4 +176,4 @@ class Mamba2Mixer(nn.Module):
         y = torch.stack(outs, dim=1).reshape(B_batch, N, self.d_inner)
 
         y = self.norm(y * F.silu(z))
-        return self.out_proj(y)
+        return self.dropout(self.out_proj(y))

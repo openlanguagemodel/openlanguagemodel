@@ -1,117 +1,11 @@
-import torch
-import torch.nn as nn
-
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Residual
 from olm.nn.attention import GroupedQueryAttention, Mamba2Mixer
-from olm.nn.feedforward import ClassicFFN, ClassicMoEFFN, LatentMoEFFN, FeedForwardBase
-from olm.nn.feedforward.moe_base import MoERouter
+from olm.nn.feedforward import ClassicMoEFFN, LatentMoEFFN
 from olm.nn.activations import ReLUSquared
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.blocks import OutputHead
-
-
-class NemotronScaledRouter(MoERouter):
-    """Softmax top-k router with a routed-output scaling factor.
-
-    Identical interface to ``MoERouter`` but multiplies the normalized top-k
-    weights by a fixed ``routed_scaling_factor``, matching Nemotron-H's
-    ``routed_scaling_factor`` (2.5 for Nano, 5.0 for Super).
-
-    Args:
-        embed_dim (int): Dimension the router operates on (``latent_dim`` for
-            LatentMoE layers, ``embed_dim`` otherwise).
-        num_experts (int): Total number of routable experts.
-        top_k (int): Number of experts each token is routed to.
-        routed_scaling_factor (float): Multiplier applied to routing weights.
-    """
-
-    def __init__(
-        self,
-        embed_dim: int,
-        num_experts: int,
-        top_k: int = 2,
-        routed_scaling_factor: float = 1.0,
-    ):
-        super().__init__(embed_dim, num_experts, top_k)
-        self.routed_scaling_factor = routed_scaling_factor
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        top_k_indices, top_k_weights = super().forward(x)
-        return top_k_indices, top_k_weights * self.routed_scaling_factor
-
-
-class NemotronMoEFFN(FeedForwardBase):
-    """Plain (non-latent) MoE with an independently-sized shared expert.
-
-    Nemotron-H's routed and shared experts use different FFN widths
-    (``moe_intermediate_size`` vs ``moe_shared_expert_intermediate_size``),
-    which the generic ``ClassicMoEFFN`` can't express since it uses one
-    ``hidden_dim`` for both. This composes a routed-only ``ClassicMoEFFN``
-    with a separate list of full-width shared experts. Used by Nemotron Nano;
-    Nemotron Super uses ``LatentMoEFFN`` instead (its MoE has a latent
-    bottleneck the routed experts operate in).
-
-    Args:
-        embed_dim (int): Model dimension.
-        num_experts (int): Total number of routable experts.
-        num_shared_experts (int): Number of always-active shared experts.
-        top_k (int): Number of experts routed to per token.
-        hidden_dim (int): FFN hidden dim of each routed expert.
-        shared_hidden_dim (int): FFN hidden dim of each shared expert.
-        routed_scaling_factor (float): Multiplier on routed weights.
-        activation_fn (nn.Module): Activation shared by routed and shared experts.
-        bias (bool): Whether to use bias in linear layers.
-    """
-
-    def __init__(
-        self,
-        embed_dim: int,
-        num_experts: int,
-        num_shared_experts: int,
-        top_k: int,
-        hidden_dim: int,
-        shared_hidden_dim: int,
-        routed_scaling_factor: float,
-        activation_fn=None,
-        bias: bool = False,
-    ):
-        super().__init__(embed_dim)
-        self.routed = ClassicMoEFFN(
-            embed_dim,
-            num_experts=num_experts,
-            num_shared_experts=0,
-            top_k=top_k,
-            hidden_dim=hidden_dim,
-            activation_fn=activation_fn,
-            bias=bias,
-        )
-        self.routed.router = NemotronScaledRouter(
-            embed_dim, num_experts, top_k, routed_scaling_factor
-        )
-
-        if num_shared_experts > 0:
-            self.shared_experts = nn.ModuleList(
-                [
-                    ClassicFFN(
-                        embed_dim,
-                        hidden_dim=shared_hidden_dim,
-                        activation_fn=activation_fn,
-                        bias=bias,
-                    )
-                    for _ in range(num_shared_experts)
-                ]
-            )
-        else:
-            self.shared_experts = None
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.routed(x)
-        if self.shared_experts is not None:
-            for expert in self.shared_experts:
-                out = out + expert(x)
-        return out
 
 
 class NemotronHModel(Block):
@@ -159,7 +53,7 @@ class NemotronHModel(Block):
         routed_scaling_factor (float): Multiplier on MoE routing weights.
         moe_latent_size (int, optional): If set, MoE layers use a
             ``LatentMoEFFN`` bottleneck of this size (Nemotron Super) instead
-            of the full-width ``NemotronMoEFFN`` (Nemotron Nano).
+            of a full-width ``ClassicMoEFFN`` (Nemotron Nano).
         rope_theta (float): RoPE base frequency (attention layers).
         dropout (float): Dropout probability.
         rms_norm_eps (float): Epsilon for RMSNorm layers.
@@ -229,21 +123,19 @@ class NemotronHModel(Block):
                         shared_hidden_dim=moe_shared_expert_intermediate_size,
                         activation_fn=ReLUSquared(),
                         bias=False,
-                    )
-                    mixer.routed.router = NemotronScaledRouter(
-                        moe_latent_size, num_experts, top_k, routed_scaling_factor
+                        routed_scaling_factor=routed_scaling_factor,
                     )
                 else:
-                    mixer = NemotronMoEFFN(
+                    mixer = ClassicMoEFFN(
                         embed_dim,
                         num_experts=num_experts,
                         num_shared_experts=num_shared_experts,
                         top_k=top_k,
                         hidden_dim=moe_intermediate_size,
                         shared_hidden_dim=moe_shared_expert_intermediate_size,
-                        routed_scaling_factor=routed_scaling_factor,
                         activation_fn=ReLUSquared(),
                         bias=False,
+                        routed_scaling_factor=routed_scaling_factor,
                     )
             else:
                 raise ValueError(
