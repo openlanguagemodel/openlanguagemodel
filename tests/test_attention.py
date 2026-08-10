@@ -1,3 +1,6 @@
+import copy
+
+import pytest
 import torch
 
 from olm.nn.attention import (
@@ -5,6 +8,8 @@ from olm.nn.attention import (
     MultiHeadAttentionwithALiBi,
     MultiHeadLatentAttention,
     SlidingWindowAttention,
+    SparseAttention,
+    SparseAttentionwithRoPE,
 )
 from olm.nn.attention.masks import attention_mask_to_bool
 
@@ -240,3 +245,79 @@ def test_alibi_combines_custom_mask_with_causal_mask():
     out = attn(x, mask=mask)
 
     assert torch.allclose(out[0, 0], x[0, 0], atol=1e-6)
+
+
+def _sparse(**overrides):
+    kwargs = dict(embed_dim=16, num_heads=2, window=4, dropout=0.0)
+    kwargs.update(overrides)
+    return SparseAttention(**kwargs)
+
+
+def _sparse_rope(**overrides):
+    kwargs = dict(embed_dim=16, num_heads=2, max_seq_len=8, window=4, dropout=0.0)
+    kwargs.update(overrides)
+    return SparseAttentionwithRoPE(**kwargs)
+
+
+@pytest.mark.parametrize("backend", ["auto", "sdpa"])
+def test_sparse_attention_cpu_forward_backward(backend):
+    attn = _sparse(backend=backend)
+    attn.train()
+    x = torch.randn(2, 8, 16, requires_grad=True)
+
+    out = attn(x)
+    assert out.shape == (2, 8, 16)
+
+    out.mean().backward()
+    assert x.grad is not None
+    assert any(p.grad is not None for p in attn.parameters() if p.requires_grad)
+
+
+@pytest.mark.parametrize("backend", ["auto", "sdpa"])
+def test_sparse_attention_with_rope_cpu_forward_backward(backend):
+    attn = _sparse_rope(backend=backend)
+    attn.train()
+    x = torch.randn(2, 8, 16, requires_grad=True)
+
+    out = attn(x)
+    assert out.shape == (2, 8, 16)
+
+    out.mean().backward()
+    assert x.grad is not None
+    assert any(p.grad is not None for p in attn.parameters() if p.requires_grad)
+
+
+@pytest.mark.parametrize("attn_factory", [_sparse, _sparse_rope])
+def test_sparse_attention_auto_backend_resolves_to_sdpa_on_cpu(attn_factory):
+    attn = attn_factory(backend="auto")
+    assert attn._resolve_backend(torch.device("cpu")) == "sdpa"
+
+
+@pytest.mark.parametrize("attn_factory", [_sparse, _sparse_rope])
+def test_sparse_attention_explicit_flex_backend_raises_clear_error_on_cpu(
+    attn_factory,
+):
+    attn = attn_factory(backend="flex")
+    x = torch.randn(1, 8, 16)
+
+    with pytest.raises(RuntimeError, match="only supported on CUDA"):
+        attn(x)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA")
+@pytest.mark.parametrize("attn_factory", [_sparse, _sparse_rope])
+def test_sparse_attention_flex_matches_sdpa_on_cuda(attn_factory):
+    attn_sdpa = attn_factory(backend="sdpa").cuda()
+    attn_flex = copy.deepcopy(attn_sdpa)
+    attn_flex.backend = "flex"
+
+    x_sdpa = torch.randn(2, 8, 16, device="cuda", requires_grad=True)
+    x_flex = x_sdpa.detach().clone().requires_grad_(True)
+
+    out_sdpa = attn_sdpa(x_sdpa)
+    out_flex = attn_flex(x_flex)
+    assert torch.allclose(out_sdpa, out_flex, atol=1e-3, rtol=1e-3)
+
+    out_sdpa.mean().backward()
+    out_flex.mean().backward()
+    assert torch.allclose(x_sdpa.grad, x_flex.grad, atol=1e-3, rtol=1e-3)

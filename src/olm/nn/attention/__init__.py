@@ -11,6 +11,7 @@ from .gated_deltanet import GatedDeltaNet
 from .lightning import LightningAttention
 from .kda import KimiDeltaAttention
 from .mamba2 import Mamba2Mixer
+from .sparse import SparseAttention, SparseAttentionwithRoPE, build_sparse_mask_mod
 
 __all__ = [
     "MultiHeadAttention", "MultiHeadAttentionwithRoPE",
@@ -23,4 +24,5 @@ __all__ = [
     "GatedDeltaNet", "LightningAttention",
     "KimiDeltaAttention",
     "Mamba2Mixer",
+    "SparseAttention", "SparseAttentionwithRoPE", "build_sparse_mask_mod",
 ]
