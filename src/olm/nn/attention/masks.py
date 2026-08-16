@@ -16,11 +16,9 @@ def attention_mask_to_bool(mask: torch.Tensor, device=None) -> torch.Tensor:
     if mask.dtype == torch.bool:
         return mask
 
-    if (
-        torch.is_floating_point(mask)
-        and mask.numel()
-        and bool(torch.any(mask < 0).item())
-    ):
+    if torch.is_floating_point(mask):
+        # Additive convention: attend where mask >= 0, block where mask < 0 (e.g. -inf).
+        # Avoids data-dependent .item() for torch.compile compatibility.
         return mask >= 0
 
     return mask != 0

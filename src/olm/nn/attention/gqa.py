@@ -3,7 +3,10 @@ import torch.nn as nn
 from olm.nn.torch_nn_wrappers import Linear
 import torch.nn.functional as F
 from typing import Optional
-from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
+from olm.nn.embeddings.positional.rope import (
+    PartialRotaryPositionalEmbedding,
+    RotaryPositionalEmbedding,
+)
 from olm.nn.attention.masks import attention_mask_to_bool
 from olm.nn.norms import RMSNorm
 
@@ -44,6 +47,9 @@ class GroupedQueryAttention(nn.Module):
         rms_norm_eps: float = 1e-6,
         attention_scale: Optional[float] = None,
         attn_logit_softcap: Optional[float] = None,
+        use_rope: bool = True,
+        partial_rotary_factor: float = 1.0,
+        use_attention_sink: bool = False,
     ):
         super().__init__()
 
@@ -73,6 +79,14 @@ class GroupedQueryAttention(nn.Module):
         self.dropout_p = dropout
         self.scale = attention_scale if attention_scale is not None else self.head_dim**-0.5
         self.attn_logit_softcap = attn_logit_softcap
+        self.use_rope = use_rope
+        self.use_attention_sink = use_attention_sink
+
+        if not 0.0 < partial_rotary_factor <= 1.0:
+            raise ValueError(
+                "partial_rotary_factor must be in (0.0, 1.0], "
+                f"got {partial_rotary_factor}"
+            )
 
         # QK Norm (Qwen 2/2.5 feature)
         self.use_qk_norm = use_qk_norm
@@ -80,10 +94,25 @@ class GroupedQueryAttention(nn.Module):
             self.q_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
             self.k_norm = RMSNorm(self.head_dim, eps=rms_norm_eps)
 
-        # Rotary Embeddings
-        self.rope = RotaryPositionalEmbedding(
-            self.head_dim, max_seq_len, base=rope_theta
-        )
+        if use_rope:
+            if partial_rotary_factor < 1.0:
+                self.rope = PartialRotaryPositionalEmbedding(
+                    self.head_dim,
+                    rotary_percentage=partial_rotary_factor,
+                    base=rope_theta,
+                    max_seq_len=max_seq_len,
+                )
+            else:
+                self.rope = RotaryPositionalEmbedding(
+                    self.head_dim, max_seq_len, base=rope_theta
+                )
+        else:
+            self.rope = None
+
+        if use_attention_sink:
+            self.attention_sink = nn.Parameter(torch.zeros(num_heads))
+        else:
+            self.register_parameter("attention_sink", None)
 
         # Projections
         self.q_proj = Linear(
@@ -134,10 +163,9 @@ class GroupedQueryAttention(nn.Module):
             q = self.q_norm(q)
             k = self.k_norm(k)
 
-        # Apply RoPE to Q and K
-        # RoPE expects [batch, seq, heads, dim]
-        q = self.rope(q)
-        k = self.rope(k)
+        if self.rope is not None:
+            q = self.rope(q)
+            k = self.rope(k)
 
         # Transpose for attention: [B, Heads, N, D]
         q = q.transpose(1, 2)
@@ -164,7 +192,7 @@ class GroupedQueryAttention(nn.Module):
             attn_mask = attn_mask & causal_mask
             is_causal = False
 
-        if self.attn_logit_softcap is None:
+        if self.attn_logit_softcap is None and not self.use_attention_sink:
             # Scaled Dot Product Attention
             # Uses Flash Attention optimization if available via F.scaled_dot_product_attention
             attention_out = F.scaled_dot_product_attention(
@@ -174,11 +202,13 @@ class GroupedQueryAttention(nn.Module):
                 attn_mask=attn_mask,
                 dropout_p=self.dropout_p if self.training else 0.0,
                 is_causal=is_causal,
+                scale=self.scale,
             )
         else:
             attn_scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
-            softcap = self.attn_logit_softcap
-            attn_scores = torch.tanh(attn_scores / softcap) * softcap
+            if self.attn_logit_softcap is not None:
+                softcap = self.attn_logit_softcap
+                attn_scores = torch.tanh(attn_scores / softcap) * softcap
 
             if is_causal:
                 causal_mask = torch.ones(N, N, device=x.device, dtype=torch.bool).tril()
@@ -187,9 +217,25 @@ class GroupedQueryAttention(nn.Module):
             if attn_mask is not None:
                 attn_scores = attn_scores.masked_fill(~attn_mask, float("-inf"))
 
+            if self.use_attention_sink:
+                sink_scores = self.attention_sink.view(1, self.num_heads, 1, 1)
+                sink_scores = sink_scores.expand(B, self.num_heads, N, 1)
+                attn_scores = torch.cat([attn_scores, sink_scores], dim=-1)
+                sink_values = torch.zeros(
+                    B,
+                    self.num_heads,
+                    1,
+                    self.head_dim,
+                    dtype=v.dtype,
+                    device=v.device,
+                )
+                values = torch.cat([v, sink_values], dim=-2)
+            else:
+                values = v
+
             attn_probs = F.softmax(attn_scores, dim=-1)
             attn_probs = self.dropout(attn_probs)
-            attention_out = torch.matmul(attn_probs, v)
+            attention_out = torch.matmul(attn_probs, values)
 
         # [B, Heads, N, D] -> [B, N, Heads, D] -> [B, N, num_heads * head_dim]
         attention_out = (

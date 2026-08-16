@@ -7,10 +7,26 @@ from olm.models.alibaba import (
     Qwen2_5_14B,
     Qwen2_5_32B,
     Qwen2_5_72B,
+    Qwen3Model,
+    Qwen3_235B_A22B,
+    Qwen3_5_Model,
+    Qwen3_5_397B,
+    Qwen3NextModel,
+    Qwen3Next80BA3B,
 )
-from olm.models.allenai import OLMoModel, OLMo_7B
+from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model, Olmo3_7B, Olmo3_32B
+from olm.models.deepseekai import DeepSeekV3Model, DeepSeekV3_671B
 from olm.models.facebook import OPTModel, OPT125M
-from olm.models.google import Gemma2Model, Gemma2_2B, Gemma2_9B, Gemma2_27B
+from olm.models.google import (
+    Gemma2Model,
+    Gemma2_2B,
+    Gemma2_9B,
+    Gemma2_27B,
+    Gemma3Model,
+    Gemma3_4B,
+    Gemma3_27B,
+)
+from olm.models.inclusionai import Ling2_5_Model, Ling2_5_1T
 from olm.models.meta import (
     Llama2Model,
     Llama2_7B,
@@ -22,9 +38,28 @@ from olm.models.meta import (
     Llama3_1_405B,
     Llama3_2_1B,
     Llama3_2_3B,
+    Llama4MaverickModel,
+    Llama4Maverick_400B,
 )
 from olm.models.microsoft import Phi3Model, Phi3_5_Mini, Phi3_Small, Phi4Model, Phi4_14B
+from olm.models.minimax import MiniMaxM2Model, MiniMaxM2
+from olm.models.mistralai import (
+    MistralLarge3Model,
+    MistralLarge3,
+    MistralSmall3_1_Model,
+    MistralSmall3_1_24B,
+)
+from olm.models.minimax import MiniMaxM2_5_Model, MiniMaxM2_5_230B
+from olm.models.nanbeige import Nanbeige4_1_Model, Nanbeige4_1_3B
+from olm.models.moonshotai import (
+    KimiLinearModel,
+    KimiLinear48BA3B,
+    KimiK2Model,
+    KimiK2_1T,
+)
 from olm.models.openai import GPT2Model, GPT2, GPT2Medium, GPT2Large, GPT2XL
+from olm.models.sarvam import Sarvam30B_Model, Sarvam30B, Sarvam105B_Model, Sarvam105B
+from olm.models.stepfun import Step3_5_Flash_Model, Step3_5_Flash_196B
 
 __all__ = [
     "GPT2Model",
@@ -50,17 +85,55 @@ __all__ = [
     "Qwen2_5_14B",
     "Qwen2_5_32B",
     "Qwen2_5_72B",
+    "Qwen3Model",
+    "Qwen3_235B_A22B",
+    "Qwen3_5_Model",
+    "Qwen3_5_397B",
+    "Qwen3NextModel",
+    "Qwen3Next80BA3B",
     "Phi3Model",
     "Phi3_5_Mini",
     "Phi3_Small",
     "Phi4Model",
     "Phi4_14B",
+    "MiniMaxM2Model",
+    "MiniMaxM2",
+    "MistralLarge3Model",
+    "MistralLarge3",
+    "MistralSmall3_1_Model",
+    "MistralSmall3_1_24B",
     "Gemma2Model",
     "Gemma2_2B",
     "Gemma2_9B",
     "Gemma2_27B",
+    "Gemma3Model",
+    "Gemma3_4B",
+    "Gemma3_27B",
     "OLMoModel",
     "OLMo_7B",
+    "Olmo3Model",
+    "Olmo3_7B",
+    "Olmo3_32B",
     "OPTModel",
     "OPT125M",
+    "Step3_5_Flash_Model",
+    "Step3_5_Flash_196B",
+    "MiniMaxM2_5_Model",
+    "MiniMaxM2_5_230B",
+    "Nanbeige4_1_Model",
+    "Nanbeige4_1_3B",
+    "Ling2_5_Model",
+    "Ling2_5_1T",
+    "Sarvam30B_Model",
+    "Sarvam30B",
+    "Sarvam105B_Model",
+    "Sarvam105B",
+    "KimiLinearModel",
+    "KimiLinear48BA3B",
+    "KimiK2Model",
+    "KimiK2_1T",
+    "DeepSeekV3Model",
+    "DeepSeekV3_671B",
+    "Llama4MaverickModel",
+    "Llama4Maverick_400B",
 ]
