@@ -110,17 +110,7 @@ class SinusoidalPositionalEmbedding(PositionalEmbeddingBase):
             # add batch dimension and broadcast
             pos_embed = pe.unsqueeze(0)  # (1, seq_len, embed_dim)
         else:
-            # custom positions
-            max_pos = seq_positions.max().item()
-            if max_pos >= self.max_seq_len:
-                pe = self._build_sinusoidal_encoding(max_pos + 1, embed_dim, self.base)
-                pe = pe.to(x.device)
-            else:
-                pe = self.pe
-
-            # seq_positions: (b, seq_len)
-            # pe: (max_seq_len, embed_dim)
-            pos_embed = pe[seq_positions]  # (b, seq_len, embed_dim)
+            pos_embed = self.pe[seq_positions]  # (b, seq_len, embed_dim)
 
         x = x + pos_embed
         x = self.dropout(x)

@@ -59,8 +59,12 @@ class Llama3RotaryPositionalEmbedding(PositionalEmbeddingBase):
 
         inv_freq = self._compute_inv_freq()
         self.register_buffer("inv_freq", inv_freq, persistent=False)
-        self.register_buffer("emb_sin", torch.empty(0, 1, head_dim // 2), persistent=False)
-        self.register_buffer("emb_cos", torch.empty(0, 1, head_dim // 2), persistent=False)
+
+        # Eagerly pre-compute full sin/cos cache (torch.compile-friendly)
+        t = torch.arange(max_seq_len, dtype=torch.float32)
+        freqs = torch.einsum("i,j->ij", t, inv_freq)
+        self.register_buffer("emb_sin", freqs.sin().unsqueeze(1), persistent=False)
+        self.register_buffer("emb_cos", freqs.cos().unsqueeze(1), persistent=False)
 
     def _compute_inv_freq(self) -> torch.Tensor:
         inv_freq_base = 1.0 / (
@@ -91,13 +95,6 @@ class Llama3RotaryPositionalEmbedding(PositionalEmbeddingBase):
 
         return inv_freq
 
-    def _update_cache(self, seq_len: int, device: torch.device) -> None:
-        t = torch.arange(seq_len, dtype=torch.float32, device=device)
-        inv_freq = self.inv_freq.to(device=device, dtype=torch.float32)
-        freqs = torch.einsum("i,j->ij", t, inv_freq)
-        self.register_buffer("emb_sin", freqs.sin().unsqueeze(1), persistent=False)
-        self.register_buffer("emb_cos", freqs.cos().unsqueeze(1), persistent=False)
-
     def forward(
         self, x: torch.Tensor, seq_positions: Optional[torch.LongTensor] = None
     ) -> torch.Tensor:
@@ -118,10 +115,6 @@ class Llama3RotaryPositionalEmbedding(PositionalEmbeddingBase):
             pos = torch.arange(seq_len, dtype=torch.long, device=x.device).unsqueeze(0).expand(b, seq_len)
         else:
             pos = seq_positions
-
-        required_len = int(pos.max().item()) + 1 if pos.numel() else seq_len
-        if self.emb_sin.device != x.device or self.emb_sin.size(0) < required_len:
-            self._update_cache(required_len, x.device)
 
         sin = self.emb_sin[pos].to(dtype=x.dtype)
         cos = self.emb_cos[pos].to(dtype=x.dtype)
