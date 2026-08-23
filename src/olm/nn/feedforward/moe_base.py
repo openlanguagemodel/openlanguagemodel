@@ -5,13 +5,18 @@ import torch.nn.functional as F
 from abc import ABC
 
 from olm.nn.feedforward.base import FeedForwardBase
+from olm.nn.moe.router import MoERouter as ConfigurableMoERouter
 from olm.nn.torch_nn_wrappers import Linear
 
 class MoERouter(nn.Module):
     """
-    Router for Mixture of Experts.
+    Minimal softmax router for Mixture of Experts.
 
     Routes input tokens to the top-k experts based on learned gate logits.
+    ``MoEFeedForwardBase`` routes through ``olm.nn.moe.MoERouter`` instead,
+    which additionally covers sigmoid scoring, correction-bias balancing and
+    group-limited routing; this class is kept as the smallest readable
+    reference implementation.
 
     Args:
         embed_dim (int): Dimension the router operates on.
@@ -69,9 +74,12 @@ class MoEFeedForwardBase(FeedForwardBase):
     Base class for Mixture of Experts FeedForward networks.
 
     Supports:
-    - Top-K routing (optionally with a constant routed scaling factor)
+    - Configurable routing through ``olm.nn.moe.MoERouter`` -- softmax or
+      sigmoid scoring, auxiliary-loss-free (``noaux_tc``) correction bias,
+      group-limited routing, and a constant routed scaling factor
     - Shared experts (always active), which may use their own width and
       their own dimension
+    - A router dimension independent of the expert dimension
     - Dynamic expert instantiation
     """
     def __init__(
@@ -84,6 +92,8 @@ class MoEFeedForwardBase(FeedForwardBase):
         expert_kwargs: dict = None,
         shared_expert_kwargs: dict = None,
         shared_embed_dim: int = None,
+        router_embed_dim: int = None,
+        router_kwargs: dict = None,
         routed_scaling_factor: float = 1.0,
         **kwargs
     ):
@@ -100,9 +110,16 @@ class MoEFeedForwardBase(FeedForwardBase):
                 wider than their routed experts (e.g. Nemotron-H) override
                 ``hidden_dim`` here.
             shared_embed_dim: Dimension the shared experts operate on. Defaults
-                to ``embed_dim``. Differs only when routing happens in a
+                to ``embed_dim``. Differs only when the experts run in a
                 compressed space while the shared branch stays full-width
                 (see ``LatentMoEFFN``).
+            router_embed_dim: Dimension the router operates on. Defaults to
+                ``embed_dim``. Differs when routing decisions are taken on the
+                full-width hidden state while the experts run in a compressed
+                space (see ``LatentMoEFFN``).
+            router_kwargs: Routing options forwarded to ``olm.nn.moe.MoERouter``
+                -- e.g. ``scoring_func``, ``routing_method``, ``n_group``,
+                ``topk_group``, ``fp32_gate``. Defaults to plain softmax top-k.
             routed_scaling_factor: Constant multiplier on the routing weights.
             **kwargs: Additional arguments passed to FeedForwardBase.
         """
@@ -115,9 +132,19 @@ class MoEFeedForwardBase(FeedForwardBase):
             self.expert_kwargs if shared_expert_kwargs is None else shared_expert_kwargs
         )
         self.shared_embed_dim = embed_dim if shared_embed_dim is None else shared_embed_dim
+        self.router_embed_dim = embed_dim if router_embed_dim is None else router_embed_dim
 
-        # Initialize Router
-        self.router = MoERouter(embed_dim, num_experts, top_k, routed_scaling_factor)
+        # Initialize Router. The shared, configurable router covers softmax and
+        # sigmoid scoring, correction-bias (``noaux_tc``) balancing and
+        # group-limited routing, so architectures do not need their own.
+        self.router = ConfigurableMoERouter(
+            embed_dim=self.router_embed_dim,
+            num_experts=num_experts,
+            top_k=top_k,
+            routed_scaling_factor=routed_scaling_factor,
+            **(router_kwargs or {}),
+        )
+        self.last_router_logits: Optional[torch.Tensor] = None
 
         # Initialize Routable Experts
         self.experts = nn.ModuleList([
@@ -152,16 +179,21 @@ class MoEFeedForwardBase(FeedForwardBase):
             shared_output = shared_output + expert(x)
         return shared_output
 
-    def compute_routed(self, x: torch.Tensor) -> torch.Tensor:
+    def compute_routed(
+        self, x: torch.Tensor, router_input: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
         """
         Route each token to its top-k experts and combine their outputs.
 
         Split out from ``forward`` so subclasses can wrap the routed branch on
-        its own -- e.g. running it inside a compressed latent space while the
-        shared branch stays at full width.
+        its own -- e.g. running the experts inside a compressed latent space
+        while routing and the shared branch stay at full width.
 
         Args:
-            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
+            x (torch.Tensor): Expert inputs shaped ``[batch, seq_len, embed_dim]``.
+            router_input (torch.Tensor, optional): Hidden states the router
+                scores, shaped ``[batch, seq_len, router_embed_dim]``. Defaults
+                to ``x``, i.e. routing in the same space as the experts.
 
         Returns:
             torch.Tensor: Hidden states shaped ``[batch, seq_len, embed_dim]``.
@@ -170,7 +202,10 @@ class MoEFeedForwardBase(FeedForwardBase):
         x_flat = x.view(-1, embed_dim) # (batch * seq, embed_dim)
 
         # Route to Experts
-        top_k_indices, top_k_weights = self.router(x) # (batch, seq, top_k)
+        top_k_indices, top_k_weights, router_logits = self.router(
+            x if router_input is None else router_input
+        ) # (batch, seq, top_k)
+        self.last_router_logits = router_logits
 
         # Flatten for processing
         top_k_indices = top_k_indices.view(-1, self.top_k) # (batch * seq, top_k)

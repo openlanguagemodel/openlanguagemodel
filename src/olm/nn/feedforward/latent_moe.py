@@ -9,16 +9,18 @@ class LatentMoEFFN(MoEFeedForwardBase):
     """
     Mixture-of-Experts feed-forward with a compressed latent bottleneck.
 
-    Tokens are projected into a low-rank latent space before routing and
-    expert computation, then the combined expert output is projected back
-    up -- so both the router and every routed expert operate on
-    ``latent_dim`` rather than the full ``embed_dim``, shrinking the FLOPs of
-    a very wide expert bank. The shared expert (always active) runs at full
-    width, unaffected by the bottleneck. Used by Nemotron 3 Super.
+    Tokens are projected into a low-rank latent space before expert
+    computation, then the combined expert output is projected back up -- so
+    every routed expert operates on ``latent_dim`` rather than the full
+    ``embed_dim``, shrinking the FLOPs of a very wide expert bank. Routing
+    itself is *not* compressed: the router scores the full-width hidden state,
+    so expert selection sees the uncompressed representation. The shared expert
+    (always active) likewise runs at full width. Used by Nemotron 3 Super.
 
     Structure:
         shared = SharedExperts(x)                          # full embed_dim
-        routed = up_proj(routed_moe(down_proj(x)))         # latent_dim bottleneck
+        weights = Router(x)                                # full embed_dim
+        routed = up_proj(experts(down_proj(x), weights))    # latent_dim bottleneck
         return routed + shared
 
     Args:
@@ -33,6 +35,7 @@ class LatentMoEFFN(MoEFeedForwardBase):
         dropout: Dropout probability.
         bias: Whether to use bias in linear layers.
         routed_scaling_factor: Constant multiplier on the routing weights.
+        router_kwargs: Routing options forwarded to ``olm.nn.moe.MoERouter``.
         expert_cls: FFN class instantiated for each expert.
     """
 
@@ -49,6 +52,7 @@ class LatentMoEFFN(MoEFeedForwardBase):
         dropout: float = 0.0,
         bias: bool = False,
         routed_scaling_factor: float = 1.0,
+        router_kwargs: dict = None,
         expert_cls=ClassicFFN,
     ):
         expert_kwargs = {
@@ -63,7 +67,7 @@ class LatentMoEFFN(MoEFeedForwardBase):
         if shared_hidden_dim is not None:
             shared_expert_kwargs = {**expert_kwargs, "hidden_dim": shared_hidden_dim}
 
-        # Router and routed experts live in the latent space; the shared
+        # Routed experts live in the latent space; the router and the shared
         # experts stay at full width, outside the bottleneck.
         super().__init__(
             embed_dim=latent_dim,
@@ -74,6 +78,8 @@ class LatentMoEFFN(MoEFeedForwardBase):
             expert_kwargs=expert_kwargs,
             shared_expert_kwargs=shared_expert_kwargs,
             shared_embed_dim=embed_dim,
+            router_embed_dim=embed_dim,
+            router_kwargs=router_kwargs,
             routed_scaling_factor=routed_scaling_factor,
         )
 
@@ -93,5 +99,9 @@ class LatentMoEFFN(MoEFeedForwardBase):
         Returns:
             ``[batch, seq_len, embed_dim]``
         """
-        routed_out = self.up_proj(self.compute_routed(self.down_proj(x)))
+        # Routing is scored on the full-width hidden state; only the expert
+        # branch goes through the latent bottleneck.
+        routed_out = self.up_proj(
+            self.compute_routed(self.down_proj(x), router_input=x)
+        )
         return routed_out + self.compute_shared(x)

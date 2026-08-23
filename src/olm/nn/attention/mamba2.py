@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 
 import torch
@@ -43,6 +44,9 @@ class Mamba2Mixer(AttentionBase):
         state_size: Per-head recurrent state size (``N``).
         n_groups: Number of groups sharing a ``B``/``C`` projection (GQA-style).
         conv_kernel_size: Kernel for the causal Conv1d applied to ``x, B, C``.
+        time_step_min: Lower bound of the log-uniform range the initial
+            per-head timestep is drawn from.
+        time_step_max: Upper bound of that range.
         time_step_floor: Minimum value ``dt`` is clamped to for stability.
         rms_norm_eps: Epsilon for the pre-output-projection RMSNorm.
         bias: Whether to use bias in the in/out projections.
@@ -57,11 +61,19 @@ class Mamba2Mixer(AttentionBase):
         state_size: int = 128,
         n_groups: int = 1,
         conv_kernel_size: int = 4,
+        time_step_min: float = 0.001,
+        time_step_max: float = 0.1,
         time_step_floor: float = 1e-4,
         rms_norm_eps: float = 1e-5,
         bias: bool = False,
         dropout: float = 0.0,
     ):
+        if not 0 < time_step_min <= time_step_max:
+            raise ValueError(
+                "Require 0 < time_step_min <= time_step_max, got "
+                f"time_step_min={time_step_min}, time_step_max={time_step_max}"
+            )
+
         # AttentionBase.__init__ builds square Q/K/V projections and requires
         # embed_dim to be divisible by num_heads. Neither holds for an SSM
         # mixer, whose inner width is num_heads * head_dim, so set up the
@@ -74,6 +86,8 @@ class Mamba2Mixer(AttentionBase):
         self.dropout = nn.Dropout(dropout)
         self.state_size = state_size
         self.n_groups = n_groups
+        self.time_step_min = time_step_min
+        self.time_step_max = time_step_max
         self.time_step_floor = time_step_floor
         self.d_inner = num_heads * head_dim
 
@@ -89,7 +103,20 @@ class Mamba2Mixer(AttentionBase):
             torch.log(torch.arange(1, num_heads + 1, dtype=torch.float32))
         )
         self.D = nn.Parameter(torch.ones(num_heads))
-        self.dt_bias = nn.Parameter(torch.zeros(num_heads))
+
+        # ``dt`` is produced as ``softplus(dt_proj + dt_bias)``, so the bias
+        # sets the initial timestep. Following the reference implementation,
+        # draw one timestep per head log-uniformly from
+        # ``[time_step_min, time_step_max]`` and store its inverse softplus --
+        # a zero bias would instead start every head at softplus(0) ~ 0.693,
+        # far outside that range, and change the initial recurrence dynamics.
+        dt = torch.exp(
+            torch.rand(num_heads)
+            * (math.log(time_step_max) - math.log(time_step_min))
+            + math.log(time_step_min)
+        ).clamp(min=time_step_floor)
+        inv_dt = dt + torch.log(-torch.expm1(-dt))  # inverse of softplus
+        self.dt_bias = nn.Parameter(inv_dt)
 
         self.norm = RMSNorm(self.d_inner, eps=rms_norm_eps)
         self.out_proj = Linear(self.d_inner, embed_dim, bias=bias)

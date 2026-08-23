@@ -695,7 +695,8 @@ def test_kimi_linear_uses_kda_with_periodic_mla_and_dense_then_moe_layers():
     ffns = [layer.blocks[1].block.blocks[1] for layer in layers]
     assert isinstance(ffns[0], SwiGLUFFN)
     assert all(isinstance(f, SwiGLUMoEFFN) for f in ffns[1:])
-    assert all(isinstance(f.router, kimi_linear_module.KimiLinearRouter) for f in ffns[1:])
+    assert all(f.router.scoring_func == "sigmoid" for f in ffns[1:])
+    assert all(f.router.routed_scaling_factor == 2.446 for f in ffns[1:])
 
 
 def test_kimi_linear_48b_reference_preset():
@@ -808,7 +809,7 @@ def test_minimax_m2_uses_partial_rope_and_sigmoid_router():
     # head_dim=8, rotary_percentage=0.5 -> 4 rotated dims
     assert attn.rope.rotary_dim == 4
     assert attn.use_qk_norm
-    assert isinstance(moe.router, minimax_module.MiniMaxM2Router)
+    assert moe.router.scoring_func == "sigmoid"
 
 
 def test_minimax_m2_reference_preset_is_untied():

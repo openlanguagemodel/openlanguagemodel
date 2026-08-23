@@ -200,3 +200,7 @@ website/tsconfig.tsbuildinfo
 # Keep website source helpers visible despite the Python template's broad lib/ rule.
 !website/app/lib/
 !website/app/lib/**
+
+# macOS filesystem cruft
+.DS_Store
+**/.DS_Store

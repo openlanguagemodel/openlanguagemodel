@@ -22,6 +22,12 @@ class NemotronHModel(Block):
         x = x + GQA(RMSNorm(x))      # '*'
         x = x + MoE(RMSNorm(x))      # 'E'
 
+    MoE layers route with sigmoid scoring and an auxiliary-loss-free
+    correction bias (``noaux_tc``), optionally restricted to the best
+    ``topk_group`` of ``n_group`` expert groups, and scale the routed branch by
+    ``routed_scaling_factor`` to keep parity with the always-active shared
+    expert.
+
     Nemotron-H does not tie input/output embeddings; the named presets pass
     ``tie_weights=False``. The Multi-Token-Prediction head present in the
     Nemotron 3 Super reference checkpoint is a training/inference feature
@@ -54,6 +60,14 @@ class NemotronHModel(Block):
         moe_latent_size (int, optional): If set, MoE layers use a
             ``LatentMoEFFN`` bottleneck of this size (Nemotron Super) instead
             of a full-width ``ClassicMoEFFN`` (Nemotron Nano).
+        n_group (int, optional): Number of expert groups for group-limited
+            routing. ``None`` scores every expert.
+        topk_group (int, optional): Number of groups a token may draw experts
+            from; required when ``n_group`` is set.
+        time_step_min (float): Lower bound of the sampled initial timestep
+            (Mamba-2 layers).
+        time_step_max (float): Upper bound of the sampled initial timestep
+            (Mamba-2 layers).
         rope_theta (float): RoPE base frequency (attention layers).
         dropout (float): Dropout probability.
         rms_norm_eps (float): Epsilon for RMSNorm layers.
@@ -81,12 +95,28 @@ class NemotronHModel(Block):
         moe_shared_expert_intermediate_size: int,
         routed_scaling_factor: float,
         moe_latent_size: int = None,
+        n_group: int = None,
+        topk_group: int = None,
+        time_step_min: float = 0.001,
+        time_step_max: float = 0.1,
         rope_theta: float = 10000.0,
         dropout: float = 0.0,
         rms_norm_eps: float = 1e-5,
         tie_weights: bool = True,
     ):
         embedding = Embedding(vocab_size, embed_dim)
+
+        # Sigmoid scoring with an auxiliary-loss-free correction bias, as in
+        # the reference implementation; the softmax default would change both
+        # which experts a token picks and how their outputs are weighted.
+        router_kwargs = {
+            "scoring_func": "sigmoid",
+            "routing_method": "noaux_tc",
+            "norm_weights": True,
+            "fp32_gate": True,
+            "n_group": n_group,
+            "topk_group": topk_group,
+        }
 
         layer_blocks = []
         for layer_type in hybrid_override_pattern:
@@ -98,6 +128,8 @@ class NemotronHModel(Block):
                     state_size=ssm_state_size,
                     n_groups=n_groups,
                     conv_kernel_size=conv_kernel_size,
+                    time_step_min=time_step_min,
+                    time_step_max=time_step_max,
                     rms_norm_eps=rms_norm_eps,
                 )
             elif layer_type == "*":
@@ -124,6 +156,7 @@ class NemotronHModel(Block):
                         activation_fn=ReLUSquared(),
                         bias=False,
                         routed_scaling_factor=routed_scaling_factor,
+                        router_kwargs=router_kwargs,
                     )
                 else:
                     mixer = ClassicMoEFFN(
@@ -136,6 +169,7 @@ class NemotronHModel(Block):
                         activation_fn=ReLUSquared(),
                         bias=False,
                         routed_scaling_factor=routed_scaling_factor,
+                        router_kwargs=router_kwargs,
                     )
             else:
                 raise ValueError(

@@ -1,58 +1,10 @@
-import torch
-
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Residual
 from olm.nn.attention import MultiHeadLatentAttention, KimiDeltaAttention
 from olm.nn.feedforward import SwiGLUFFN, SwiGLUMoEFFN
-from olm.nn.feedforward.moe_base import MoERouter
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.blocks import OutputHead
-
-
-class KimiLinearRouter(MoERouter):
-    """Sigmoid top-k MoE router with a routed-output scaling factor.
-
-    Identical interface to ``MoERouter`` but scores experts with an
-    independent sigmoid per expert (rather than softmax) and multiplies the
-    normalized top-k weights by a fixed ``routed_scaling_factor``, matching
-    Kimi Linear's ``moe_router_activation_func='sigmoid'`` and
-    ``routed_scaling_factor=2.446``.
-
-    Args:
-        embed_dim (int): Model dimension.
-        num_experts (int): Total number of routable experts.
-        top_k (int): Number of experts each token is routed to.
-        routed_scaling_factor (float): Multiplier applied to the normalized
-            routing weights.
-    """
-
-    def __init__(
-        self,
-        embed_dim: int,
-        num_experts: int,
-        top_k: int = 2,
-        routed_scaling_factor: float = 2.446,
-    ):
-        super().__init__(embed_dim, num_experts, top_k)
-        self.routed_scaling_factor = routed_scaling_factor
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Route each token to its top-k experts using scaled sigmoid scores.
-
-        Args:
-            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
-
-        Returns:
-            tuple[torch.Tensor, torch.Tensor]: Expert indices and routing
-            weights, both shaped ``[batch, seq_len, top_k]``.
-        """
-        logits = self.gate(x)
-        scores = torch.sigmoid(logits)
-        top_k_scores, top_k_indices = torch.topk(scores, self.top_k, dim=-1)
-        top_k_weights = top_k_scores / top_k_scores.sum(dim=-1, keepdim=True)
-        top_k_weights = top_k_weights * self.routed_scaling_factor
-        return top_k_indices, top_k_weights
 
 
 class KimiLinearBlock(Block):
@@ -142,6 +94,9 @@ class KimiLinearBlock(Block):
             )
 
         if use_moe:
+            # Kimi Linear scores experts with sigmoid
+            # (``moe_router_activation_func='sigmoid'``) and scales the routed
+            # output, rather than using the plain softmax default.
             ffn = SwiGLUMoEFFN(
                 embed_dim,
                 num_experts=num_experts,
@@ -149,11 +104,8 @@ class KimiLinearBlock(Block):
                 top_k=top_k,
                 hidden_dim=moe_intermediate_size,
                 bias=False,
-            )
-            # Kimi Linear scores experts with sigmoid + a routed-output scale,
-            # not the plain softmax SwiGLUMoEFFN builds by default.
-            ffn.router = KimiLinearRouter(
-                embed_dim, num_experts, top_k, routed_scaling_factor
+                routed_scaling_factor=routed_scaling_factor,
+                router_kwargs={"scoring_func": "sigmoid"},
             )
         else:
             ffn = SwiGLUFFN(embed_dim, hidden_dim=intermediate_size, bias=False)
