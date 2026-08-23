@@ -23,11 +23,11 @@ from olm.nn.activations.swiglu import SwiGLU
 from olm.nn.activations.swish import Swish
 from olm.nn.activations.silu import SiLU
 from olm.nn.activations.tanh import Tanh
-
+from olm.nn.activations.bias_gelu import BiasGELU
 
 @pytest.mark.parametrize(
     "activation_cls",
-    [ReLU, ELU, GELU, Swish, SiLU, SELU, Tanh, Softmax],
+    [ReLU, ELU, GELU, Swish, SiLU, SELU, Tanh, Softmax, BiasGELU],
 )
 def test_pointwise_activation_preserves_shape(activation_cls):
     activation = activation_cls()
