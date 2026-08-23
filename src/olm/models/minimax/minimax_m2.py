@@ -1,44 +1,11 @@
-import torch
-
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat, Residual
 from olm.nn.attention import GroupedQueryAttention
 from olm.nn.feedforward import SwiGLUMoEFFN
-from olm.nn.feedforward.moe_base import MoERouter
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
 from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
 from olm.nn.blocks import OutputHead
-
-
-class MiniMaxM2Router(MoERouter):
-    """Top-k MoE router with sigmoid scoring (MiniMax-M2 ``scoring_func='sigmoid'``).
-
-    Identical interface to ``MoERouter`` but replaces the softmax over experts
-    with an independent sigmoid score per expert before selecting the top-k and
-    re-normalizing, matching DeepSeek-V3 style routing.
-
-    Args:
-        embed_dim (int): Model dimension.
-        num_experts (int): Total number of routable experts.
-        top_k (int): Number of experts each token is routed to.
-    """
-
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Route each token to its top-k experts using sigmoid scores.
-
-        Args:
-            x (torch.Tensor): Hidden states shaped ``[batch, seq_len, embed_dim]``.
-
-        Returns:
-            tuple[torch.Tensor, torch.Tensor]: Expert indices and normalized
-            routing weights, both shaped ``[batch, seq_len, top_k]``.
-        """
-        logits = self.gate(x)
-        scores = torch.sigmoid(logits)
-        top_k_scores, top_k_indices = torch.topk(scores, self.top_k, dim=-1)
-        top_k_weights = top_k_scores / top_k_scores.sum(dim=-1, keepdim=True)
-        return top_k_indices, top_k_weights
 
 
 class MiniMaxM2Block(Block):
@@ -102,6 +69,8 @@ class MiniMaxM2Block(Block):
             max_seq_len=max_seq_len,
         )
 
+        # MiniMax-M2 scores experts with sigmoid rather than softmax
+        # (``scoring_func='sigmoid'``).
         moe = SwiGLUMoEFFN(
             embed_dim,
             num_experts=num_experts,
@@ -109,9 +78,8 @@ class MiniMaxM2Block(Block):
             top_k=top_k,
             hidden_dim=moe_intermediate_size,
             bias=False,
+            router_kwargs={"scoring_func": "sigmoid"},
         )
-        # MiniMax-M2 scores experts with sigmoid rather than softmax.
-        moe.router = MiniMaxM2Router(embed_dim, num_experts, top_k)
 
         super().__init__(
             [

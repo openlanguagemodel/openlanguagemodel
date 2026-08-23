@@ -146,3 +146,217 @@ def test_sequence_load_balance_loss_supports_sigmoid_router_stats():
     assert torch.isfinite(loss)
     loss.backward()
     assert router_logits.grad is not None
+
+
+def test_moe_ffn_shared_experts_can_be_wider_than_routed_experts():
+    model = ClassicMoEFFN(
+        embed_dim=32,
+        num_experts=4,
+        num_shared_experts=1,
+        top_k=2,
+        hidden_dim=16,
+        shared_hidden_dim=64,
+        bias=False,
+    )
+
+    assert model.experts[0].hidden_dim == 16
+    assert model.shared_experts[0].hidden_dim == 64
+
+    x = torch.randn(2, 5, 32)
+    assert model(x).shape == x.shape
+
+
+def test_moe_router_applies_routed_scaling_factor():
+    model = ClassicMoEFFN(
+        embed_dim=32, num_experts=4, top_k=2, hidden_dim=16, bias=False
+    )
+    x = torch.randn(2, 5, 32)
+
+    model.router.routed_scaling_factor = 1.0
+    baseline = model.compute_routed(x)
+    model.router.routed_scaling_factor = 2.5
+    scaled = model.compute_routed(x)
+
+    assert torch.allclose(scaled, 2.5 * baseline, atol=1e-5)
+
+
+def test_latent_moe_routes_in_latent_space_with_full_width_shared_experts():
+    from olm.nn.feedforward import LatentMoEFFN
+    from olm.nn.feedforward.moe_base import MoEFeedForwardBase
+
+    model = LatentMoEFFN(
+        embed_dim=32,
+        latent_dim=8,
+        num_experts=4,
+        num_shared_experts=1,
+        top_k=2,
+        hidden_dim=16,
+        shared_hidden_dim=64,
+        bias=False,
+        routed_scaling_factor=5.0,
+    )
+
+    assert isinstance(model, MoEFeedForwardBase)
+    # Routed experts live in the bottleneck...
+    assert model.experts[0].embed_dim == 8
+    # ...while the router and the shared experts stay at full model width.
+    assert model.router.gate.in_features == 32
+    assert model.router_embed_dim == 32
+    assert model.shared_experts[0].embed_dim == 32
+    assert model.shared_experts[0].hidden_dim == 64
+    assert model.embed_dim == 32
+
+    x = torch.randn(2, 5, 32)
+    out = model(x)
+    assert out.shape == x.shape
+    out.sum().backward()
+    assert model.down_proj.weight.grad is not None
+    assert model.up_proj.weight.grad is not None
+
+
+def test_mamba2_mixer_fills_the_attention_base_role():
+    import pytest
+    from olm.nn.attention import Mamba2Mixer
+    from olm.nn.attention.base import AttentionBase
+
+    mixer = Mamba2Mixer(32, num_heads=4, head_dim=8, state_size=16, n_groups=1)
+    assert isinstance(mixer, AttentionBase)
+
+    x = torch.randn(2, 5, 32)
+    assert mixer(x).shape == x.shape
+
+    with pytest.raises(NotImplementedError):
+        mixer.compute_attention(x, x, x)
+
+
+def test_latent_moe_scores_routing_on_the_full_width_hidden_state():
+    """Routing must see the uncompressed hidden state, not down_proj(x)."""
+    from olm.nn.feedforward import LatentMoEFFN
+
+    model = LatentMoEFFN(
+        embed_dim=32, latent_dim=8, num_experts=4, top_k=2, hidden_dim=16, bias=False
+    )
+    x = torch.randn(2, 5, 32)
+
+    model(x)
+    logits_from_forward = model.last_router_logits.clone()
+
+    # The gate only accepts full-width input, and the logits recorded during
+    # forward are exactly the ones it produces from x.
+    assert model.router.gate.in_features == 32
+    assert torch.allclose(logits_from_forward, model.router(x)[2], atol=1e-6)
+
+
+def test_moe_router_group_limited_routing_restricts_experts_to_top_groups():
+    router = MoERouter(
+        embed_dim=16,
+        num_experts=8,
+        top_k=2,
+        scoring_func="sigmoid",
+        n_group=4,
+        topk_group=1,
+    )
+    x = torch.randn(2, 5, 16)
+
+    top_k_indices, top_k_weights, _ = router(x)
+
+    # With one group of two experts eligible, every token must draw both of
+    # its experts from the same group.
+    groups = top_k_indices // 2
+    assert (groups[..., 0] == groups[..., 1]).all()
+    assert torch.isfinite(top_k_weights).all()
+    assert router.last_stats.metadata["n_group"] == 4
+
+
+def test_moe_router_group_limited_routing_validates_config():
+    import pytest
+
+    with pytest.raises(ValueError):
+        MoERouter(embed_dim=16, num_experts=8, n_group=4)  # missing topk_group
+    with pytest.raises(ValueError):
+        MoERouter(embed_dim=16, num_experts=7, n_group=4, topk_group=1)
+    with pytest.raises(ValueError):
+        MoERouter(embed_dim=16, num_experts=8, n_group=4, topk_group=5)
+
+
+def test_nemotron_moe_layers_use_sigmoid_correction_bias_routing():
+    from olm.models.nvidia import NemotronHModel
+    from olm.nn.feedforward import ClassicMoEFFN as _ClassicMoEFFN
+
+    model = NemotronHModel(
+        vocab_size=64,
+        embed_dim=32,
+        hybrid_override_pattern="ME",
+        num_heads=4,
+        num_kv_heads=2,
+        head_dim=8,
+        max_seq_len=16,
+        mamba_num_heads=4,
+        mamba_head_dim=8,
+        ssm_state_size=16,
+        n_groups=1,
+        conv_kernel_size=4,
+        num_experts=8,
+        num_shared_experts=1,
+        top_k=2,
+        moe_intermediate_size=16,
+        moe_shared_expert_intermediate_size=32,
+        routed_scaling_factor=2.5,
+        n_group=4,
+        topk_group=2,
+        tie_weights=False,
+    )
+
+    moe_layers = [m for m in model.modules() if isinstance(m, _ClassicMoEFFN)]
+    assert moe_layers
+    for moe in moe_layers:
+        router = moe.router
+        assert router.scoring_func == "sigmoid"
+        assert router.routing_method == "noaux_tc"
+        # Auxiliary-loss-free correction bias, applied to selection only.
+        assert router.expert_bias is not None
+        assert router.n_group == 4 and router.topk_group == 2
+        assert router.routed_scaling_factor == 2.5
+
+    logits = model(torch.randint(0, 64, (2, 6)))
+    assert logits.shape == (2, 6, 64)
+
+
+def test_mamba2_dt_bias_matches_reference_timestep_initialization():
+    import math
+    import torch.nn.functional as F
+    from olm.nn.attention import Mamba2Mixer
+
+    time_step_min, time_step_max = 0.001, 0.1
+    mixer = Mamba2Mixer(
+        32,
+        num_heads=16,
+        head_dim=8,
+        state_size=16,
+        n_groups=1,
+        time_step_min=time_step_min,
+        time_step_max=time_step_max,
+    )
+
+    # dt_bias stores inverse-softplus timesteps, so softplus recovers the
+    # sampled timesteps -- which must lie inside the configured range.
+    dt = F.softplus(mixer.dt_bias)
+    assert (dt >= time_step_min - 1e-6).all()
+    assert (dt <= time_step_max + 1e-6).all()
+    # A zero bias would put every head at softplus(0) ~ 0.693 instead.
+    assert not torch.allclose(mixer.dt_bias, torch.zeros_like(mixer.dt_bias))
+    assert dt.std() > 0
+
+    narrow = Mamba2Mixer(
+        32,
+        num_heads=8,
+        head_dim=8,
+        state_size=16,
+        n_groups=1,
+        time_step_min=0.05,
+        time_step_max=0.05,
+    )
+    assert torch.allclose(
+        F.softplus(narrow.dt_bias), torch.full((8,), 0.05), atol=1e-5
+    )
+    assert math.isclose(narrow.time_step_max, 0.05)
