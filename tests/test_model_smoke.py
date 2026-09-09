@@ -19,16 +19,13 @@ import olm.models.meta.llama4 as llama4_module
 import olm.models.microsoft.phi3 as phi3_module
 import olm.models.microsoft.phi4 as phi4_module
 import olm.models.minimax.minimax_m2 as minimax_module
+import olm.models.mistralai.mistral_large3 as mistral_large3_module
 import olm.models.mistralai.mistral_small3_1 as mistral_small3_1_module
 import olm.models.moonshotai.kimi_k2 as kimi_k2_module
-import olm.models.openai.gpt2 as gpt2_module
-from olm.models.alibaba import Qwen2Model, Qwen3Model
-from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
-import olm.models.mistralai.mistral_large3 as mistral_large3_module
 import olm.models.moonshotai.kimi_linear as kimi_linear_module
 import olm.models.openai.gpt2 as gpt2_module
-from olm.models.alibaba import Qwen2Model, Qwen3NextModel
-from olm.models.allenai import OLMoModel, OLMo_7B
+from olm.models.alibaba import Qwen2Model, Qwen3Model, Qwen3NextModel
+from olm.models.allenai import OLMoModel, OLMo_7B, Olmo3Model
 from olm.models.deepseekai import DeepSeekV3Model
 from olm.models.facebook import OPTModel
 from olm.models.google import Gemma2Model, Gemma3Model

@@ -202,4 +202,4 @@ learn here is wasted.
 - **Want to see every component?** → [Building Blocks](guides/components.md)
 - **Want to design your own architecture?** → [The Block System](guides/architecture.md)
   and [Custom Architectures](tutorials/custom-architecture.md)
-- **Want exact signatures and options?** → [API Reference](api/index.md)
+- **Want exact signatures and options?** → [API Reference](api.md)
