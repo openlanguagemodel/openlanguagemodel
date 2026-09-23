@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://openlanguagemodel.github.io/openlanguagemodel/docs/
+    about: Start here for guides, tutorials, API reference, and Colab notebooks.
+  - name: Security issue
+    url: https://github.com/openlanguagemodel/openlanguagemodel/security/policy
+    about: Please report suspected vulnerabilities privately.

@@ -1,82 +1,157 @@
-# Contributing to OpenLanguageModel (OLM)
+# Contributing to OpenLanguageModel
 
-Thank you for your interest in contributing to OLM! We welcome contributions from everyone, whether you're fixing a typo, adding extensive documentation, or implementing a new model architecture.
+Thanks for helping make OpenLanguageModel better. OLM is built for people who
+want to learn, inspect, and modify language models without losing the ordinary
+PyTorch underneath, so contributions that make the code clearer, safer, better
+tested, or easier to teach from are especially welcome.
 
-## Getting Started
+## Ways To Contribute
 
-1.  **Fork the repository** on GitHub.
-2.  **Clone your fork** locally:
-    ```bash
-    git clone https://github.com/your-username/openlanguagemodel.git
-    cd openlanguagemodel
-    ```
-3.  **Set up your environment**:
-    We recommend using a virtual environment (venv or conda).
+- Fix docs, examples, typos, broken links, or confusing explanations.
+- Add focused tests for model families, training behavior, datasets, or public
+  APIs.
+- Improve generated API docstrings, shapes, return types, and examples.
+- Report bugs with a small reproduction.
+- Propose model, training, or documentation improvements through an issue before
+  opening a large implementation PR.
 
-    ```bash
-    # Create a virtual environment
-    python -m venv .venv
-    # On Windows
-    .venv\Scripts\activate
-    # On macOS/Linux
-    source .venv/bin/activate
+Looking for a first task? Check the open issues (including the
+`good first issue` label) and `CONTRIBUTING_ROADMAP.md`, which lists components
+that are planned but not built yet. Comment on an issue before you start so two
+people don't write the same patch.
 
-    # Install dependencies in editable mode with dev tools
-    pip install -e .
-    # Install additional dev dependencies if needed (e.g. pytest, pre-commit)
-    pip install pytest pre-commit
-    ```
+## Development Setup
 
-4.  **Install pre-commit hooks**:
-    This ensures your code is formatted and checked before committing.
-    ```bash
-    pre-commit install
-    ```
+Use Python 3.10, 3.11, or 3.12.
 
-## Development Workflow
+Unless you have write access to this repository, fork it first — you will not be
+able to push a branch to the official repository, and the pull request flow below
+assumes you are pushing to your own fork.
 
-1.  **Create a branch** for your feature or fix:
-    ```bash
-    git checkout -b feature/my-new-feature
-    ```
-2.  **Make your changes**.
-    - **Code Style**: We follow standard Python conventions. Please ensure your code is readable and well-documented.
-    - **Docstrings**: All public functions and classes should have Google-style docstrings.
-    - **Type Hints**: Use type hints for function arguments and return values.
+```bash
+# Fork https://github.com/openlanguagemodel/openlanguagemodel on GitHub, then:
+git clone https://github.com/<your-username>/openlanguagemodel.git
+cd openlanguagemodel
+git remote add upstream https://github.com/openlanguagemodel/openlanguagemodel.git
+git fetch upstream
 
-3.  **Commit your changes**:
-    ```bash
-    git add .
-    git commit -m "feat: add support for XYZ architecture"
-    ```
-    We follow [Conventional Commits](https://www.conventionalcommits.org/). Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`.
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
 
-## Project Structure
+That leaves `origin` pointing at your fork (where you push) and `upstream` at the
+official repository (where you pull from and open pull requests against).
 
-- `src/olm/`: The core library code.
-    - `models/`: High-level model definitions (e.g., GPT, OLMo).
-    - `nn/`: Reusable neural network blocks (attention, feedforward, etc.).
-    - `data/`: Data loading and processing utilities.
-    - `train/`: Training loop implementation.
-- `tests/`: Unit and integration tests.
-- `examples/`: Example scripts and usage demos.
+If you do have write access, you can clone the official repository directly; in
+that case use `origin` wherever the commands below say `upstream` (for example
+`git checkout -b my-change origin/dev`).
 
-## Pull Request Process
+On Windows, activate the environment with:
 
-1.  Push your branch to GitHub.
-2.  Open a Pull Request (PR) against the `dev` branch of the original repository.
-3.  Describe your changes clearly in the PR description. Link to any relevant issues.
-4.  Wait for review. We may ask for changes or clarifications.
-5.  Once approved, your PR will be merged!
+```text
+.venv\Scripts\activate
+```
 
-## Adding a New Model
+Run the Python checks:
 
-If you are adding a new model architecture:
+```bash
+python -m compileall -q src tests scripts
+pytest -q tests
+```
 
-1.  Create a new file in `src/olm/models/` (e.g., `mynewmodel.py`).
-2.  Implement the model class, inheriting from `torch.nn.Module`.
-3.  Reuse existing components from `olm.nn` wherever possible (e.g., `Attention`, `FeedForward`).
-4.  Add a configuration class or dictionary if needed.
-5.  Add a test in `tests/` ensuring the model can run a forward pass and backward pass.
+For website work:
 
-Thank you for helping make OLM better!
+```bash
+cd website
+npm ci
+npm run lint
+npm run build
+```
+
+## Pull Request Flow
+
+1. Sync with `dev` and branch from it:
+
+   ```bash
+   git fetch upstream
+   git checkout -b my-change upstream/dev
+   ```
+
+2. Keep the change focused. Small PRs are easier to review and merge.
+3. Add or update tests when behavior changes.
+4. Update docs when public APIs, examples, installation, or training behavior
+   changes.
+5. Push the branch to your fork and open a pull request into `dev` (GitHub
+   pre-selects `main` as the base branch; switch it to `dev`):
+
+   ```bash
+   git push -u origin my-change
+   ```
+
+6. Fill out the pull request template and link related issues.
+
+`main` is reserved for stable release rollouts. Maintainers merge `dev` into
+`main` when preparing a versioned release.
+
+For branch names, use a readable prefix such as:
+
+```bash
+git checkout -b <your-username>/fix-tokenizer-streaming
+git checkout -b <your-username>/docs-first-model
+```
+
+Recent `dev` history mixes commit-message styles, but Conventional Commit
+prefixes (`feat:`, `fix:`, `refactor:`) are the most common. Following that is
+helpful, not enforced.
+
+## Code Style
+
+- Follow the style already present in the surrounding file.
+- Prefer explicit, readable PyTorch over hidden framework behavior.
+- Keep abstractions small and only add them when they remove real repetition or
+  clarify a public path.
+- Public classes and methods should have useful docstrings, including expected
+  tensor shapes and return values where relevant.
+- Avoid unrelated refactors inside bug-fix PRs.
+- Don't run a formatter over files you aren't otherwise changing. The codebase
+  is not `black`-formatted, so doing that buries a small change in hundreds of
+  unrelated lines.
+
+## Tests
+
+Please run the relevant subset locally before opening a PR. For broad or public
+API changes, run the full suite:
+
+```bash
+pytest -q tests
+```
+
+For model-family changes, include at least a constructor/config check and a tiny
+forward/backward or one-batch training smoke test when practical.
+
+## Documentation
+
+Docs live in `docs/` and are rendered into the website. If you add or change a
+public component, update the relevant guide or API docstring. If you add a
+notebook, also update `docs/colab-notebooks.md`. The notebooks in `notebooks/`
+are generated by `scripts/create_colab_notebooks.py`, so edit the script rather
+than the `.ipynb` files.
+
+## Adding A Model Family
+
+Before adding a new model family, open an issue describing:
+
+- the model family and reference source
+- the architecture pieces needed
+- which parts are exact, approximate, or intentionally omitted
+- the tests you plan to add
+
+Model implementations should be readable worked examples assembled from OLM's
+public components, not hidden configuration blobs.
+
+## Community Expectations
+
+All contributors are expected to follow the
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Please report security issues using
+[`SECURITY.md`](SECURITY.md), not public issues.

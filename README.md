@@ -9,7 +9,7 @@ OLM gives you:
 - local and Hugging Face dataset streams in `olm.data`
 - single-device, single-node multi-GPU DDP/FSDP, AMP, checkpointing, callbacks, and automatic trainer selection in `olm.train`
 
-[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [Colab Notebooks](docs/colab-notebooks.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues)
+[Website](https://openlanguagemodel.github.io/openlanguagemodel/) · [Docs](docs/) · [Install](docs/installation.md) · [Colab Notebooks](docs/colab-notebooks.md) · [API Reference](docs/api.md) · [Examples](examples/) · [Issues](https://github.com/openlanguagemodel/openlanguagemodel/issues) · [Contributing](CONTRIBUTING.md)
 
 ## Why OLM
 
@@ -168,6 +168,12 @@ See [`docs/installation.md`](docs/installation.md) for dependency and release-bu
 ## Project Status
 
 OLM v2.2 is the stabilization and release-readiness pass: tied output embeddings by default, model-family smoke coverage, AutoTrainer, streaming datasets, AMP, checkpointing, single-node DDP/FSDP paths, clearer installation docs, and a stronger generated API reference. Multi-node training remains a v4 roadmap item.
+
+## Community
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): how to set up a development environment and open focused PRs.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md): expectations for healthy project participation.
+- [`SECURITY.md`](SECURITY.md): how to report vulnerabilities privately.
 
 ## Citation
 
