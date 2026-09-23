@@ -83,20 +83,14 @@ def rows_for(path: Path) -> list[dict[str, Any]]:
                     "seed": record["seed"],
                     "model_key": model["key"],
                     "model_label": model["config"]["label"],
-                    "actual_unique_parameters": model.get(
-                        "actual_unique_parameters"
-                    ),
+                    "actual_unique_parameters": model.get("actual_unique_parameters"),
                     "sequence_length": record["sequence_length"],
                     "batch_size": "",
                     "status": model["status"],
                     "model_status": model["status"],
                     "is_best_batch_for_seed": False,
-                    "build_peak_allocated_gb": model.get(
-                        "build_peak_allocated_gb"
-                    ),
-                    "build_peak_reserved_gb": model.get(
-                        "build_peak_reserved_gb"
-                    ),
+                    "build_peak_allocated_gb": model.get("build_peak_allocated_gb"),
+                    "build_peak_reserved_gb": model.get("build_peak_reserved_gb"),
                     "build_seconds": model.get("build_seconds"),
                     "sweep_stop_reason": model.get("sweep_stop_reason"),
                     "error": model.get("error"),
@@ -119,8 +113,7 @@ def rows_for(path: Path) -> list[dict[str, Any]]:
                 "model_status": model["status"],
                 "stable": batch.get("stable"),
                 "is_best_batch_for_seed": (
-                    batch["status"] == "complete"
-                    and batch["batch_size"] == best_batch
+                    batch["status"] == "complete" and batch["batch_size"] == best_batch
                 ),
                 "sweep_stop_reason": model.get("sweep_stop_reason"),
             }

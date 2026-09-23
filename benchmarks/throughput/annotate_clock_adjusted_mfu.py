@@ -59,8 +59,7 @@ GPU_REFERENCES = {
         "official_reference_boost_clock_mhz": 1_980.0,
         "source": "https://www.nvidia.com/en-us/data-center/h100/",
         "clock_source": (
-            "https://docs.nvidia.com/nim/benchmarking/llm/1.0.0/"
-            "performance.html"
+            "https://docs.nvidia.com/nim/benchmarking/llm/1.0.0/" "performance.html"
         ),
         "peak_derivation": (
             "Half NVIDIA's official 1,979 TFLOP/s BF16 Tensor Core "
@@ -72,8 +71,7 @@ GPU_REFERENCES = {
         "official_reference_boost_clock_mhz": 1_980.0,
         "source": "https://www.nvidia.com/en-us/data-center/h200/",
         "clock_source": (
-            "https://docs.nvidia.com/nim/benchmarking/llm/1.0.0/"
-            "performance.html"
+            "https://docs.nvidia.com/nim/benchmarking/llm/1.0.0/" "performance.html"
         ),
         "peak_derivation": (
             "Half NVIDIA's official 1,979 TFLOP/s H200 SXM BF16 Tensor "
@@ -86,8 +84,7 @@ GPU_REFERENCES = {
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
         "clock_source": (
-            "benchmark environment: nvidia-smi "
-            "--query-gpu=clocks.max.sm"
+            "benchmark environment: nvidia-smi " "--query-gpu=clocks.max.sm"
         ),
         "peak_derivation": (
             "NVIDIA specifies 36 PFLOP/s sparse BF16 Tensor Core "
@@ -101,8 +98,7 @@ GPU_REFERENCES = {
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
         "clock_source": (
-            "benchmark environment: nvidia-smi "
-            "--query-gpu=clocks.max.sm"
+            "benchmark environment: nvidia-smi " "--query-gpu=clocks.max.sm"
         ),
         "peak_derivation": (
             "NVIDIA specifies 36 PFLOP/s sparse BF16 Tensor Core "
@@ -116,8 +112,7 @@ GPU_REFERENCES = {
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
         "clock_source": (
-            "benchmark environment: nvidia-smi "
-            "--query-gpu=clocks.max.sm"
+            "benchmark environment: nvidia-smi " "--query-gpu=clocks.max.sm"
         ),
         "peak_derivation": (
             "NVIDIA specifies 36 PFLOP/s sparse BF16 Tensor Core "
@@ -154,9 +149,7 @@ GPU_REFERENCES = {
 
 
 def configured_max_sm_clock(environment: dict[str, Any]) -> float:
-    fields = [
-        field.strip() for field in environment["nvidia_smi"].split(",")
-    ]
+    fields = [field.strip() for field in environment["nvidia_smi"].split(",")]
     if len(fields) < 7:
         raise ValueError("nvidia_smi metadata does not contain max SM clock")
     return float(fields[6])
@@ -174,10 +167,7 @@ def registered_reference_clock(reference: dict[str, Any]) -> float:
 
 def annotate_node(node: Any, configured_peak: float) -> None:
     if isinstance(node, dict):
-        if (
-            "achieved_tflops" in node
-            and "model_flops_utilization_pct" in node
-        ):
+        if "achieved_tflops" in node and "model_flops_utilization_pct" in node:
             node["nominal_reference_model_flops_utilization_pct"] = node[
                 "model_flops_utilization_pct"
             ]
@@ -204,11 +194,7 @@ def annotate(record: dict[str, Any]) -> dict[str, Any]:
 
     configured_clock = configured_max_sm_clock(environment)
     reference_clock = registered_reference_clock(reference)
-    configured_peak = (
-        nominal_peak
-        * configured_clock
-        / reference_clock
-    )
+    configured_peak = nominal_peak * configured_clock / reference_clock
     raw_peak_source = environment.get("dense_bf16_peak_source")
     if raw_peak_source != reference["source"]:
         annotated.setdefault("metadata_corrections", []).append(
@@ -244,9 +230,7 @@ def annotate(record: dict[str, Any]) -> dict[str, Any]:
     annotated["mfu_reporting"] = {
         "raw_field": "model_flops_utilization_pct",
         "raw_field_denominator": "Official nominal dense BF16 peak.",
-        "configured_clock_field": (
-            "configured_clock_model_flops_utilization_pct"
-        ),
+        "configured_clock_field": ("configured_clock_model_flops_utilization_pct"),
         "configured_clock_denominator_tflops": configured_peak,
         "configured_clock_formula": (
             "nominal_peak * configured_max_sm_clock / reference_clock"
@@ -270,10 +254,7 @@ def main() -> int:
 
     args.output_directory.mkdir(parents=True, exist_ok=True)
     for input_path in args.inputs:
-        output_path = (
-            args.output_directory
-            / f"{input_path.stem}_clock_adjusted.json"
-        )
+        output_path = args.output_directory / f"{input_path.stem}_clock_adjusted.json"
         temporary = output_path.with_suffix(output_path.suffix + ".tmp")
         record = annotate(json.loads(input_path.read_text()))
         temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")

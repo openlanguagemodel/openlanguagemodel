@@ -36,9 +36,7 @@ def validate(path: Path) -> tuple[int, float]:
                 TIMESTAMP_FORMAT,
             )
             if timestamps and timestamp < timestamps[-1]:
-                raise ValueError(
-                    f"{path}:{line_number}: timestamp moved backwards"
-                )
+                raise ValueError(f"{path}:{line_number}: timestamp moved backwards")
             timestamps.append(timestamp)
 
     if not timestamps:
@@ -56,14 +54,8 @@ def main() -> int:
     for path in args.inputs:
         samples, duration = validate(path)
         total_samples += samples
-        print(
-            f"VALID {path.name}: samples={samples}, "
-            f"span={duration:.3f}s"
-        )
-    print(
-        f"VALID telemetry set: files={len(args.inputs)}, "
-        f"samples={total_samples}"
-    )
+        print(f"VALID {path.name}: samples={samples}, " f"span={duration:.3f}s")
+    print(f"VALID telemetry set: files={len(args.inputs)}, " f"samples={total_samples}")
     return 0
 
 

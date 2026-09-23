@@ -85,9 +85,7 @@ def candidate_batches(
     baseline_context: int,
     context_length: int,
 ) -> tuple[int, list[int]]:
-    center = nearest_power_of_two(
-        baseline_batch * baseline_context / context_length
-    )
+    center = nearest_power_of_two(baseline_batch * baseline_context / context_length)
     candidates = {center, center * 2}
     if center > 1:
         candidates.add(center // 2)
@@ -159,9 +157,7 @@ def main() -> int:
         load_baseline(path, None) for path in candidate_baseline_paths
     ]
     baseline_uuid = baseline["environment"]["nvidia_smi"].split(",")[1].strip()
-    for path, candidate_baseline in zip(
-        candidate_baseline_paths, candidate_baselines
-    ):
+    for path, candidate_baseline in zip(candidate_baseline_paths, candidate_baselines):
         if (
             candidate_baseline["environment"]["device_name"]
             != baseline["environment"]["device_name"]
@@ -188,9 +184,7 @@ def main() -> int:
     reference_batch_median_tps: dict[str, dict[int, float]] = {}
     for model_key in args.models:
         if any(model_key not in models for models in candidate_model_maps):
-            parser.error(
-                f"candidate references do not all contain model {model_key!r}"
-            )
+            parser.error(f"candidate references do not all contain model {model_key!r}")
         complete_by_reference = []
         for models in candidate_model_maps:
             complete_by_reference.append(
@@ -211,9 +205,7 @@ def main() -> int:
         }
         reference_batch_median_tps[model_key] = medians
         reference_best_batches[model_key] = (
-            max(medians, key=lambda batch: (medians[batch], batch))
-            if medians
-            else None
+            max(medians, key=lambda batch: (medians[batch], batch)) if medians else None
         )
 
     torch.cuda.set_device(0)
@@ -226,10 +218,7 @@ def main() -> int:
         )
     if baseline["environment"]["device_name"] != device_name:
         parser.error("baseline GPU model does not match the current GPU")
-    if (
-        baseline["environment"]["dense_bf16_peak_tflops"]
-        != peak_tflops
-    ):
+    if baseline["environment"]["dense_bf16_peak_tflops"] != peak_tflops:
         parser.error("baseline and context sweep use different MFU denominators")
 
     torch.backends.cuda.enable_flash_sdp(True)
@@ -315,9 +304,7 @@ def main() -> int:
             "total_device_bytes": total_device_bytes,
             "total_device_gb": total_device_bytes / 1e9,
             "dense_bf16_peak_tflops": peak_tflops,
-            "dense_bf16_peak_source": baseline["environment"][
-                "dense_bf16_peak_source"
-            ],
+            "dense_bf16_peak_source": baseline["environment"]["dense_bf16_peak_source"],
             "dense_bf16_peak_derivation": baseline["environment"].get(
                 "dense_bf16_peak_derivation"
             ),
@@ -329,9 +316,7 @@ def main() -> int:
             "nvidia_smi": nvidia_smi_metadata(),
             "git_commit": git_value(["rev-parse", "HEAD"]),
             "git_status": git_value(["status", "--short"]),
-            "pytorch_cuda_alloc_conf": os.environ.get(
-                "PYTORCH_CUDA_ALLOC_CONF"
-            ),
+            "pytorch_cuda_alloc_conf": os.environ.get("PYTORCH_CUDA_ALLOC_CONF"),
         },
         "excluded_models": excluded,
         "models": [],
@@ -349,13 +334,9 @@ def main() -> int:
             "config": asdict(config),
             "started_at": utc_now(),
             "wall_start_unix_ns": time.time_ns(),
-            "actual_unique_parameters": baseline_model[
-                "actual_unique_parameters"
-            ],
+            "actual_unique_parameters": baseline_model["actual_unique_parameters"],
             "baseline_best_batch_size": baseline_best_batch,
-            "baseline_best_tokens_per_second": baseline_model[
-                "best_tokens_per_second"
-            ],
+            "baseline_best_tokens_per_second": baseline_model["best_tokens_per_second"],
             "baseline_best_model_flops_utilization_pct": baseline_model[
                 "best_model_flops_utilization_pct"
             ],
@@ -408,9 +389,7 @@ def main() -> int:
                 torch.cuda.synchronize()
                 parameter_count = unique_parameter_count(model)
                 if parameter_count != model_record["actual_unique_parameters"]:
-                    raise RuntimeError(
-                        "parameter count changed relative to baseline"
-                    )
+                    raise RuntimeError("parameter count changed relative to baseline")
                 optimizer = AdamW(
                     model.parameters(),
                     lr=args.learning_rate,
@@ -419,9 +398,7 @@ def main() -> int:
                 )
                 context_record.update(
                     {
-                        "parameter_bytes": unique_tensor_bytes(
-                            model.parameters()
-                        ),
+                        "parameter_bytes": unique_tensor_bytes(model.parameters()),
                         "buffer_bytes": unique_tensor_bytes(model.buffers()),
                         "build_peak_allocated_gb": (
                             torch.cuda.max_memory_allocated() / 1e9
@@ -433,9 +410,7 @@ def main() -> int:
                         "build_finished_at": utc_now(),
                         "build_wall_start_unix_ns": build_wall_start_unix_ns,
                         "build_wall_finish_unix_ns": time.time_ns(),
-                        "build_wall_seconds": (
-                            time.perf_counter() - build_wall_start
-                        ),
+                        "build_wall_seconds": (time.perf_counter() - build_wall_start),
                     }
                 )
             except (torch.cuda.OutOfMemoryError, RuntimeError) as error:
@@ -449,9 +424,7 @@ def main() -> int:
                         "build_finished_at": utc_now(),
                         "build_wall_start_unix_ns": build_wall_start_unix_ns,
                         "build_wall_finish_unix_ns": time.time_ns(),
-                        "build_wall_seconds": (
-                            time.perf_counter() - build_wall_start
-                        ),
+                        "build_wall_seconds": (time.perf_counter() - build_wall_start),
                         "finished_at": utc_now(),
                         "wall_finish_unix_ns": time.time_ns(),
                         "context_wall_seconds": (
@@ -498,8 +471,8 @@ def main() -> int:
                         max_relative_jitter=args.max_relative_jitter,
                     )
                     context_record["batches"].append(result)
-                    context_record["optimizer_state"] = (
-                        optimizer_state_metadata(optimizer)
+                    context_record["optimizer_state"] = optimizer_state_metadata(
+                        optimizer
                     )
                     write_record(args.output, record)
                     print(
@@ -521,9 +494,7 @@ def main() -> int:
                             "status": "oom",
                             "started_at": batch_attempt_started_at,
                             "finished_at": utc_now(),
-                            "wall_start_unix_ns": (
-                                batch_attempt_wall_start_unix_ns
-                            ),
+                            "wall_start_unix_ns": (batch_attempt_wall_start_unix_ns),
                             "wall_finish_unix_ns": time.time_ns(),
                             "batch_size": batch_size,
                             "seed": args.seed,
@@ -563,15 +534,11 @@ def main() -> int:
                     {
                         "status": "complete",
                         "best_batch_size": best["batch_size"],
-                        "best_tokens_per_second": best[
-                            "tokens_per_second"
-                        ],
+                        "best_tokens_per_second": best["tokens_per_second"],
                         "best_model_flops_utilization_pct": best[
                             "model_flops_utilization_pct"
                         ],
-                        "best_peak_allocated_gb": best[
-                            "peak_allocated_gb"
-                        ],
+                        "best_peak_allocated_gb": best["peak_allocated_gb"],
                     }
                 )
             else:

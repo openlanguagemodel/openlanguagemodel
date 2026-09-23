@@ -63,8 +63,7 @@ def metric_summary(
     summary: dict[str, Any] = {}
     for metric in METRICS:
         values = {
-            str(seed): row[metric]
-            for seed, row in sorted(coordinate_rows.items())
+            str(seed): row[metric] for seed, row in sorted(coordinate_rows.items())
         }
         numeric_values = list(values.values())
         mean = statistics.mean(numeric_values)
@@ -74,9 +73,7 @@ def metric_summary(
             "min": min(numeric_values),
             "max": max(numeric_values),
             "relative_range": (
-                (max(numeric_values) - min(numeric_values)) / mean
-                if mean
-                else 0.0
+                (max(numeric_values) - min(numeric_values)) / mean if mean else 0.0
             ),
         }
     return summary
@@ -95,9 +92,7 @@ def main() -> int:
     if len(set(seeds)) != len(seeds):
         parser.error("replicate seeds must be unique")
 
-    gpu_names = {
-        record["environment"]["device_name"] for _, record in loaded
-    }
+    gpu_names = {record["environment"]["device_name"] for _, record in loaded}
     gpu_uuids = {
         (record["environment"].get("nvidia_smi") or "").split(",")[1].strip()
         for _, record in loaded
@@ -105,24 +100,16 @@ def main() -> int:
     if len(gpu_names) != 1 or len(gpu_uuids) != 1:
         parser.error("all replicates must use the same physical GPU")
 
-    flattened = {
-        record["seed"]: flatten(record) for _, record in loaded
-    }
-    coordinates = sorted(
-        set().union(*(set(rows) for rows in flattened.values()))
-    )
+    flattened = {record["seed"]: flatten(record) for _, record in loaded}
+    coordinates = sorted(set().union(*(set(rows) for rows in flattened.values())))
     status_differences: list[dict[str, Any]] = []
     common_complete: list[dict[str, Any]] = []
 
     for model_key, sequence_length, batch_size in coordinates:
         coordinate = (model_key, sequence_length, batch_size)
-        by_seed = {
-            seed: rows.get(coordinate) for seed, rows in flattened.items()
-        }
+        by_seed = {seed: rows.get(coordinate) for seed, rows in flattened.items()}
         statuses = {
-            str(seed): (
-                row["status"] if row is not None else "not_attempted"
-            )
+            str(seed): (row["status"] if row is not None else "not_attempted")
             for seed, row in sorted(by_seed.items())
         }
         if len(set(statuses.values())) != 1:
@@ -137,9 +124,7 @@ def main() -> int:
             continue
         if next(iter(statuses.values())) == "complete":
             complete_rows = {
-                seed: row
-                for seed, row in by_seed.items()
-                if row is not None
+                seed: row for seed, row in by_seed.items() if row is not None
             }
             common_complete.append(
                 {

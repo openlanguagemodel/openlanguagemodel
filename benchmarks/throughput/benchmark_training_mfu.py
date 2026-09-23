@@ -94,12 +94,8 @@ DENSE_BF16_PEAK_SOURCES = {
         "https://www.nvidia.com/content/PDF/"
         "nvidia-ampere-ga-102-gpu-architecture-whitepaper-v2.1.pdf"
     ),
-    "NVIDIA A100 80GB PCIe": (
-        "https://www.nvidia.com/en-us/data-center/a100/"
-    ),
-    "NVIDIA H100 80GB HBM3": (
-        "https://www.nvidia.com/en-us/data-center/h100/"
-    ),
+    "NVIDIA A100 80GB PCIe": ("https://www.nvidia.com/en-us/data-center/a100/"),
+    "NVIDIA H100 80GB HBM3": ("https://www.nvidia.com/en-us/data-center/h100/"),
     "NVIDIA H200": "https://www.nvidia.com/en-us/data-center/h200/",
     "NVIDIA H200 NVL": "https://www.nvidia.com/en-us/data-center/h200/",
     "NVIDIA B200": "https://www.nvidia.com/en-us/data-center/hgx/",
@@ -416,9 +412,7 @@ def run_batch(
 
     median_ms = statistics.median(measured_times_ms)
     mean_ms = statistics.mean(measured_times_ms)
-    total_flops = training_flops(
-        parameter_count, config, batch_size, sequence_length
-    )
+    total_flops = training_flops(parameter_count, config, batch_size, sequence_length)
     achieved_tflops = total_flops / (median_ms / 1_000.0) / 1e12
     tokens_per_second = batch_size * sequence_length / (median_ms / 1_000.0)
     mean_tokens_per_second = batch_size * sequence_length / (mean_ms / 1_000.0)
@@ -452,9 +446,7 @@ def run_batch(
         "median_step_time_ms": median_ms,
         "p25_step_time_ms": percentile(measured_times_ms, 0.25),
         "p75_step_time_ms": percentile(measured_times_ms, 0.75),
-        "measured_robust_relative_jitter": robust_relative_jitter(
-            measured_times_ms
-        ),
+        "measured_robust_relative_jitter": robust_relative_jitter(measured_times_ms),
         "tokens_per_second": tokens_per_second,
         "mean_based_tokens_per_second": mean_tokens_per_second,
         "tokens_per_step": batch_size * sequence_length,
@@ -466,9 +458,7 @@ def run_batch(
         "selected_sdpa_backend": sdpa_backend,
         "peak_allocated_bytes": peak_allocated_bytes,
         "peak_allocated_gb": peak_allocated_bytes / 1e9,
-        "peak_allocated_vram_pct": 100.0
-        * peak_allocated_bytes
-        / total_device_bytes,
+        "peak_allocated_vram_pct": 100.0 * peak_allocated_bytes / total_device_bytes,
         "peak_reserved_bytes": peak_reserved_bytes,
         "peak_reserved_gb": peak_reserved_bytes / 1e9,
         "peak_reserved_vram_pct": 100.0 * peak_reserved_bytes / total_device_bytes,
@@ -750,9 +740,7 @@ def main() -> int:
                 "parameter_gb": parameter_bytes / 1e9,
                 "buffer_bytes": buffer_bytes,
                 "buffer_gb": buffer_bytes / 1e9,
-                "build_peak_allocated_gb": (
-                    torch.cuda.max_memory_allocated() / 1e9
-                ),
+                "build_peak_allocated_gb": (torch.cuda.max_memory_allocated() / 1e9),
                 "build_peak_reserved_gb": torch.cuda.max_memory_reserved() / 1e9,
                 "build_seconds": build_seconds,
                 "batches": [],
@@ -776,9 +764,7 @@ def main() -> int:
                 "wall_start_unix_ns": model_wall_start_unix_ns,
                 "wall_finish_unix_ns": time.time_ns(),
                 "error": str(error),
-                "build_peak_allocated_gb": (
-                    torch.cuda.max_memory_allocated() / 1e9
-                ),
+                "build_peak_allocated_gb": (torch.cuda.max_memory_allocated() / 1e9),
                 "build_peak_reserved_gb": torch.cuda.max_memory_reserved() / 1e9,
                 "build_seconds": time.perf_counter() - model_wall_start,
                 "batches": [],

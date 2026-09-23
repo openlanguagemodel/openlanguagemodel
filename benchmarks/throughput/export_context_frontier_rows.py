@@ -122,9 +122,7 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                     "benchmark": baseline["benchmark"],
                     "model_key": model["key"],
                     "model_label": model["config"]["label"],
-                    "actual_unique_parameters": model.get(
-                        "actual_unique_parameters"
-                    ),
+                    "actual_unique_parameters": model.get("actual_unique_parameters"),
                     "sequence_length": baseline["sequence_length"],
                     "batch_size": "",
                     "status": model["status"],
@@ -136,12 +134,8 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                         baseline["batch_sizes"],
                         separators=(",", ":"),
                     ),
-                    "build_peak_allocated_gb": model.get(
-                        "build_peak_allocated_gb"
-                    ),
-                    "build_peak_reserved_gb": model.get(
-                        "build_peak_reserved_gb"
-                    ),
+                    "build_peak_allocated_gb": model.get("build_peak_allocated_gb"),
+                    "build_peak_reserved_gb": model.get("build_peak_reserved_gb"),
                     "build_seconds": model.get("build_seconds"),
                     "sweep_stop_reason": model.get("sweep_stop_reason"),
                     "error": model.get("error"),
@@ -156,9 +150,7 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                 "benchmark": baseline["benchmark"],
                 "model_key": model["key"],
                 "model_label": model["config"]["label"],
-                "actual_unique_parameters": model.get(
-                    "actual_unique_parameters"
-                ),
+                "actual_unique_parameters": model.get("actual_unique_parameters"),
                 "sequence_length": baseline["sequence_length"],
                 "batch_size": batch["batch_size"],
                 "model_status": model["status"],
@@ -212,15 +204,9 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                         "build_peak_allocated_gb": context.get(
                             "build_peak_allocated_gb"
                         ),
-                        "build_peak_reserved_gb": context.get(
-                            "build_peak_reserved_gb"
-                        ),
-                        "build_wall_seconds": context.get(
-                            "build_wall_seconds"
-                        ),
-                        "sweep_stop_reason": context.get(
-                            "sweep_stop_reason"
-                        ),
+                        "build_peak_reserved_gb": context.get("build_peak_reserved_gb"),
+                        "build_wall_seconds": context.get("build_wall_seconds"),
+                        "sweep_stop_reason": context.get("sweep_stop_reason"),
                         "error": context.get("error"),
                     }
                 )
@@ -233,9 +219,7 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                     "benchmark": frontier["benchmark"],
                     "model_key": model["key"],
                     "model_label": model["config"]["label"],
-                    "actual_unique_parameters": model[
-                        "actual_unique_parameters"
-                    ],
+                    "actual_unique_parameters": model["actual_unique_parameters"],
                     "sequence_length": context["sequence_length"],
                     "batch_size": batch["batch_size"],
                     "model_status": model.get("status", "complete"),
@@ -245,8 +229,7 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
                     ),
                     "is_best_batch_at_context": (
                         batch["status"] == "complete"
-                        and batch["batch_size"]
-                        == context.get("best_batch_size")
+                        and batch["batch_size"] == context.get("best_batch_size")
                     ),
                     "candidate_batch_sizes": json.dumps(
                         context["candidate_batch_sizes"],
@@ -293,9 +276,7 @@ def merge_and_mark(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             successful_by_model.setdefault(key, []).append(row)
     for model_rows in successful_by_model.values():
         max_tps = max(row["tokens_per_second"] for row in model_rows)
-        max_mfu = max(
-            row["model_flops_utilization_pct"] for row in model_rows
-        )
+        max_mfu = max(row["model_flops_utilization_pct"] for row in model_rows)
         for row in model_rows:
             row["is_max_tokens_per_second_across_contexts"] = (
                 row["tokens_per_second"] == max_tps
@@ -330,9 +311,7 @@ def selected_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     selected: list[dict[str, Any]] = []
     for key in sorted(grouped):
         group = grouped[key]
-        best = [
-            row for row in group if row.get("is_best_batch_at_context")
-        ]
+        best = [row for row in group if row.get("is_best_batch_at_context")]
         if best:
             selected.extend(best)
         else:
@@ -368,11 +347,7 @@ def main() -> int:
             row["seed"],
             row["model_key"],
             row["sequence_length"],
-            (
-                int(row["batch_size"])
-                if row.get("batch_size") not in ("", None)
-                else -1
-            ),
+            (int(row["batch_size"]) if row.get("batch_size") not in ("", None) else -1),
         )
     )
     selected = selected_rows(rows)

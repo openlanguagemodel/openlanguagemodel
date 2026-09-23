@@ -115,8 +115,7 @@ def lookup(
             }
         )
         model_build_oom = any(
-            row["status"] == "oom_during_model_build"
-            for row in matching
+            row["status"] == "oom_during_model_build" for row in matching
         )
         return {
             "gpu_name": gpu_name,
@@ -124,9 +123,7 @@ def lookup(
             "model_key": model_key,
             "sequence_length": context_length,
             "status": (
-                "oom_during_model_build"
-                if model_build_oom
-                else "no_successful_batch"
+                "oom_during_model_build" if model_build_oom else "no_successful_batch"
             ),
             "attempted_batches": attempted_batches,
         }
@@ -146,28 +143,16 @@ def lookup(
         key=lambda row: int(row["seed"]),
     )
     seeds = [int(row["seed"]) for row in selected_rows]
-    tokens_per_second = [
-        numeric(row, "tokens_per_second") for row in selected_rows
-    ]
+    tokens_per_second = [numeric(row, "tokens_per_second") for row in selected_rows]
     configured_mfu = [
         numeric(row, "configured_clock_model_flops_utilization_pct")
         for row in selected_rows
     ]
-    nominal_mfu = [
-        numeric(row, "model_flops_utilization_pct") for row in selected_rows
-    ]
-    peak_vram_gb = [
-        numeric(row, "peak_allocated_gb") for row in selected_rows
-    ]
-    peak_vram_pct = [
-        numeric(row, "peak_allocated_vram_pct") for row in selected_rows
-    ]
+    nominal_mfu = [numeric(row, "model_flops_utilization_pct") for row in selected_rows]
+    peak_vram_gb = [numeric(row, "peak_allocated_gb") for row in selected_rows]
+    peak_vram_pct = [numeric(row, "peak_allocated_vram_pct") for row in selected_rows]
     oom_batches = sorted(
-        {
-            int(row["batch_size"])
-            for row in matching
-            if row["status"] == "oom"
-        }
+        {int(row["batch_size"]) for row in matching if row["status"] == "oom"}
     )
 
     return {
@@ -175,9 +160,7 @@ def lookup(
         "gpu_uuid": uuids[0],
         "model_key": selected_rows[0]["model_key"],
         "model_label": selected_rows[0]["model_label"],
-        "actual_unique_parameters": int(
-            selected_rows[0]["actual_unique_parameters"]
-        ),
+        "actual_unique_parameters": int(selected_rows[0]["actual_unique_parameters"]),
         "sequence_length": context_length,
         "status": "complete",
         "best_batch_for_tokens_per_second": tps_batch,
@@ -271,8 +254,7 @@ def markdown(result: dict[str, Any]) -> str:
     )
     if result["first_measured_oom_batch"] is not None:
         lines.append(
-            f"First measured OOM batch: "
-            f"{result['first_measured_oom_batch']}."
+            f"First measured OOM batch: " f"{result['first_measured_oom_batch']}."
         )
     return "\n".join(lines)
 

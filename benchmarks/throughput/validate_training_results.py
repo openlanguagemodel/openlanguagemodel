@@ -49,9 +49,7 @@ def validate_step_timestamps(
     )
     require(
         all(
-            isinstance(start, int)
-            and isinstance(finish, int)
-            and start < finish
+            isinstance(start, int) and isinstance(finish, int) and start < finish
             for start, finish in zip(starts, finishes)
         ),
         f"{label} invalid {phase} timestamp bounds",
@@ -166,8 +164,7 @@ def main() -> int:
         require(record["seed"] not in seeds, f"{path}: duplicate seed")
         seeds.add(record["seed"])
         require(
-            record["environment"]["device_name"]
-            == first["environment"]["device_name"],
+            record["environment"]["device_name"] == first["environment"]["device_name"],
             f"{path}: GPU model differs across replicates",
         )
         require(

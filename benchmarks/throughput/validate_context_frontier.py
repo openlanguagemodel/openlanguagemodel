@@ -49,9 +49,7 @@ def validate_step_timestamps(
     )
     require(
         all(
-            isinstance(start, int)
-            and isinstance(finish, int)
-            and start < finish
+            isinstance(start, int) and isinstance(finish, int) and start < finish
             for start, finish in zip(starts, finishes)
         ),
         f"{label} invalid {phase} timestamp bounds",
@@ -107,8 +105,7 @@ def validate(path: Path, allow_all_oom: bool = False) -> dict[str, Any]:
     oom_batches = 0
     for model in record["models"]:
         require(
-            [context["sequence_length"] for context in model["contexts"]]
-            == contexts,
+            [context["sequence_length"] for context in model["contexts"]] == contexts,
             f"{prefix} {model['key']}: missing or reordered contexts",
         )
         for context in model["contexts"]:
@@ -207,8 +204,7 @@ def main() -> int:
     args = parser.parse_args()
 
     validated = [
-        validate(path, allow_all_oom=args.allow_all_oom)
-        for path in args.inputs
+        validate(path, allow_all_oom=args.allow_all_oom) for path in args.inputs
     ]
     first = validated[0]["record"]
     reference_points = point_signature(first)
@@ -219,8 +215,7 @@ def main() -> int:
         require(record["seed"] not in seeds, f"{path}: duplicate seed")
         seeds.add(record["seed"])
         require(
-            record["environment"]["device_name"]
-            == first["environment"]["device_name"],
+            record["environment"]["device_name"] == first["environment"]["device_name"],
             f"{path}: GPU model differs across replicates",
         )
         require(
