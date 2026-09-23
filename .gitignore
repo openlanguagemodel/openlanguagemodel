@@ -177,6 +177,11 @@ pyrightconfig.json
 # ignore checkpoint dir from any level
 **/checkpoints
 
+# Run logs written by the example scripts (MetricsLoggerCallback adds a new
+# metrics_<timestamp>.jsonl per run). Files already tracked stay tracked; use
+# `git add -f` to deliberately commit a new reference run.
+examples/*/logs/
+
 # Local agent/worktree backups
 claude_bkp/
 
