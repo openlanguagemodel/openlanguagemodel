@@ -45,6 +45,8 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
             Defaults to 1e-6.
         attention_scale (float, optional): Override for the softmax scale. Defaults
             to ``(qk_nope_head_dim + qk_rope_head_dim) ** -0.5``.
+        rope_interleaved (bool, optional): Pair adjacent rotary dimensions when
+            True; use split-half rotary pairs when False. Defaults to True.
     """
 
     def __init__(
@@ -63,6 +65,7 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
         bias: bool = False,
         rms_norm_eps: float = 1e-6,
         attention_scale: Optional[float] = None,
+        rope_interleaved: bool = True,
     ):
         super().__init__(
             embed_dim,
@@ -78,6 +81,7 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
         self.qk_nope_head_dim = qk_nope_head_dim
         self.qk_rope_head_dim = qk_rope_head_dim
         self.v_head_dim = v_head_dim
+        self.rope_interleaved = rope_interleaved
 
         # Query and key share this per-head dimension when computing scores.
         self.qk_head_dim = qk_nope_head_dim + qk_rope_head_dim
@@ -102,9 +106,7 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
         else:
             self.q_a_proj = Linear(embed_dim, q_lora_rank, bias=bias)
             self.q_a_layernorm = RMSNorm(q_lora_rank, eps=rms_norm_eps)
-            self.q_b_proj = Linear(
-                q_lora_rank, num_heads * self.qk_head_dim, bias=bias
-            )
+            self.q_b_proj = Linear(q_lora_rank, num_heads * self.qk_head_dim, bias=bias)
 
         # Key/value projection: down to a shared latent plus the decoupled rope key.
         self.kv_a_proj_with_mqa = Linear(
@@ -177,39 +179,7 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
             torch.Tensor: Output tensor of shape ``[batch, seq_len, embed_dim]``.
         """
         B, N, _ = x.shape
-
-        # --- Queries ---
-        if self.q_lora_rank is None:
-            q = self.q_proj(x)
-        else:
-            q = self.q_b_proj(self.q_a_layernorm(self.q_a_proj(x)))
-        q = q.view(B, N, self.num_heads, self.qk_head_dim)
-        q_nope, q_rope = torch.split(
-            q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
-        )
-
-        # --- Keys / Values ---
-        kv = self.kv_a_proj_with_mqa(x)
-        compressed_kv, k_rope = torch.split(
-            kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
-        )
-        kv = self.kv_b_proj(self.kv_a_layernorm(compressed_kv))
-        kv = kv.view(B, N, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
-        k_nope, value = torch.split(
-            kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
-        )
-
-        # --- Decoupled RoPE ---
-        # Query rope part is per-head; key rope part is shared across heads (MQA).
-        q_rope = self.rope(q_rope)
-        k_rope = self.rope(k_rope.view(B, N, 1, self.qk_rope_head_dim))
-        k_rope = k_rope.expand(B, N, self.num_heads, self.qk_rope_head_dim)
-
-        # --- Assemble full query/key per head, then [B, N, H, D] -> [B, H, N, D] ---
-        q = torch.cat([q_nope, q_rope], dim=-1).transpose(1, 2)
-        k = torch.cat([k_nope, k_rope], dim=-1).transpose(1, 2)
-        value = value.transpose(1, 2)
-
+        q, k, value, _ = self._project_qkv(x)
         attention_out = self.compute_attention(q, k, value, mask)
 
         # [B, H, N, v_head_dim] -> [B, N, H * v_head_dim]
@@ -220,3 +190,54 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
         )
 
         return self.out_proj(attention_out)
+
+    def _project_qkv(
+        self, x: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Project MLA heads and expose the normalized query latent.
+
+        The final tensor is the input to ``q_b_proj`` when query LoRA is
+        enabled, or the original hidden state otherwise. DSA reuses it for
+        the lightning indexer without duplicating MLA's projections.
+        """
+        B, N, _ = x.shape
+
+        if self.q_lora_rank is None:
+            q_latent = x
+            q = self.q_proj(x)
+        else:
+            q_latent = self.q_a_layernorm(self.q_a_proj(x))
+            q = self.q_b_proj(q_latent)
+        q = q.view(B, N, self.num_heads, self.qk_head_dim)
+        q_nope, q_rope = torch.split(
+            q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
+        )
+
+        kv = self.kv_a_proj_with_mqa(x)
+        compressed_kv, k_rope = torch.split(
+            kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
+        )
+        kv = self.kv_b_proj(self.kv_a_layernorm(compressed_kv))
+        kv = kv.view(B, N, self.num_heads, self.qk_nope_head_dim + self.v_head_dim)
+        k_nope, value = torch.split(
+            kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
+        )
+
+        q_rope = self._apply_rope(q_rope)
+        k_rope = self._apply_rope(k_rope.view(B, N, 1, self.qk_rope_head_dim))
+        k_rope = k_rope.expand(B, N, self.num_heads, self.qk_rope_head_dim)
+
+        q = torch.cat([q_nope, q_rope], dim=-1).transpose(1, 2)
+        k = torch.cat([k_nope, k_rope], dim=-1).transpose(1, 2)
+        value = value.transpose(1, 2)
+        return q, k, value, q_latent
+
+    def _apply_rope(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply RoPE using interleaved or split-half dimension pairs."""
+        if self.rope_interleaved:
+            return self.rope(x)
+
+        half = x.shape[-1] // 2
+        paired = torch.stack((x[..., :half], x[..., half:]), dim=-1).flatten(-2)
+        paired = self.rope(paired).view(*x.shape[:-1], half, 2)
+        return torch.cat((paired[..., 0], paired[..., 1]), dim=-1)

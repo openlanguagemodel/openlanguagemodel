@@ -30,6 +30,8 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         window_size: Sliding window size (tokens). Defaults to 512.
         head_dim: Per-head dimension; inferred from embed_dim / num_heads
             if not provided.
+        v_head_dim: Per-head value dimension. Defaults to ``head_dim``.
+        value_scale: Multiplier applied to projected values before attention.
         dropout: Attention dropout probability.
         rope_theta: RoPE base frequency.
         use_qk_norm: Apply RMSNorm to Q and K per head.
@@ -46,6 +48,8 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         max_seq_len: int,
         window_size: int = 512,
         head_dim: Optional[int] = None,
+        v_head_dim: Optional[int] = None,
+        value_scale: Optional[float] = None,
         dropout: float = 0.0,
         rope_theta: float = 10000.0,
         use_qk_norm: bool = False,
@@ -62,8 +66,12 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         self.num_kv_heads = num_kv_heads
         self.num_groups = num_heads // num_kv_heads
         self.embed_dim = embed_dim
+        self.v_head_dim = self.head_dim if v_head_dim is None else v_head_dim
+        if self.v_head_dim < 1:
+            raise ValueError(f"v_head_dim must be positive, got {self.v_head_dim}")
+        self.value_scale = value_scale
         self.window_size = window_size
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
         self.dropout_p = dropout
         self.max_seq_len = max_seq_len
         self.use_rope = use_rope
@@ -77,11 +85,12 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
 
         self.q_dim = num_heads * self.head_dim
         self.kv_dim = num_kv_heads * self.head_dim
+        self.v_dim = num_kv_heads * self.v_head_dim
 
         self.q_proj = Linear(embed_dim, self.q_dim, bias=qkv_bias)
         self.k_proj = Linear(embed_dim, self.kv_dim, bias=qkv_bias)
-        self.v_proj = Linear(embed_dim, self.kv_dim, bias=qkv_bias)
-        self.out_proj = Linear(self.q_dim, embed_dim, bias=use_bias)
+        self.v_proj = Linear(embed_dim, self.v_dim, bias=qkv_bias)
+        self.out_proj = Linear(num_heads * self.v_head_dim, embed_dim, bias=use_bias)
 
         self.use_qk_norm = use_qk_norm
         if use_qk_norm:
@@ -108,7 +117,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         else:
             self.register_parameter("attention_sink", None)
 
-    def _build_sliding_window_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
+    def _build_sliding_window_mask(
+        self, seq_len: int, device: torch.device
+    ) -> torch.Tensor:
         """Build a causal sliding-window boolean mask ``[seq_len, seq_len]``."""
         row = torch.arange(seq_len, device=device)
         col = torch.arange(seq_len, device=device)
@@ -116,7 +127,13 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         window = (row.unsqueeze(1) - col.unsqueeze(0)) < self.window_size
         return causal & window
 
-    def compute_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def compute_attention(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        v: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
         N = q.shape[2]
         sw_mask = self._build_sliding_window_mask(N, q.device)
         attn_mask = sw_mask
@@ -136,7 +153,7 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
                 v.size(0),
                 self.num_heads,
                 1,
-                self.head_dim,
+                self.v_head_dim,
                 dtype=v.dtype,
                 device=v.device,
             )
@@ -147,7 +164,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
 
         return torch.matmul(attn_probs, v)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, mask: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
         """
         Computes the attention scores and output.
 
@@ -164,7 +183,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
 
         q = self.q_proj(x).view(B, N, self.num_heads, self.head_dim)
         k = self.k_proj(x).view(B, N, self.num_kv_heads, self.head_dim)
-        v = self.v_proj(x).view(B, N, self.num_kv_heads, self.head_dim)
+        v = self.v_proj(x).view(B, N, self.num_kv_heads, self.v_head_dim)
+        if self.value_scale is not None:
+            v = v * self.value_scale
 
         if self.use_qk_norm:
             q = self.q_norm(q)
@@ -179,11 +200,19 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         v = v.transpose(1, 2)
 
         if self.num_groups > 1:
-            k = k[:, :, None, :, :].expand(B, self.num_kv_heads, self.num_groups, N, self.head_dim)
+            k = k[:, :, None, :, :].expand(
+                B, self.num_kv_heads, self.num_groups, N, self.head_dim
+            )
             k = k.reshape(B, self.num_heads, N, self.head_dim)
-            v = v[:, :, None, :, :].expand(B, self.num_kv_heads, self.num_groups, N, self.head_dim)
-            v = v.reshape(B, self.num_heads, N, self.head_dim)
+            v = v[:, :, None, :, :].expand(
+                B, self.num_kv_heads, self.num_groups, N, self.v_head_dim
+            )
+            v = v.reshape(B, self.num_heads, N, self.v_head_dim)
 
         out = self.compute_attention(q, k, v, mask)
-        out = out.transpose(1, 2).contiguous().view(B, N, self.q_dim)
+        out = (
+            out.transpose(1, 2)
+            .contiguous()
+            .view(B, N, self.num_heads * self.v_head_dim)
+        )
         return self.out_proj(out)

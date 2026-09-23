@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import torch
 import torch.nn as nn
@@ -7,6 +8,7 @@ from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.moe import MoEFeedForward, MoERouter
 from olm.train.losses import SequenceLoadBalanceLoss
 
+
 def test_moe_ffn():
     print("Testing MoE FFNs...")
     batch_size = 2
@@ -14,48 +16,50 @@ def test_moe_ffn():
     embed_dim = 32
     num_experts = 4
     top_k = 2
-    
+
     x = torch.randn(batch_size, seq_len, embed_dim)
-    
+
     # List of classes to test
     classes = [ClassicMoEFFN, GeGLUMoEFFN, SwiGLUMoEFFN]
-    
+
     for cls in classes:
         print(f"Testing {cls.__name__}...")
-        
+
         # 1. Basic Instantiation with Fine-Grained (Shared Experts)
         model = cls(
             embed_dim=embed_dim,
             num_experts=num_experts,
-            num_shared_experts=2, # Fine-grained / Shared experts test
+            num_shared_experts=2,  # Fine-grained / Shared experts test
             top_k=top_k,
-            hidden_dim=embed_dim * 2, # Smaller hidden dim for test
-            dropout=0.1
+            hidden_dim=embed_dim * 2,  # Smaller hidden dim for test
+            dropout=0.1,
         )
-        
+
         # 2. Forward Pass
         out = model(x)
         assert out.shape == x.shape, f"Output shape mismatch: {out.shape} vs {x.shape}"
-        
+
         # 3. Backward Pass (Gradient Flow)
         loss = out.sum()
         loss.backward()
-        
+
         # Check if router gate has grads
-        assert model.router.gate.weight.grad is not None, "Router gate weight has no gradient!"
-        
+        assert (
+            model.router.gate.weight.grad is not None
+        ), "Router gate weight has no gradient!"
+
         # Check if experts have grads
-        # Note: Since input is random, all experts might not be selected, but with top_k=2 and 4 experts, 
+        # Note: Since input is random, all experts might not be selected, but with top_k=2 and 4 experts,
         # and batch*seq=20, it's highly likely all are selected.
         # But ensure at least some experts have grads.
         expert_grads = False
         for i, expert in enumerate(model.experts):
-             # Depending on implementation, parameters might be nested differently
-             # Just check one parameter
-             for p in expert.parameters():
-                 if p.grad is not None:
-                     expert_grads = True
-                     break
+            # Depending on implementation, parameters might be nested differently
+            # Just check one parameter
+            for p in expert.parameters():
+                if p.grad is not None:
+                    expert_grads = True
+                    break
         assert expert_grads, "No gradients flow to experts!"
 
         # Check shared experts grads
@@ -66,8 +70,9 @@ def test_moe_ffn():
                     shared_grads = True
                     break
         assert shared_grads, "No gradients flow to shared experts!"
-        
+
         print(f"{cls.__name__} Passed!")
+
 
 if __name__ == "__main__":
     try:
@@ -76,6 +81,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nTests Failed: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -123,6 +129,30 @@ def test_moe_router_aux_loss_free_bias_update_moves_underused_experts_up():
 
     assert router.expert_bias[0] < before[0]
     assert torch.all(router.expert_bias[1:] > before[1:])
+
+
+def test_moe_router_smebu_update_is_centered_and_uses_momentum():
+    router = MoERouter(
+        embed_dim=8,
+        num_experts=4,
+        top_k=2,
+        scoring_func="sigmoid",
+        routing_method="noaux_tc",
+    )
+    before = router.expert_bias.detach().clone()
+
+    router.update_expert_bias_softclamped_momentum_(
+        torch.tensor([0.50, 0.25, 0.15, 0.10]),
+        update_rate=5e-4,
+        momentum=0.5,
+        clamp_scale=2.0,
+    )
+
+    delta = router.expert_bias.detach() - before
+    assert torch.isclose(delta.sum(), torch.tensor(0.0), atol=1e-8)
+    assert delta[0] < 0
+    assert delta[-1] > 0
+    assert torch.count_nonzero(router.expert_bias_momentum) == 4
 
 
 def test_sequence_load_balance_loss_supports_sigmoid_router_stats():

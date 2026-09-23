@@ -46,6 +46,8 @@ class MoERouter(nn.Module):
         fp32_gate: Cast logits to float32 before scoring for stability.
         routed_scaling_factor: Multiplicative factor applied to the
             combined expert output (e.g. 2.5 in Sarvam / Ling 2.5).
+        num_expert_groups: Number of logical expert groups.
+        top_k_groups: Number of groups made eligible before expert top-k.
         expert_weight_norm: Normalize expert gate logits by expert output
             L2 norm (Step 3.5 Flash).
     """
@@ -61,9 +63,20 @@ class MoERouter(nn.Module):
         norm_weights: bool = True,
         fp32_gate: bool = False,
         routed_scaling_factor: float = 1.0,
+        num_expert_groups: int = 1,
+        top_k_groups: int = 1,
         expert_weight_norm: bool = False,
     ):
         super().__init__()
+        if num_experts % num_expert_groups != 0:
+            raise ValueError("num_experts must be divisible by num_expert_groups")
+        if not 1 <= top_k_groups <= num_expert_groups:
+            raise ValueError("top_k_groups must be in [1, num_expert_groups]")
+
+        experts_per_group = num_experts // num_expert_groups
+        if top_k > top_k_groups * experts_per_group:
+            raise ValueError("top_k exceeds the experts available in selected groups")
+
         self.num_experts = num_experts
         self.top_k = top_k
         self.scoring_func = scoring_func
@@ -71,14 +84,18 @@ class MoERouter(nn.Module):
         self.norm_weights = norm_weights
         self.fp32_gate = fp32_gate
         self.routed_scaling_factor = routed_scaling_factor
+        self.num_expert_groups = num_expert_groups
+        self.top_k_groups = top_k_groups
         self.expert_weight_norm = expert_weight_norm
 
         self.gate = Linear(embed_dim, num_experts, bias=use_bias)
 
         if routing_method == "noaux_tc":
             self.expert_bias = nn.Parameter(torch.zeros(num_experts))
+            self.register_buffer("expert_bias_momentum", torch.zeros(num_experts))
         else:
             self.expert_bias = None
+            self.register_buffer("expert_bias_momentum", None)
         self.last_stats: Optional[MoERouterStats] = None
 
     def forward(
@@ -97,10 +114,16 @@ class MoERouter(nn.Module):
                 - ``router_logits``: ``[batch, seq_len, num_experts]`` raw logits
                   (for auxiliary loss computation).
         """
-        logits = self.gate(x)
-
         if self.fp32_gate:
-            logits = logits.float()
+            bias = self.gate.bias
+            with torch.autocast(device_type=x.device.type, enabled=False):
+                logits = F.linear(
+                    x.float(),
+                    self.gate.weight.float(),
+                    None if bias is None else bias.float(),
+                )
+        else:
+            logits = self.gate(x)
 
         router_logits = logits
 
@@ -113,9 +136,25 @@ class MoERouter(nn.Module):
         if self.expert_bias is not None:
             selection_scores = scores + self.expert_bias
 
-        top_k_weights, top_k_indices = torch.topk(
-            selection_scores, self.top_k, dim=-1
-        )
+        if self.num_expert_groups > 1:
+            experts_per_group = self.num_experts // self.num_expert_groups
+            grouped_scores = selection_scores.view(
+                *selection_scores.shape[:-1],
+                self.num_expert_groups,
+                experts_per_group,
+            )
+            group_scores = grouped_scores.topk(
+                k=min(2, experts_per_group), dim=-1
+            ).values.sum(dim=-1)
+            selected_groups = group_scores.topk(self.top_k_groups, dim=-1).indices
+            group_mask = torch.zeros_like(group_scores, dtype=torch.bool)
+            group_mask.scatter_(-1, selected_groups, True)
+            expert_mask = group_mask.unsqueeze(-1).expand_as(grouped_scores)
+            selection_scores = grouped_scores.masked_fill(
+                ~expert_mask, float("-inf")
+            ).reshape_as(selection_scores)
+
+        top_k_weights, top_k_indices = torch.topk(selection_scores, self.top_k, dim=-1)
 
         if self.scoring_func == "sigmoid":
             top_k_weights = scores.gather(-1, top_k_indices)
@@ -144,6 +183,8 @@ class MoERouter(nn.Module):
                 "top_k": self.top_k,
                 "scoring_func": self.scoring_func,
                 "routing_method": self.routing_method,
+                "num_expert_groups": self.num_expert_groups,
+                "top_k_groups": self.top_k_groups,
             },
         )
 
@@ -178,3 +219,45 @@ class MoERouter(nn.Module):
             target_fraction = target_fraction.to(self.expert_bias.device)
 
         self.expert_bias.add_(update_rate * (target_fraction - expert_fraction))
+
+    @torch.no_grad()
+    def update_expert_bias_softclamped_momentum_(
+        self,
+        expert_fraction: Optional[torch.Tensor] = None,
+        update_rate: float = 5e-4,
+        momentum: float = 0.5,
+        clamp_scale: float = 2.0,
+    ) -> None:
+        """Update loss-free routing biases with soft-clamped momentum.
+
+        The normalized load error is centered across experts, bounded with
+        ``tanh``, and smoothed before being applied to the selection bias.
+        This is the SMEBU update used by Arcee Trinity.
+
+        Args:
+            expert_fraction: Observed fraction of routed assignments per expert.
+                Uses the most recent router statistics when omitted.
+            update_rate: Maximum update magnitude before momentum smoothing.
+            momentum: Fraction of the previous update retained.
+            clamp_scale: Multiplier applied before the ``tanh`` soft clamp.
+        """
+        if self.expert_bias is None or self.expert_bias_momentum is None:
+            raise ValueError("SMEBU updates require routing_method='noaux_tc'")
+        if not 0.0 <= momentum < 1.0:
+            raise ValueError(f"momentum must be in [0, 1), got {momentum}")
+        if update_rate < 0.0:
+            raise ValueError(f"update_rate must be non-negative, got {update_rate}")
+
+        if expert_fraction is None:
+            if self.last_stats is None:
+                raise ValueError("No router stats available for SMEBU update")
+            expert_fraction = self.last_stats.expert_fraction
+
+        expert_fraction = expert_fraction.to(self.expert_bias.device)
+        target = torch.full_like(expert_fraction, 1.0 / self.num_experts)
+        violation = (target - expert_fraction) / target.clamp_min(1e-12)
+        update = update_rate * torch.tanh(clamp_scale * violation)
+        update = update - update.mean()
+
+        self.expert_bias_momentum.mul_(momentum).add_(update, alpha=1.0 - momentum)
+        self.expert_bias.add_(self.expert_bias_momentum)

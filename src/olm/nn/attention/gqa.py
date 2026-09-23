@@ -27,6 +27,11 @@ class GroupedQueryAttention(nn.Module):
         num_heads (int): Number of Query heads.
         num_kv_heads (int): Number of Key/Value heads. Must divide num_heads.
         max_seq_len (int): Maximum sequence length for RoPE.
+        head_dim (int, optional): Per-head query/key dimension.
+        v_head_dim (int, optional): Per-head value dimension. Defaults to
+            ``head_dim``.
+        value_scale (float, optional): Multiplier applied to projected values
+            before attention.
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         rope_theta (float, optional): Base frequency for RoPE. Defaults to 10000.0.
         use_bias (bool, optional): Whether to use bias in linear projections. Defaults to False.
@@ -39,6 +44,8 @@ class GroupedQueryAttention(nn.Module):
         num_kv_heads: int,
         max_seq_len: int,
         head_dim: Optional[int] = None,
+        v_head_dim: Optional[int] = None,
+        value_scale: Optional[float] = None,
         dropout: float = 0.0,
         rope_theta: float = 10000.0,
         use_bias: bool = False,
@@ -63,6 +70,11 @@ class GroupedQueryAttention(nn.Module):
         else:
             self.head_dim = head_dim
 
+        self.v_head_dim = self.head_dim if v_head_dim is None else v_head_dim
+        if self.v_head_dim < 1:
+            raise ValueError(f"v_head_dim must be positive, got {self.v_head_dim}")
+        self.value_scale = value_scale
+
         if num_heads % num_kv_heads != 0:
             raise ValueError(
                 f"num_heads ({num_heads}) must be divisible by num_kv_heads ({num_kv_heads})"
@@ -75,9 +87,12 @@ class GroupedQueryAttention(nn.Module):
 
         self.q_dim = num_heads * self.head_dim
         self.kv_dim = num_kv_heads * self.head_dim
+        self.v_dim = num_kv_heads * self.v_head_dim
 
         self.dropout_p = dropout
-        self.scale = attention_scale if attention_scale is not None else self.head_dim**-0.5
+        self.scale = (
+            attention_scale if attention_scale is not None else self.head_dim**-0.5
+        )
         self.attn_logit_softcap = attn_logit_softcap
         self.use_rope = use_rope
         self.use_attention_sink = use_attention_sink
@@ -122,10 +137,10 @@ class GroupedQueryAttention(nn.Module):
             embed_dim, self.kv_dim, bias=qkv_bias
         )  # torch.nn.Linear can also be used
         self.v_proj = Linear(
-            embed_dim, self.kv_dim, bias=qkv_bias
+            embed_dim, self.v_dim, bias=qkv_bias
         )  # torch.nn.Linear can also be used
         self.out_proj = Linear(
-            self.q_dim, embed_dim, bias=use_bias
+            num_heads * self.v_head_dim, embed_dim, bias=use_bias
         )  # torch.nn.Linear can also be used
 
         self.dropout = nn.Dropout(dropout)
@@ -156,7 +171,9 @@ class GroupedQueryAttention(nn.Module):
         # Reshape to [B, N, Heads, D]
         q = q.view(B, N, self.num_heads, self.head_dim)
         k = k.view(B, N, self.num_kv_heads, self.head_dim)
-        v = v.view(B, N, self.num_kv_heads, self.head_dim)
+        v = v.view(B, N, self.num_kv_heads, self.v_head_dim)
+        if self.value_scale is not None:
+            v = v * self.value_scale
 
         # Apply QK Norm if enabled (per head, before RoPE)
         if self.use_qk_norm:
@@ -180,9 +197,9 @@ class GroupedQueryAttention(nn.Module):
             k = k.reshape(B, self.num_heads, N, self.head_dim)
 
             v = v[:, :, None, :, :].expand(
-                B, self.num_kv_heads, self.num_groups, N, self.head_dim
+                B, self.num_kv_heads, self.num_groups, N, self.v_head_dim
             )
-            v = v.reshape(B, self.num_heads, N, self.head_dim)
+            v = v.reshape(B, self.num_heads, N, self.v_head_dim)
 
         attn_mask = None
         is_causal = True
@@ -212,7 +229,9 @@ class GroupedQueryAttention(nn.Module):
 
             if is_causal:
                 causal_mask = torch.ones(N, N, device=x.device, dtype=torch.bool).tril()
-                attn_mask = causal_mask if attn_mask is None else attn_mask & causal_mask
+                attn_mask = (
+                    causal_mask if attn_mask is None else attn_mask & causal_mask
+                )
 
             if attn_mask is not None:
                 attn_scores = attn_scores.masked_fill(~attn_mask, float("-inf"))
@@ -225,7 +244,7 @@ class GroupedQueryAttention(nn.Module):
                     B,
                     self.num_heads,
                     1,
-                    self.head_dim,
+                    self.v_head_dim,
                     dtype=v.dtype,
                     device=v.device,
                 )
@@ -237,9 +256,11 @@ class GroupedQueryAttention(nn.Module):
             attn_probs = self.dropout(attn_probs)
             attention_out = torch.matmul(attn_probs, values)
 
-        # [B, Heads, N, D] -> [B, N, Heads, D] -> [B, N, num_heads * head_dim]
+        # [B, Heads, N, D] -> [B, N, Heads, D] -> [B, N, num_heads * v_head_dim]
         attention_out = (
-            attention_out.transpose(1, 2).contiguous().view(B, N, self.q_dim)
+            attention_out.transpose(1, 2)
+            .contiguous()
+            .view(B, N, self.num_heads * self.v_head_dim)
         )
 
         return self.out_proj(attention_out)

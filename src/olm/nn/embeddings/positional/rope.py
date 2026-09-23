@@ -1,4 +1,6 @@
 # src/olm/nn/embeddings/positional/rope.py
+import math
+
 import torch
 from typing import Optional, Literal
 from olm.nn.embeddings.positional.base import PositionalEmbeddingBase
@@ -229,6 +231,7 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
         # YaRN specific parameters
         yarn_alpha: float = 1.0,
         yarn_beta: float = 32.0,
+        yarn_beta_slow: float = 1.0,
         # XPos specific parameters
         xpos_scale_base: Optional[int] = None,
     ):
@@ -241,7 +244,8 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             scaling_factor: scaling factor for position (linear) or base adjustment (ntk)
             original_max_seq_len: original context length before scaling (for ntk/yarn)
             yarn_alpha: attention scale factor for YaRN
-            yarn_beta: wavelength threshold for YaRN interpolation
+            yarn_beta: YaRN fast-rotation boundary (``beta_fast``).
+            yarn_beta_slow: YaRN slow-rotation boundary (``beta_slow``).
             xpos_scale_base: base for XPos exponential scaling (defaults to max_seq_len)
         """
         super().__init__()
@@ -256,6 +260,7 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
         self.original_max_seq_len = original_max_seq_len or max_seq_len
         self.yarn_alpha = yarn_alpha
         self.yarn_beta = yarn_beta
+        self.yarn_beta_slow = yarn_beta_slow
         self.xpos_scale_base = xpos_scale_base or max_seq_len
 
         # Compute effective base based on scaling type
@@ -287,22 +292,29 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
 
     def _compute_yarn_inv_freq(self) -> torch.Tensor:
         """Compute inverse frequencies for YaRN scaling."""
-        dim_indices = torch.arange(0, self.head_dim, 2, dtype=torch.float32)
+        dim = self.head_dim
+        indices = torch.arange(0, dim, 2, dtype=torch.float32)
+        position_frequencies = self.base ** (indices / dim)
+        extrapolated = 1.0 / position_frequencies
+        interpolated = 1.0 / (self.scaling_factor * position_frequencies)
 
-        # Compute wavelengths
-        inv_freq_base = 1.0 / (self.base ** (dim_indices / self.head_dim))
-        wavelengths = 2 * torch.pi / inv_freq_base
+        def correction_dim(num_rotations: float) -> float:
+            return (
+                dim
+                * math.log(self.original_max_seq_len / (num_rotations * 2 * math.pi))
+                / (2 * math.log(self.base))
+            )
 
-        # Apply YaRN interpolation based on wavelength
-        # Low frequency dims (long wavelengths) are not interpolated
-        # High frequency dims (short wavelengths) are interpolated
-        inv_freq_scaled = torch.where(
-            wavelengths > self.yarn_beta,
-            inv_freq_base,  # Keep low frequencies unchanged
-            inv_freq_base / self.scaling_factor,  # Interpolate high frequencies
+        low = max(math.floor(correction_dim(self.yarn_beta)), 0)
+        high = min(math.ceil(correction_dim(self.yarn_beta_slow)), dim - 1)
+        if low == high:
+            high += 0.001
+        ramp = (torch.arange(dim // 2, dtype=torch.float32) - low) / (high - low)
+        extrapolation_weight = 1.0 - ramp.clamp(0.0, 1.0)
+        return (
+            interpolated * (1.0 - extrapolation_weight)
+            + extrapolated * extrapolation_weight
         )
-
-        return inv_freq_scaled
 
     def _update_embeddings(self, seq_len: int, device: Optional[torch.device] = None):
         """Update sin/cos embeddings for given sequence length."""

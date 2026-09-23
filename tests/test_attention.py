@@ -223,6 +223,84 @@ def test_sliding_window_attention_supports_partial_rope_and_sink():
     assert out.shape == (2, 4, 8)
 
 
+def test_gqa_supports_separate_value_head_dim():
+    attn = GroupedQueryAttention(
+        embed_dim=16,
+        num_heads=4,
+        num_kv_heads=2,
+        max_seq_len=4,
+        head_dim=6,
+        v_head_dim=4,
+        use_rope=False,
+    )
+    x = torch.randn(2, 4, 16, requires_grad=True)
+
+    out = attn(x)
+    out.mean().backward()
+
+    assert attn.v_head_dim == 4
+    assert attn.v_proj.out_features == 8
+    assert attn.out_proj.in_features == 16
+    assert out.shape == x.shape
+    assert x.grad is not None
+
+
+def test_sliding_window_attention_supports_separate_value_head_dim():
+    attn = SlidingWindowAttention(
+        embed_dim=16,
+        num_heads=4,
+        num_kv_heads=2,
+        max_seq_len=4,
+        window_size=4,
+        head_dim=6,
+        v_head_dim=4,
+        use_rope=False,
+    )
+    x = torch.randn(2, 4, 16, requires_grad=True)
+
+    out = attn(x)
+    out.mean().backward()
+
+    assert attn.v_head_dim == 4
+    assert attn.v_proj.out_features == 8
+    assert attn.out_proj.in_features == 16
+    assert out.shape == x.shape
+    assert x.grad is not None
+
+
+def test_gqa_and_sliding_window_apply_value_scale():
+    modules = [
+        GroupedQueryAttention(
+            embed_dim=2,
+            num_heads=1,
+            num_kv_heads=1,
+            max_seq_len=3,
+            use_rope=False,
+            value_scale=0.5,
+        ),
+        SlidingWindowAttention(
+            embed_dim=2,
+            num_heads=1,
+            num_kv_heads=1,
+            max_seq_len=3,
+            window_size=3,
+            use_rope=False,
+            value_scale=0.5,
+        ),
+    ]
+    x = torch.tensor([[[2.0, 0.0], [4.0, 0.0], [6.0, 0.0]]])
+
+    for attn in modules:
+        with torch.no_grad():
+            attn.q_proj.weight.zero_()
+            attn.k_proj.weight.zero_()
+            attn.v_proj.weight.copy_(torch.eye(2))
+            attn.out_proj.weight.copy_(torch.eye(2))
+
+        out = attn(x)
+        assert torch.allclose(out[0, -1], torch.tensor([2.0, 0.0]), atol=1e-6)
+
+
 def test_alibi_combines_custom_mask_with_causal_mask():
     attn = MultiHeadAttentionwithALiBi(
         embed_dim=2,
