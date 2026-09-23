@@ -73,9 +73,11 @@ def validate(path: Path) -> dict[str, Any]:
     )
     require(record.get("status") == "complete", f"{prefix} suite is incomplete")
     require(record.get("suite_wall_seconds", 0) > 0, f"{prefix} invalid wall time")
-    require(len(record.get("models", [])) == 9, f"{prefix} expected nine models")
+    # The publication suite runs all nine models, but a contributed GPU may run
+    # a subset (``--models``); replicate signatures below still must match.
+    require(record.get("models"), f"{prefix} no models")
     require(
-        len({model["key"] for model in record["models"]}) == 9,
+        len({model["key"] for model in record["models"]}) == len(record["models"]),
         f"{prefix} model keys are not unique",
     )
 
@@ -180,6 +182,10 @@ def main() -> int:
         require(
             record["protocol"] == first["protocol"],
             f"{path}: benchmark protocol differs across replicates",
+        )
+        require(
+            record.get("amp_dtype", "bf16") == first.get("amp_dtype", "bf16"),
+            f"{path}: autocast dtype differs across replicates",
         )
         require(
             batch_signature(record) == reference_signature,

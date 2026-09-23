@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Add configured-clock MFU fields without altering raw benchmark JSON."""
+"""Add configured-clock MFU fields without altering raw benchmark JSON.
+
+Each reference registers the nominal dense Tensor Core peak for one autocast
+dtype (``peak_dtype``, BF16 unless stated) together with the clock at which
+that peak is specified. The configured-clock denominator rescales the nominal
+peak to the board's configured maximum SM clock.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +18,7 @@ from typing import Any
 
 GPU_REFERENCES = {
     "NVIDIA GeForce RTX 4090": {
-        "nominal_dense_bf16_peak_tflops": 165.2,
+        "nominal_dense_peak_tflops": 165.2,
         "official_reference_boost_clock_mhz": 2_520.0,
         "source": (
             "https://images.nvidia.com/aem-dam/Solutions/geforce/ada/"
@@ -20,7 +26,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA GeForce RTX 5090": {
-        "nominal_dense_bf16_peak_tflops": 209.5,
+        "nominal_dense_peak_tflops": 209.5,
         "official_reference_boost_clock_mhz": 2_407.0,
         "source": (
             "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/"
@@ -28,7 +34,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA RTX A6000": {
-        "nominal_dense_bf16_peak_tflops": 154.8,
+        "nominal_dense_peak_tflops": 154.8,
         "official_reference_boost_clock_mhz": 1_800.0,
         "source": (
             "https://www.nvidia.com/content/PDF/"
@@ -41,7 +47,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA A100 80GB PCIe": {
-        "nominal_dense_bf16_peak_tflops": 312.0,
+        "nominal_dense_peak_tflops": 312.0,
         "official_reference_boost_clock_mhz": 1_410.0,
         "source": "https://www.nvidia.com/en-us/data-center/a100/",
         "clock_source": (
@@ -55,7 +61,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA H100 80GB HBM3": {
-        "nominal_dense_bf16_peak_tflops": 989.5,
+        "nominal_dense_peak_tflops": 989.5,
         "official_reference_boost_clock_mhz": 1_980.0,
         "source": "https://www.nvidia.com/en-us/data-center/h100/",
         "clock_source": (
@@ -67,7 +73,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA H200": {
-        "nominal_dense_bf16_peak_tflops": 989.5,
+        "nominal_dense_peak_tflops": 989.5,
         "official_reference_boost_clock_mhz": 1_980.0,
         "source": "https://www.nvidia.com/en-us/data-center/h200/",
         "clock_source": (
@@ -79,7 +85,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA B200": {
-        "nominal_dense_bf16_peak_tflops": 2_250.0,
+        "nominal_dense_peak_tflops": 2_250.0,
         "board_configured_reference_clock_mhz": 1_965.0,
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
@@ -93,7 +99,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA B300 SXM6 AC": {
-        "nominal_dense_bf16_peak_tflops": 2_250.0,
+        "nominal_dense_peak_tflops": 2_250.0,
         "board_configured_reference_clock_mhz": 2_032.0,
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
@@ -107,7 +113,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA B300-SXM6-AC": {
-        "nominal_dense_bf16_peak_tflops": 2_250.0,
+        "nominal_dense_peak_tflops": 2_250.0,
         "board_configured_reference_clock_mhz": 2_032.0,
         "clock_reference_kind": "measured_board_configured_maximum",
         "source": "https://www.nvidia.com/en-us/data-center/hgx/",
@@ -121,7 +127,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA RTX 6000 Ada Generation": {
-        "nominal_dense_bf16_peak_tflops": 364.2,
+        "nominal_dense_peak_tflops": 364.2,
         "official_reference_boost_clock_mhz": 2_505.0,
         "source": (
             "https://images.nvidia.com/aem-dam/en-zz/Solutions/technologies/"
@@ -134,7 +140,7 @@ GPU_REFERENCES = {
         ),
     },
     "NVIDIA RTX PRO 6000 Blackwell Server Edition": {
-        "nominal_dense_bf16_peak_tflops": 468.0,
+        "nominal_dense_peak_tflops": 468.0,
         "official_reference_boost_clock_mhz": 2_430.0,
         "source": (
             "https://www.nvidia.com/en-us/data-center/"
@@ -145,7 +151,36 @@ GPU_REFERENCES = {
             "The advertised 1 PFLOP FP16/BF16 value uses sparsity."
         ),
     },
+    "Tesla T4": {
+        "nominal_dense_peak_tflops": 65.0,
+        "peak_dtype": "fp16",
+        "official_reference_boost_clock_mhz": 1_590.0,
+        "source": "https://www.nvidia.com/en-us/data-center/tesla-t4/",
+        "clock_source": (
+            "https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/"
+            "tesla-t4/t4-tensor-core-product-brief.pdf"
+        ),
+        "peak_derivation": (
+            "NVIDIA specifies 65 TFLOP/s mixed-precision (FP16 inputs, FP32 "
+            "accumulation) Tensor Core performance. Turing has no structured-"
+            "sparsity mode, so the published value is already a dense rate."
+        ),
+    },
 }
+
+
+def gpu_reference(device_name: str, amp_dtype: str = "bf16") -> dict[str, Any]:
+    """Return the registered peak/clock reference for a GPU and autocast dtype."""
+
+    reference = GPU_REFERENCES.get(device_name)
+    if reference is None:
+        raise ValueError(f"no clock reference registered for {device_name!r}")
+    if reference.get("peak_dtype", "bf16") != amp_dtype:
+        raise ValueError(
+            f"{device_name!r} registers a {reference.get('peak_dtype', 'bf16')} "
+            f"peak, but the result used {amp_dtype} autocast"
+        )
+    return reference
 
 
 def configured_max_sm_clock(environment: dict[str, Any]) -> float:
@@ -184,11 +219,9 @@ def annotate_node(node: Any, configured_peak: float) -> None:
 def annotate(record: dict[str, Any]) -> dict[str, Any]:
     annotated = copy.deepcopy(record)
     environment = annotated["environment"]
-    device_name = environment["device_name"]
-    if device_name not in GPU_REFERENCES:
-        raise ValueError(f"no clock reference registered for {device_name!r}")
-    reference = GPU_REFERENCES[device_name]
-    nominal_peak = reference["nominal_dense_bf16_peak_tflops"]
+    amp_dtype = annotated.get("amp_dtype", "bf16")
+    reference = gpu_reference(environment["device_name"], amp_dtype)
+    nominal_peak = reference["nominal_dense_peak_tflops"]
     if environment["dense_bf16_peak_tflops"] != nominal_peak:
         raise ValueError("raw result does not use the registered nominal peak")
 
@@ -229,7 +262,7 @@ def annotate(record: dict[str, Any]) -> dict[str, Any]:
         environment["board_configured_reference_clock_mhz"] = reference_clock
     annotated["mfu_reporting"] = {
         "raw_field": "model_flops_utilization_pct",
-        "raw_field_denominator": "Official nominal dense BF16 peak.",
+        "raw_field_denominator": (f"Official nominal dense {amp_dtype.upper()} peak."),
         "configured_clock_field": ("configured_clock_model_flops_utilization_pct"),
         "configured_clock_denominator_tflops": configured_peak,
         "configured_clock_formula": (

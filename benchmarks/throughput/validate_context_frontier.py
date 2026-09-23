@@ -233,6 +233,10 @@ def main() -> int:
             f"{path}: benchmark protocol differs across replicates",
         )
         require(
+            record.get("amp_dtype", "bf16") == first.get("amp_dtype", "bf16"),
+            f"{path}: autocast dtype differs across replicates",
+        )
+        require(
             candidate_signature(record) == reference_candidates,
             f"{path}: candidate grid differs across replicates",
         )

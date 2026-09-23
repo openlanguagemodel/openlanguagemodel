@@ -50,6 +50,7 @@ FIELDS = [
     "build_seconds",
     "sweep_stop_reason",
     "error",
+    "amp_dtype",
 ]
 
 
@@ -77,6 +78,7 @@ def rows_for(path: Path) -> list[dict[str, Any]]:
             rows.append(
                 {
                     "source_file": path.name,
+                    "amp_dtype": record.get("amp_dtype", "bf16"),
                     "benchmark": record["benchmark"],
                     "gpu_name": environment["device_name"],
                     "gpu_uuid": gpu_uuid(environment),
@@ -100,6 +102,7 @@ def rows_for(path: Path) -> list[dict[str, Any]]:
         for batch in batches:
             row = {
                 "source_file": path.name,
+                "amp_dtype": record.get("amp_dtype", "bf16"),
                 "benchmark": record["benchmark"],
                 "gpu_name": environment["device_name"],
                 "gpu_uuid": gpu_uuid(environment),

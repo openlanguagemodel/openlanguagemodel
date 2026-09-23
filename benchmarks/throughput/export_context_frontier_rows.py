@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from annotate_clock_adjusted_mfu import (
-    GPU_REFERENCES,
     configured_max_sm_clock,
+    gpu_reference,
     registered_reference_clock,
 )
 
@@ -66,6 +66,7 @@ FIELDS = [
     "selected_sdpa_backend",
     "sweep_stop_reason",
     "error",
+    "amp_dtype",
 ]
 
 
@@ -95,14 +96,16 @@ def rows_for_frontier(path: Path) -> list[dict[str, Any]]:
         raise ValueError(f"{path}: baseline seed mismatch")
 
     environment = frontier["environment"]
-    reference = GPU_REFERENCES[environment["device_name"]]
+    amp_dtype = frontier.get("amp_dtype", "bf16")
+    reference = gpu_reference(environment["device_name"], amp_dtype)
     configured_clock = configured_max_sm_clock(environment)
     configured_peak = (
-        reference["nominal_dense_bf16_peak_tflops"]
+        reference["nominal_dense_peak_tflops"]
         * configured_clock
         / registered_reference_clock(reference)
     )
     common = {
+        "amp_dtype": amp_dtype,
         "gpu_name": environment["device_name"],
         "gpu_uuid": gpu_uuid(environment),
         "seed": frontier["seed"],

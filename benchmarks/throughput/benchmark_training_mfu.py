@@ -7,6 +7,12 @@ and optimizer states use PyTorch's standard FP32 training storage. Batch 1 is
 the fixed-workload result; larger power-of-two batches form the saturation
 sweep.
 
+GPUs without BF16 Tensor Cores (compute capability below 8.0, such as the
+Tesla T4) can run the same step with ``--amp-dtype fp16``. The step then adds
+dynamic loss scaling through ``torch.amp.GradScaler`` and MFU uses the GPU's
+dense FP16 peak. For schema compatibility the denominator is still stored in
+the ``dense_bf16_peak_tflops`` field; ``amp_dtype`` records which peak it is.
+
 Warmup timings are retained so cold-start behavior and convergence to steady
 state remain inspectable. Results are checkpointed to JSON after every model
 build and batch, including OOM boundaries.
@@ -171,6 +177,57 @@ DENSE_BF16_PEAK_DERIVATIONS = {
 }
 
 
+# Dense FP16 Tensor Core throughput with FP32 accumulation. Used as the MFU
+# denominator for ``--amp-dtype fp16`` runs on GPUs without BF16 Tensor Cores.
+KNOWN_DENSE_FP16_TFLOPS = {
+    "Tesla T4": 65.0,
+}
+
+DENSE_FP16_PEAK_SOURCES = {
+    "Tesla T4": "https://www.nvidia.com/en-us/data-center/tesla-t4/",
+}
+
+DENSE_FP16_PEAK_DERIVATIONS = {
+    "Tesla T4": (
+        "NVIDIA specifies 65 TFLOP/s mixed-precision (FP16 inputs, FP32 "
+        "accumulation) Tensor Core performance. Turing has no structured-"
+        "sparsity mode, so the published value is already a dense rate."
+    ),
+}
+
+AMP_DTYPES = {
+    "bf16": torch.bfloat16,
+    "fp16": torch.float16,
+}
+
+
+def registered_peak(
+    device_name: str,
+    amp_dtype: str,
+) -> tuple[float | None, str | None, str | None]:
+    """Return the registered dense peak, its source, and its derivation."""
+
+    if amp_dtype == "fp16":
+        return (
+            KNOWN_DENSE_FP16_TFLOPS.get(device_name),
+            DENSE_FP16_PEAK_SOURCES.get(device_name),
+            DENSE_FP16_PEAK_DERIVATIONS.get(device_name),
+        )
+    return (
+        KNOWN_DENSE_BF16_TFLOPS.get(device_name),
+        DENSE_BF16_PEAK_SOURCES.get(device_name),
+        DENSE_BF16_PEAK_DERIVATIONS.get(device_name),
+    )
+
+
+def make_grad_scaler(amp_dtype: str) -> torch.amp.GradScaler | None:
+    """FP16 needs dynamic loss scaling; BF16 has FP32's exponent range."""
+
+    if amp_dtype == "fp16":
+        return torch.amp.GradScaler("cuda")
+    return None
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -283,6 +340,7 @@ def selected_sdpa_backend(
     config: ModelConfig,
     batch_size: int,
     sequence_length: int,
+    dtype: torch.dtype = torch.bfloat16,
 ) -> str | None:
     """Ask PyTorch which SDPA backend the benchmark tensor shape selects."""
 
@@ -294,7 +352,7 @@ def selected_sdpa_backend(
         probe = torch.empty(
             (batch_size, config.num_heads, sequence_length, head_dim),
             device="cuda",
-            dtype=torch.bfloat16,
+            dtype=dtype,
         )
         choice = torch._fused_sdp_choice(
             probe,
@@ -317,14 +375,23 @@ def timed_training_step(
     tokens: torch.Tensor,
     start_event: torch.cuda.Event,
     end_event: torch.cuda.Event,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    scaler: torch.amp.GradScaler | None = None,
 ) -> tuple[float, float]:
     optimizer.zero_grad(set_to_none=True)
     start_event.record()
-    with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+    with torch.autocast(device_type="cuda", dtype=amp_dtype):
         logits = model(tokens)
         loss = shifted_cross_entropy(logits, tokens)
-    loss.backward()
-    optimizer.step()
+    if scaler is None:
+        loss.backward()
+        optimizer.step()
+    else:
+        # Fused AdamW unscales and skips overflowing steps inside its update
+        # kernel; GradScaler adds one non-finite check over the gradients.
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
     end_event.record()
     end_event.synchronize()
     elapsed_ms = start_event.elapsed_time(end_event)
@@ -349,6 +416,8 @@ def run_batch(
     required_stable_checks: int,
     max_relative_drift: float,
     max_relative_jitter: float,
+    amp_dtype: torch.dtype = torch.bfloat16,
+    scaler: torch.amp.GradScaler | None = None,
 ) -> dict[str, Any]:
     batch_started_at = utc_now()
     batch_wall_start_unix_ns = time.time_ns()
@@ -379,7 +448,7 @@ def run_batch(
     for _ in range(max_warmup_steps):
         warmup_step_wall_start_unix_ns.append(time.time_ns())
         elapsed_ms, loss_value = timed_training_step(
-            model, optimizer, tokens, start_event, end_event
+            model, optimizer, tokens, start_event, end_event, amp_dtype, scaler
         )
         warmup_step_wall_finish_unix_ns.append(time.time_ns())
         warmup_times_ms.append(elapsed_ms)
@@ -404,7 +473,7 @@ def run_batch(
     for _ in range(measured_steps):
         measured_step_wall_start_unix_ns.append(time.time_ns())
         elapsed_ms, loss_value = timed_training_step(
-            model, optimizer, tokens, start_event, end_event
+            model, optimizer, tokens, start_event, end_event, amp_dtype, scaler
         )
         measured_step_wall_finish_unix_ns.append(time.time_ns())
         measured_times_ms.append(elapsed_ms)
@@ -418,7 +487,7 @@ def run_batch(
     mean_tokens_per_second = batch_size * sequence_length / (mean_ms / 1_000.0)
     peak_allocated_bytes = torch.cuda.max_memory_allocated()
     peak_reserved_bytes = torch.cuda.max_memory_reserved()
-    sdpa_backend = selected_sdpa_backend(config, batch_size, sequence_length)
+    sdpa_backend = selected_sdpa_backend(config, batch_size, sequence_length, amp_dtype)
     batch_finished_at = utc_now()
     batch_wall_finish_unix_ns = time.time_ns()
 
@@ -464,6 +533,8 @@ def run_batch(
         "peak_reserved_vram_pct": 100.0 * peak_reserved_bytes / total_device_bytes,
         "batch_wall_seconds": time.perf_counter() - batch_wall_start,
     }
+    if scaler is not None:
+        result["grad_scale"] = scaler.get_scale()
     optimizer.zero_grad(set_to_none=True)
     del tokens
     return result
@@ -568,6 +639,15 @@ def main() -> int:
         help="Power-of-two saturation sweep; batch 1 is the fixed workload.",
     )
     parser.add_argument("--sequence-length", type=int, default=2_048)
+    parser.add_argument(
+        "--amp-dtype",
+        choices=sorted(AMP_DTYPES),
+        default="bf16",
+        help=(
+            "Autocast compute dtype. Use fp16 on GPUs without BF16 Tensor Cores "
+            "(compute capability below 8.0, such as the Tesla T4)."
+        ),
+    )
     parser.add_argument("--peak-tflops", type=float, default=None)
     parser.add_argument("--max-warmup-steps", type=int, default=50)
     parser.add_argument("--measured-steps", type=int, default=20)
@@ -607,11 +687,25 @@ def main() -> int:
 
     torch.cuda.set_device(0)
     device_name = torch.cuda.get_device_name(0)
-    peak_tflops = args.peak_tflops or KNOWN_DENSE_BF16_TFLOPS.get(device_name)
+    device_capability = torch.cuda.get_device_capability(0)
+    if args.amp_dtype == "bf16" and device_capability < (8, 0):
+        parser.error(
+            f"{device_name!r} (compute capability "
+            f"{device_capability[0]}.{device_capability[1]}) has no BF16 Tensor "
+            "Cores; pass --amp-dtype fp16"
+        )
+    amp_dtype = AMP_DTYPES[args.amp_dtype]
+    registered_tflops, peak_source, peak_derivation = registered_peak(
+        device_name, args.amp_dtype
+    )
+    peak_tflops = args.peak_tflops or registered_tflops
     if peak_tflops is None:
         parser.error(
-            f"no dense BF16 peak is registered for {device_name!r}; pass --peak-tflops"
+            f"no dense {args.amp_dtype.upper()} peak is registered for "
+            f"{device_name!r}; pass --peak-tflops"
         )
+    if args.peak_tflops is not None:
+        peak_source = peak_derivation = "User-supplied --peak-tflops value."
 
     torch.backends.cuda.enable_flash_sdp(True)
     torch.backends.cuda.enable_mem_efficient_sdp(True)
@@ -628,6 +722,7 @@ def main() -> int:
             "Every timed step includes forward, shifted-token cross-entropy, "
             "backward, and fused AdamW update."
         ),
+        "amp_dtype": args.amp_dtype,
         "status": "in_progress",
         "started_at": utc_now(),
         "command": " ".join(sys.argv),
@@ -639,9 +734,12 @@ def main() -> int:
         "batch_sizes": args.batches,
         "precision": {
             "parameter_dtype": "torch.float32",
-            "compute_autocast_dtype": "torch.bfloat16",
+            "compute_autocast_dtype": str(amp_dtype),
             "gradient_dtype": "torch.float32",
             "optimizer_state_dtype": "torch.float32",
+            "loss_scaling": (
+                "torch.amp.GradScaler (dynamic)" if args.amp_dtype == "fp16" else None
+            ),
         },
         "optimizer": {
             "implementation": "olm.train.optim.AdamW",
@@ -675,20 +773,13 @@ def main() -> int:
         },
         "environment": {
             "device_name": device_name,
-            "device_capability": list(torch.cuda.get_device_capability(0)),
+            "device_capability": list(device_capability),
             "total_device_bytes": total_device_bytes,
             "total_device_gb": total_device_bytes / 1e9,
+            # The peak for ``amp_dtype``; the field name predates FP16 support.
             "dense_bf16_peak_tflops": peak_tflops,
-            "dense_bf16_peak_source": DENSE_BF16_PEAK_SOURCES.get(
-                device_name,
-                "User-supplied --peak-tflops value.",
-            ),
-            "dense_bf16_peak_derivation": (
-                DENSE_BF16_PEAK_DERIVATIONS.get(
-                    device_name,
-                    "User-supplied --peak-tflops value.",
-                )
-            ),
+            "dense_bf16_peak_source": peak_source,
+            "dense_bf16_peak_derivation": peak_derivation,
             "torch_version": torch.__version__,
             "cuda_version": torch.version.cuda,
             "cudnn_version": torch.backends.cudnn.version(),
@@ -711,6 +802,7 @@ def main() -> int:
         model_wall_start = time.perf_counter()
         model: Llama3Model | None = None
         optimizer: torch.optim.Optimizer | None = None
+        scaler: torch.amp.GradScaler | None = None
         try:
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
@@ -724,6 +816,7 @@ def main() -> int:
                 weight_decay=args.weight_decay,
                 fused=True,
             )
+            scaler = make_grad_scaler(args.amp_dtype)
             parameter_bytes = unique_tensor_bytes(model.parameters())
             buffer_bytes = unique_tensor_bytes(model.buffers())
             model_record: dict[str, Any] = {
@@ -771,7 +864,7 @@ def main() -> int:
             }
             record["models"].append(model_record)
             write_record(args.output, record)
-            del optimizer, model
+            del optimizer, model, scaler
             gc.collect()
             torch.cuda.empty_cache()
             print(f"[{config.label}] OOM during model construction", flush=True)
@@ -802,6 +895,8 @@ def main() -> int:
                     required_stable_checks=args.required_stable_checks,
                     max_relative_drift=args.max_relative_drift,
                     max_relative_jitter=args.max_relative_jitter,
+                    amp_dtype=amp_dtype,
+                    scaler=scaler,
                 )
                 model_record["batches"].append(batch_result)
                 model_record["optimizer_state"] = optimizer_state_metadata(optimizer)
@@ -897,7 +992,7 @@ def main() -> int:
         model_record["wall_finish_unix_ns"] = time.time_ns()
         model_record["model_wall_seconds"] = time.perf_counter() - model_wall_start
         write_record(args.output, record)
-        del optimizer, model
+        del optimizer, model, scaler
         gc.collect()
         torch.cuda.empty_cache()
 

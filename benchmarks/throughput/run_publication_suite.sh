@@ -6,6 +6,11 @@
 # nominal dense-BF16 denominator is used unless PEAK_TFLOPS is supplied.
 # Completed stages are skipped; an incomplete JSON is preserved and causes a
 # hard stop so a partial result is never silently overwritten.
+#
+# Optional environment variables:
+#   AMP_DTYPE  bf16 (default) or fp16 for GPUs without BF16 Tensor Cores (T4).
+#   MODELS     comma-separated model keys for the 2,048-token sweep and main
+#              frontier (default: all nine). Publication rows use all nine.
 
 set -Eeuo pipefail
 
@@ -21,6 +26,8 @@ output_root=$2
 python_executable=$3
 repository_root=$4
 peak_tflops=${5:-}
+amp_dtype=${AMP_DTYPE:-bf16}
+models=${MODELS:-all}
 
 scripts_dir="$repository_root/benchmarks/throughput"
 results_dir="$output_root/results"
@@ -121,6 +128,8 @@ for seed in 11 22; do
         "$scripts_dir/benchmark_training_mfu.py" \
         --output "$output" \
         --seed "$seed" \
+        --amp-dtype "$amp_dtype" \
+        --models "$models" \
         "${peak_arguments[@]}"
     training_files+=("$output")
 done
@@ -143,6 +152,7 @@ for seed in 11 22; do
         --candidate-baselines "${training_files[@]}" \
         --output "$output" \
         --seed "$seed" \
+        --models "$models" \
         "${peak_arguments[@]}"
     context_files+=("$output")
 done

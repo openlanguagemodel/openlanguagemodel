@@ -6,6 +6,9 @@ For each new context length, the script scales that batch inversely with
 context length to preserve approximately the same tokens per step, then tests
 the neighboring lower and higher powers of two. The existing 2,048-token
 measurements are embedded by reference rather than recomputed.
+
+The autocast dtype (``bf16`` or ``fp16``) is inherited from the baseline so a
+frontier can never mix precisions with the batch sweep it extends.
 """
 
 from __future__ import annotations
@@ -28,14 +31,16 @@ from typing import Any, Iterable
 import torch
 
 from benchmark_training_mfu import (
-    KNOWN_DENSE_BF16_TFLOPS,
+    AMP_DTYPES,
     AdamW,
     MODEL_CONFIGS,
     build_model,
     is_oom,
+    make_grad_scaler,
     nvidia_smi_metadata,
     optimizer_state_metadata,
     parse_models,
+    registered_peak,
     run_batch,
     unique_parameter_count,
     unique_tensor_bytes,
@@ -175,6 +180,10 @@ def main() -> int:
             parser.error(f"{path}: candidate-reference MFU denominator differs")
         if candidate_baseline["protocol"] != baseline["protocol"]:
             parser.error(f"{path}: candidate-reference protocol differs")
+        if candidate_baseline.get("amp_dtype", "bf16") != baseline.get(
+            "amp_dtype", "bf16"
+        ):
+            parser.error(f"{path}: candidate-reference autocast dtype differs")
 
     candidate_model_maps = [
         {model["key"]: model for model in item["models"]}
@@ -208,13 +217,16 @@ def main() -> int:
             max(medians, key=lambda batch: (medians[batch], batch)) if medians else None
         )
 
+    # Schema-v2 baselines predate --amp-dtype and are all BF16.
+    amp_dtype_name = baseline.get("amp_dtype", "bf16")
+    amp_dtype = AMP_DTYPES[amp_dtype_name]
     torch.cuda.set_device(0)
     device_name = torch.cuda.get_device_name(0)
-    peak_tflops = args.peak_tflops or KNOWN_DENSE_BF16_TFLOPS.get(device_name)
+    peak_tflops = args.peak_tflops or registered_peak(device_name, amp_dtype_name)[0]
     if peak_tflops is None:
         parser.error(
-            f"no dense BF16 peak is registered for {device_name!r}; "
-            "pass --peak-tflops"
+            f"no dense {amp_dtype_name.upper()} peak is registered for "
+            f"{device_name!r}; pass --peak-tflops"
         )
     if baseline["environment"]["device_name"] != device_name:
         parser.error("baseline GPU model does not match the current GPU")
@@ -250,6 +262,7 @@ def main() -> int:
     record: dict[str, Any] = {
         "schema_version": 2,
         "benchmark": "olm_single_gpu_context_batch_frontier",
+        "amp_dtype": amp_dtype_name,
         "status": "in_progress",
         "started_at": utc_now(),
         "command": " ".join(sys.argv),
@@ -379,6 +392,7 @@ def main() -> int:
 
             model = None
             optimizer = None
+            scaler = None
             build_started_at = utc_now()
             build_wall_start_unix_ns = time.time_ns()
             build_wall_start = time.perf_counter()
@@ -396,6 +410,7 @@ def main() -> int:
                     weight_decay=args.weight_decay,
                     fused=True,
                 )
+                scaler = make_grad_scaler(amp_dtype_name)
                 context_record.update(
                     {
                         "parameter_bytes": unique_tensor_bytes(model.parameters()),
@@ -433,7 +448,7 @@ def main() -> int:
                     }
                 )
                 write_record(args.output, record)
-                del optimizer, model
+                del optimizer, model, scaler
                 gc.collect()
                 torch.cuda.empty_cache()
                 print(
@@ -469,6 +484,8 @@ def main() -> int:
                         required_stable_checks=args.required_stable_checks,
                         max_relative_drift=args.max_relative_drift,
                         max_relative_jitter=args.max_relative_jitter,
+                        amp_dtype=amp_dtype,
+                        scaler=scaler,
                     )
                     context_record["batches"].append(result)
                     context_record["optimizer_state"] = optimizer_state_metadata(
@@ -549,7 +566,7 @@ def main() -> int:
                 time.perf_counter() - context_wall_start
             )
             write_record(args.output, record)
-            del optimizer, model
+            del optimizer, model, scaler
             gc.collect()
             torch.cuda.empty_cache()
         model_record["finished_at"] = utc_now()
