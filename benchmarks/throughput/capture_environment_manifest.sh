@@ -51,8 +51,8 @@ run_raw lscpu.json lscpu --json
 run_capture memory.txt free -b
 run_capture proc_meminfo.txt cat /proc/meminfo
 run_capture mounts.txt findmnt
-run_capture workspace_mount.txt findmnt /workspace
-run_capture workspace_disk_usage.txt df -B1 /workspace
+run_capture output_mount.txt findmnt --target "$output_dir"
+run_capture output_disk_usage.txt df -B1 "$output_dir"
 run_capture block_devices.txt lsblk -O
 run_capture pci_devices.txt lspci -nnvv
 run_capture loaded_modules.txt lsmod
@@ -80,14 +80,14 @@ run_capture torch_collect_env.txt "$python_executable" -m torch.utils.collect_en
 run_capture torch_config.txt "$python_executable" -c \
     'import json, torch; print(json.dumps({"torch": torch.__version__, "cuda": torch.version.cuda, "cudnn": torch.backends.cudnn.version(), "arch_list": torch.cuda.get_arch_list(), "device": torch.cuda.get_device_name(0), "capability": torch.cuda.get_device_capability(0), "device_properties": str(torch.cuda.get_device_properties(0)), "torch_config": torch.__config__.show()}, indent=2))'
 
-if [[ -d "$repository_root/.git" ]]; then
+if [[ -e "$repository_root/.git" ]]; then
     run_capture git_commit.txt git -C "$repository_root" rev-parse HEAD
     run_capture git_status.txt git -C "$repository_root" status --short
     run_raw git_diff.patch git -C "$repository_root" diff --binary
     run_capture git_tracked_files.txt git -C "$repository_root" ls-files -s
 fi
 
-find "$repository_root/projects/olm-mfu-benchmark" \
+find "$repository_root/benchmarks/throughput" \
     -type f \
     ! -path '*/__pycache__/*' \
     -print0 \

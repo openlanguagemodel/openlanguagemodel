@@ -22,7 +22,7 @@ python_executable=$3
 repository_root=$4
 peak_tflops=${5:-}
 
-scripts_dir="$repository_root/projects/olm-mfu-benchmark/scripts"
+scripts_dir="$repository_root/benchmarks/throughput"
 results_dir="$output_root/results"
 logs_dir="$output_root/logs"
 telemetry_dir="$output_root/telemetry"

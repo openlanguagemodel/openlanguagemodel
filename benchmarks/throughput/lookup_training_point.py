@@ -12,9 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_CATALOG = (
-    Path(__file__).resolve().parent.parent / "data" / "benchmark_catalog.csv"
-)
+DEFAULT_CATALOG = Path(__file__).resolve().parent / "data" / "benchmark_catalog.csv"
 
 
 def normalized(value: str) -> str:
