@@ -57,6 +57,8 @@ class HuggingFaceTextDataset(BaseTextDataset):
         seed (int): Shuffle seed.
         shuffle_buffer_size (int): Streaming shuffle buffer size. Not used when
             ``streaming=False``, where the whole split is shuffled.
+        append_eos (bool): Whether to add the tokenizer's EOS token after each
+            example, marking where one example ends and the next begins.
 
     Raises:
         ImportError: If the ``datasets`` package cannot be imported.
@@ -75,6 +77,7 @@ class HuggingFaceTextDataset(BaseTextDataset):
         shuffle: bool = False,
         seed: int = 42,
         shuffle_buffer_size: int = 10_000,
+        append_eos: bool = False,
     ):
         super().__init__(
             tokenizer=tokenizer,
@@ -82,6 +85,7 @@ class HuggingFaceTextDataset(BaseTextDataset):
             skip_batches=skip_batches,
             shuffle=shuffle,
             seed=seed,
+            append_eos=append_eos,
         )
 
         self.dataset_name = dataset_name
@@ -143,6 +147,9 @@ class FineWebEduDataset(HuggingFaceTextDataset):
         seed: Random seed for shuffling (default: 42)
         cache_dir: Directory to cache downloaded data (default: None)
         skip_batches: Number of batches to skip
+        append_eos: Whether to add the tokenizer's EOS token after each
+            document (default: False). New runs should usually set it, so the
+            model learns where documents end.
     """
 
     def __init__(
@@ -156,6 +163,7 @@ class FineWebEduDataset(HuggingFaceTextDataset):
         seed: int = 42,
         cache_dir: Optional[str] = None,
         skip_batches: int = 0,
+        append_eos: bool = False,
     ):
         self.subset = subset
         super().__init__(
@@ -169,6 +177,7 @@ class FineWebEduDataset(HuggingFaceTextDataset):
             skip_batches=skip_batches,
             shuffle=shuffle,
             seed=seed,
+            append_eos=append_eos,
         )
 
     def __len__(self):

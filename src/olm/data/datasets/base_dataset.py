@@ -16,7 +16,9 @@ class BaseTextDataset(IterableDataset, ABC):
     Tokens from consecutive texts go into one buffer, so a sample can span the
     end of one text and the start of the next. Each sample takes
     ``context_length + 1`` fresh tokens from the buffer, and tokens left over
-    when the source runs out are dropped.
+    when the source runs out are dropped. With ``append_eos=True`` an EOS token
+    is added after every text, so the model can see where one text ends and
+    the next begins.
 
     Iteration:
         Yields ``(input_ids, labels)`` tuples. Both tensors have shape
@@ -33,6 +35,12 @@ class BaseTextDataset(IterableDataset, ABC):
         shuffle (bool): Whether the concrete dataset should shuffle its source
             stream when supported.
         seed (int): Shuffle seed.
+        append_eos (bool): Whether to add ``tokenizer.eos_token_id`` after each
+            text. Defaults to ``False``, which puts no separator between texts.
+
+    Raises:
+        ValueError: If ``append_eos=True`` and the tokenizer has no
+            ``eos_token_id``.
     """
 
     def __init__(
@@ -42,6 +50,7 @@ class BaseTextDataset(IterableDataset, ABC):
         skip_batches: int = 0,
         shuffle: bool = False,
         seed: int = 42,
+        append_eos: bool = False,
     ):
         super().__init__()
         self.tokenizer = tokenizer
@@ -49,6 +58,13 @@ class BaseTextDataset(IterableDataset, ABC):
         self.skip_batches = skip_batches
         self.shuffle = shuffle
         self.seed = seed
+        self.append_eos = append_eos
+
+        if append_eos and getattr(tokenizer, "eos_token_id", None) is None:
+            raise ValueError(
+                "append_eos=True needs a tokenizer with an eos_token_id, but "
+                f"{type(tokenizer).__name__} has none."
+            )
 
     @abstractmethod
     def _get_text_iterator(self) -> Iterator[str]:
@@ -124,6 +140,8 @@ class BaseTextDataset(IterableDataset, ABC):
 
         for text in text_iter:
             token_buffer.extend(self._encode(text))
+            if self.append_eos:
+                token_buffer.append(self.tokenizer.eos_token_id)
 
             # Yield complete sequences. ``start`` walks through the buffer, and
             # the used tokens are removed once per text, so a long text costs

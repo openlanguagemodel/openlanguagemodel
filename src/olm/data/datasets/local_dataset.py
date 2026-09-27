@@ -23,6 +23,9 @@ class LocalTextDataset(BaseTextDataset):
         skip_batches (int): Number of samples to skip before yielding.
         shuffle (bool): Whether to shuffle file order deterministically.
         seed (int): Shuffle seed.
+        append_eos (bool): Whether to add the tokenizer's EOS token after each
+            line. Each non-empty line is one text, so set this only when every
+            line is a separate document.
     """
 
     def __init__(
@@ -33,6 +36,7 @@ class LocalTextDataset(BaseTextDataset):
         skip_batches: int = 0,
         shuffle: bool = False,
         seed: int = 42,
+        append_eos: bool = False,
     ):
         super().__init__(
             tokenizer=tokenizer,
@@ -40,6 +44,7 @@ class LocalTextDataset(BaseTextDataset):
             skip_batches=skip_batches,
             shuffle=shuffle,
             seed=seed,
+            append_eos=append_eos,
         )
         self.location = os.fspath(location)
 
