@@ -34,6 +34,7 @@ from olm.train import (
     ValidationCallback,
     find_latest_checkpoint,
     read_checkpoint,
+    unwrap_model,
 )
 
 VOCAB_SIZE = 64
@@ -321,6 +322,26 @@ def test_legacy_checkpoint_callback_files_still_resume(tmp_path):
 
     trainer.train(epochs=1, log_interval=1000)
     assert trainer.global_step == 4  # 8 batches in the epoch, 6 already used
+
+
+def test_checkpoints_hold_unwrapped_model_keys(tmp_path):
+    model = _tiny_lm(dropout=0.0)
+    # torch.compile only wraps the module here; nothing compiles until a call.
+    wrapped = torch.compile(nn.DataParallel(model))
+    assert unwrap_model(wrapped) is model
+
+    trainer = Trainer(
+        wrapped,
+        AdamW,
+        _loader(samples=4),
+        device="cpu",
+        context_length=CONTEXT_LENGTH,
+        use_amp=False,
+    )
+    trainer.save_checkpoint(tmp_path / "ckpt.pt")
+
+    saved = read_checkpoint(tmp_path / "ckpt.pt")["model"]
+    assert set(saved) == set(model.state_dict())
 
 
 def test_legacy_fsdp_layout_reads_model_weights(tmp_path):

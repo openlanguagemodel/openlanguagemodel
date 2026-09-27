@@ -16,11 +16,7 @@ from olm.train.losses.cross_entropy import CrossEntropyLoss
 from olm.data.datasets import DataLoader
 from olm.core.dist import (
     is_distributed,
-    get_rank,
     get_local_rank,
-    get_world_size,
-    is_main_process,
-    barrier,
     all_reduce,
     all_gather_object,
     print_rank_0,
