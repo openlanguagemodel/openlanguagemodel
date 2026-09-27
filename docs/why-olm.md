@@ -157,7 +157,7 @@ OLM trains on **one machine**: one CPU, one GPU, or all the GPUs of a single nod
 
 ### Not a pretrained-weights hub
 
-The presets in `olm.models` are **architectures with randomly initialized weights**, not checkpoints. `Llama3_1_8B()` builds a model from the Llama 3.1 8B configuration, with random weights. OLM 2.2 has no `from_pretrained()` and cannot load Hugging Face, Meta or Qwen checkpoints.
+The presets in `olm.models` are **architectures with randomly initialized weights**, not checkpoints. `Llama3_1_8B()` builds a model from the Llama 3.1 8B configuration, with random weights. (A few older presets, including the Llama 3.1 ones, still tie the output head where the release does not, so their parameter counts come out low by one embedding matrix: [#83](https://github.com/openlanguagemodel/openlanguagemodel/issues/83).) OLM 2.2 has no `from_pretrained()` and cannot load Hugging Face, Meta or Qwen checkpoints.
 
 To inspect a large preset without allocating memory, build it on PyTorch's `meta` device:
 
@@ -180,8 +180,8 @@ If you need a model that already knows language, start from [Hugging Face `trans
 OLM 2.2 has no LoRA, instruction-tuning (SFT) data utilities, DPO, PPO or GRPO.
 
 - You can keep training any OLM model you trained yourself with the same `Trainer`.
-- LoRA and SFT utilities are coming in 2.3.
-- Preference optimization and RL methods are on the v3 [roadmap](roadmap.md).
+- LoRA and SFT utilities are coming in 2.3, ahead of the v3 [roadmap](roadmap.md) that lists them.
+- Preference optimization and RL methods remain on the v3 roadmap.
 - For post-training a pretrained model today, use Hugging Face [TRL](https://huggingface.co/docs/trl/index) with [PEFT](https://huggingface.co/docs/peft/index), or LitGPT. For a small end-to-end example that includes SFT and RL, read Andrej Karpathy's [nanochat](https://github.com/karpathy/nanochat).
 
 ## Where OLM is today

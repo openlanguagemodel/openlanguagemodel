@@ -18,7 +18,12 @@ pip install openlanguagemodel
 
 The package installs as `olm` (`import olm`). It supports Python 3.10, 3.11 and 3.12.
 
-Use PyTorch 2.3 or newer. `pyproject.toml` declares `torch>=2.1.0`, but `olm.train` imports `torch.amp.GradScaler`, which older versions do not have ([#76](https://github.com/openlanguagemodel/openlanguagemodel/issues/76)). To work on OLM itself, install from source. [Installation](installation.md) covers both.
+Use PyTorch 2.4 or newer. `pyproject.toml` declares `torch>=2.1.0`, but that floor is too low ([#76](https://github.com/openlanguagemodel/openlanguagemodel/issues/76)):
+
+- `olm.train` imports `torch.amp.GradScaler`, which needs PyTorch 2.3.
+- pip installs a `transformers` 5.x release by default, and recent 5.x releases turn off their PyTorch support below PyTorch 2.4. `HFTokenizer.encode` asks `transformers` for PyTorch tensors, so it fails there.
+
+To work on OLM itself, install from source. [Installation](installation.md) covers both.
 
 ### How do I cite OLM?
 
@@ -28,7 +33,7 @@ Use the BibTeX entry in the [README](https://github.com/openlanguagemodel/openla
 
 ### Do the presets come with pretrained weights?
 
-No. Every class in `olm.models`, such as `GPT2`, `Llama3_1_8B` or `DeepSeekV3_671B`, builds the published architecture with **randomly initialized** weights. The presets are for training from scratch, for studying an architecture, and for ablations. They are not for chatting with or fine-tuning an existing model.
+No. Every class in `olm.models`, such as `GPT2`, `Llama3_1_8B` or `DeepSeekV3_671B`, builds a published model's configuration with **randomly initialized** weights. The presets are for training from scratch, for studying an architecture, and for ablations. They are not for chatting with or fine-tuning an existing model.
 
 ### Can I load Hugging Face (or Meta, Qwen, Mistral) checkpoints into an OLM model?
 
@@ -60,6 +65,8 @@ print(f"{sum(p.numel() for p in model.parameters()) / 1e9:.2f}B parameters")
 print(model.blocks[0])  # the token embedding
 ```
 
+This prints 7.50B, not the 8.0B of the released Llama 3.1 8B. The Llama 3.1 presets currently tie the output head to the token embedding, while the release has a separate output matrix ([#83](https://github.com/openlanguagemodel/openlanguagemodel/issues/83)).
+
 Building `Llama3_1_8B()` without `meta` would allocate about 30 GB of fp32 random weights.
 
 ## Training
@@ -72,7 +79,7 @@ Yes. Every OLM component and model is a plain `torch.nn.Module`, and the `Traine
 
 A model that knows nothing should spread its guesses evenly over the vocabulary, which gives a cross-entropy loss of ln(vocab_size): about 10.8 for GPT-2's 50,257 tokens.
 
-In OLM 2.2 you will see that only with an untied output head. With the default **tied** embeddings, the first loss is roughly `embed_dim`, far above ln(vocab_size). The token embedding uses PyTorch's default N(0, 1) initialization, and the tied head reuses that matrix. So a fresh model gives the *current* input token a logit of about `embed_dim` and predicts "the same token again" with high confidence. Training recovers within the first steps, but it spends them undoing the initialization.
+In OLM 2.2 you will see that only with an untied output head. With the default **tied** embeddings, the first loss is roughly `embed_dim`, far above ln(vocab_size). The token embedding uses PyTorch's default N(0, 1) initialization, and the tied head reuses that matrix. So a fresh model gives the *current* input token a logit of about `embed_dim` and predicts "the same token again" with high confidence. Training recovers, but it first has to undo the initialization: in the small GPT-2 run measured in [#84](https://github.com/openlanguagemodel/openlanguagemodel/pull/84), the loss was 122 at step 1 and only back to chance level at step 50.
 
 ```python
 import math
@@ -112,19 +119,19 @@ A change that initializes embeddings with standard deviation 0.02, so that a fre
 
 - **Your own text.** Point `LocalTextDataset` at a folder of `.txt` files. [Getting Started](getting-started.md#train-on-local-text) has a complete example.
 - **Any Hugging Face dataset.** Use `HuggingFaceTextDataset`, or `FineWebEduDataset` for FineWeb-Edu. See [Datasets & Training](guides/datasets-and-training.md#datasets).
-- **Your own tokenizer.** `HFTokenizer` accepts a Hugging Face Hub name (`HFTokenizer("gpt2")`) or a local directory saved with `save_pretrained`. For anything else, subclass `olm.data.tokenization.TokenizerBase` and implement `encode` (text to a 1-D tensor of token ids) and `decode`. Override `save` too if you want `model.save(..., tokenizer=tok)` to store it.
+- **Your own tokenizer.** `HFTokenizer` accepts a Hugging Face Hub name (`HFTokenizer("gpt2")`) or a local directory saved with `save_pretrained`. For anything else, subclass `olm.data.tokenization.TokenizerBase` and implement `encode` (text to a 1-D tensor of token ids) and `decode`. Override `save` too if you want `model.save(..., tokenizer=tok)` to store it. `load_model` only restores an `HFTokenizer`, so reload a custom tokenizer yourself.
 
-Size the model's `vocab_size` from the tokenizer. `HFTokenizer` exposes it as `tokenizer.vocab_size`.
+Size the model's `vocab_size` as `len(tok.tokenizer)`, the full size of the underlying Hugging Face tokenizer. In 2.2, `tok.vocab_size` is only the base vocabulary and leaves out added special tokens, whose ids sit at or above it. Qwen tokenizers, for example, report a `vocab_size` of 151,643 but encode `<|im_start|>` as id 151,644, which would index past an embedding of that size. For GPT-2 the two numbers are equal (50,257).
 
 ### How do I save and load a trained model?
 
-`model.save(directory, tokenizer=tok)` writes the whole module and, optionally, the tokenizer. `load_model(directory)` from `olm.nn.structure` restores both, so you never rebuild the architecture by hand. The format pickles Python objects, so only load directories you created or trust. See [Saving and loading](guides/datasets-and-training.md#saving-and-loading).
+`model.save(directory, tokenizer=tok)` writes the whole module and, optionally, the tokenizer. `load_model(directory)` from `olm.nn.structure` returns the model, or a `(model, tokenizer)` pair when a tokenizer was saved, so you never rebuild the architecture by hand. The format pickles Python objects, so only load directories you created or trust. See [Saving and loading](guides/datasets-and-training.md#saving-and-loading).
 
 ### How do I resume an interrupted training run?
 
-OLM 2.2 has no one-call resume. `CheckpointCallback` writes `step_N.pt` files that hold the model, optimizer and gradient-scaler state, the step, the epoch and the loss history. You reload them by hand, as shown in [Resuming trainer checkpoints](guides/datasets-and-training.md#resuming-trainer-checkpoints). That recipe has three gaps:
+OLM 2.2 has no one-call resume. `CheckpointCallback` writes `step_N.pt` files that hold the model, optimizer, gradient-scaler and learning-rate-scheduler state, the step, the epoch and the loss history. You reload them by hand, as shown in [Resuming trainer checkpoints](guides/datasets-and-training.md#resuming-trainer-checkpoints). That recipe has three gaps:
 
-- The default warmup-cosine scheduler is only created inside `train()`, so `trainer.scheduler` is `None` when the recipe runs and the schedule restarts from warmup. Pass your own `scheduler=` to the `Trainer` if you need to restore it.
+- The scheduler state is saved but not restored. The default warmup-cosine scheduler is only created inside `train()`, so `trainer.scheduler` is still `None` when the recipe runs, the recipe skips it, and the schedule restarts from warmup. Pass your own `scheduler=` to the `Trainer` so that it exists before `train()` and can be restored.
 - Random-number-generator state and callback state are not saved.
 - The data position is approximate. The recipe's `skip_batches = step * batch_size` ignores gradient accumulation, and datasets apply `skip_batches` separately to each data-loader worker and each rank.
 
@@ -138,6 +145,7 @@ For the families built on `olm.nn.moe.MoERouter` (DeepSeek-V3, Kimi K2, Llama 4 
 
 ```python
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 
 from olm.models import DeepSeekV3Model
@@ -163,7 +171,7 @@ class WithRouterLoss(nn.Module):
         aux_losses = [
             loss(r.last_stats.router_logits, r.last_stats.top_k_indices)
             for r, loss in zip(self.routers, self.balance)
-            if r.last_stats is not None  # skip routers this forward did not use
+            if r.last_stats is not None  # a router that has never run has no stats
         ]
         return LMOutput(logits=logits, aux_losses=aux_losses)
 
@@ -174,7 +182,13 @@ class UpdateExpertBias(TrainerCallback):
     def on_step_end(self, trainer, step, loss):
         for m in trainer.model.modules():
             if isinstance(m, MoERouter) and m.expert_bias is not None:
-                m.update_expert_bias_()
+                fraction = m.last_stats.expert_fraction.clone()
+                if dist.is_available() and dist.is_initialized():
+                    # Use the load over the global batch so every rank applies
+                    # the same update and the biases stay identical.
+                    dist.all_reduce(fraction)
+                    fraction /= dist.get_world_size()
+                m.update_expert_bias_(fraction)
 
 
 tiny = DeepSeekV3Model(
@@ -202,11 +216,13 @@ print(len(out.aux_losses), "balance losses")  # one per MoE layer: 3
 
 Pass `model` to the `Trainer` as usual. Add `callbacks=[UpdateExpertBias()]` for routers built with `routing_method="noaux_tc"` (DeepSeek-V3, Kimi K2 and Ling 2.5). In 2.2 nothing else calls `update_expert_bias_()`.
 
+The expert bias is a parameter that never receives a gradient, so DDP does not keep it in sync across GPUs. That is why the callback averages each router's expert load over all ranks before the update. Without the `all_reduce`, every GPU would drift to its own biases and route tokens differently, and `CheckpointCallback` would save only rank 0's copy. In a single process the callback skips the `all_reduce`.
+
 The older MoE layers in `olm.nn.feedforward` (used by Qwen3, Qwen3-Next, Mistral Large 3, Kimi Linear and MiniMax M2) discard their router logits, so this wrapper finds no routers there ([#82](https://github.com/openlanguagemodel/openlanguagemodel/issues/82)).
 
 ### Why does DDP fail on my MoE model with "Expected to have finished reduction in the prior iteration"?
 
-In a step where some expert receives no tokens, or where a router's expert bias gets no gradient, some parameters have no gradient. DDP's default `find_unused_parameters=False` treats that as an error on the next step. Pass `find_unused_parameters=True` to `DDPTrainer`, or `ddp_find_unused_parameters=True` to `AutoTrainer`. Dense models do not need it.
+Some parameters get no gradient in a step. That happens to an expert that receives no tokens, to the expert bias of a `noaux_tc` router, and on every step to a multi-token-prediction (MTP) head. DeepSeek-V3, Qwen3.5, MiniMax M2.5 and Step 3.5 Flash build an MTP head by default, but only `forward_with_mtp()` runs it, not the plain `forward()`. DDP's default `find_unused_parameters=False` treats unused parameters as an error on the next step. Pass `find_unused_parameters=True` to `DDPTrainer`, or `ddp_find_unused_parameters=True` to `AutoTrainer`. Dense models do not need it.
 
 ### Why do I get "OutputHead ties weights by default"?
 
@@ -225,7 +241,7 @@ Code written for OLM before 2.2 may call `OutputHead(embed_dim, vocab_size)` wit
 
 ### Why do I get an `IndexError` when my input is longer than `max_seq_len`?
 
-Position tables, whether rotary (RoPE) or learned, are built for `max_seq_len` positions when the model is created, so a longer input indexes past the end of the table. On a GPU the same mistake can surface as a CUDA device-side assert. Keep every input, including a prompt plus the tokens generated after it, at or below `max_seq_len`, or build the model with a larger `max_seq_len`.
+Rotary (RoPE) position tables are built for `max_seq_len` positions when the model is created, so a longer input indexes past the end of the table and raises an `IndexError`. On a GPU the same mistake can surface as a CUDA device-side assert. Models with learned absolute positions, such as `GPT2Model`, check the length first and raise a `ValueError` that names `max_seq_len`. Keep every input, including a prompt plus the tokens generated after it, at or below `max_seq_len`, or build the model with a larger `max_seq_len`.
 
 ## Hardware
 
@@ -276,8 +292,8 @@ OLM 2.2 has no built-in `generate()` and no KV cache. [`examples/inference/chat.
 Not with built-in tools in 2.2.
 
 - You can keep training a model you pretrained yourself with the same `Trainer`.
-- LoRA and SFT utilities are coming in 2.3.
-- DPO, PPO and GRPO are on the v3 [roadmap](roadmap.md).
+- LoRA and SFT utilities are coming in 2.3, ahead of the v3 [roadmap](roadmap.md) that lists them.
+- DPO, PPO and GRPO remain on the v3 roadmap.
 - To post-train a pretrained model today, use Hugging Face [TRL](https://huggingface.co/docs/trl/index) with [PEFT](https://huggingface.co/docs/peft/index).
 
 ### How do I add a new model architecture?

@@ -32,7 +32,7 @@ If you need a model that already knows language, OLM is the wrong starting point
 
 | Library | Pretraining from scratch | Fine-tuning and post-training | Distributed training |
 |---|---|---|---|
-| **OLM** | Yes, the core use case: streaming datasets, AMP, gradient accumulation, callbacks, checkpoints | None built in. LoRA and SFT are coming in 2.3; DPO and RL are on the v3 roadmap | One node: DDP and FSDP, with `AutoTrainer` choosing. No tensor, pipeline or expert parallelism. Multi-node planned for v4 |
+| **OLM** | Yes, the core use case: streaming datasets, AMP, gradient accumulation, callbacks, checkpoints | None built in. LoRA and SFT are coming in 2.3, ahead of the v3 roadmap; DPO and RL remain on v3 | One node: DDP and FSDP, with `AutoTrainer` choosing. No tensor, pipeline or expert parallelism. Multi-node planned for v4 |
 | **nanoGPT** | Yes: reproduces GPT-2 124M on OpenWebText (about 4 days on 8×A100, per its README) | Full fine-tuning from GPT-2 weights | DDP, one or several nodes via `torchrun` |
 | **nanochat** | Yes: a GPT-2-capability model for about $48 (about 2 hours on 8×H100, per its README) | SFT and RL stages in the pipeline | One node via `torchrun`, or a single GPU |
 | **LitGPT** | Yes (`litgpt pretrain`) | Full, LoRA, QLoRA and Adapter fine-tuning | FSDP through Lightning Fabric; advertises 1 to 1000+ GPUs or TPUs |
@@ -103,7 +103,7 @@ Being honest about the gaps matters more than the table. Compared with the proje
 
 - **Pretrained weights and checkpoint loading.** Every other project here except nanochat can start from someone else's weights.
 - **Text generation.** There is no built-in `generate()` and no KV cache yet (coming in 2.3).
-- **Fine-tuning and post-training.** There is no LoRA, SFT, DPO or RL (LoRA and SFT are coming in 2.3).
+- **Fine-tuning and post-training.** There is no LoRA, SFT, DPO or RL. LoRA and SFT are coming in 2.3, ahead of the roadmap's v3; DPO and RL remain on v3.
 - **Scale beyond one machine.** There is no multi-node support, and no tensor, pipeline or expert parallelism.
 - **Memory-saving training features.** There is no activation checkpointing and no quantized training. On CUDA, `use_amp=True` autocasts to fp16 even on GPUs that support bf16.
 - **Maturity.** OLM is alpha software with a smaller community. The API may still change.
