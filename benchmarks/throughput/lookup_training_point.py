@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Look up the best measured batch for a GPU/model/context training point."""
+"""Look up the best measured batch for a GPU/model/context training point.
+
+The best batch follows the same rule as the published tables (see
+``catalog.py``): only batches that completed for every seed that trained in
+the cell are candidates. A batch that fit one seed and ran out of memory on
+another sits at the edge of memory; it is reported but never selected.
+"""
 
 from __future__ import annotations
 
@@ -129,10 +135,18 @@ def lookup(
     groups: dict[int, list[dict[str, str]]] = defaultdict(list)
     for row in successful:
         groups[int(row["batch_size"])].append(row)
+    successful_seeds = {row["seed"] for row in successful}
+    shared = {
+        batch: batch_rows
+        for batch, batch_rows in groups.items()
+        if {row["seed"] for row in batch_rows} == successful_seeds
+    }
+    edge_batches = sorted(set(groups) - set(shared))
+    candidates = shared or groups
 
-    tps_batch = best_batch(groups, "tokens_per_second")
+    tps_batch = best_batch(candidates, "tokens_per_second")
     mfu_batch = best_batch(
-        groups,
+        candidates,
         "configured_clock_model_flops_utilization_pct",
     )
     selected_batch = tps_batch
@@ -176,6 +190,7 @@ def lookup(
             "configured_clock_dense_bf16_peak_tflops",
         ),
         "first_measured_oom_batch": min(oom_batches) if oom_batches else None,
+        "edge_of_memory_batches": edge_batches,
         "replicates": [
             {
                 "seed": int(row["seed"]),
@@ -253,6 +268,11 @@ def markdown(result: dict[str, Any]) -> str:
     if result["first_measured_oom_batch"] is not None:
         lines.append(
             f"First measured OOM batch: " f"{result['first_measured_oom_batch']}."
+        )
+    if result["edge_of_memory_batches"]:
+        lines.append(
+            "Completed for only some seeds (edge of memory, not selected): "
+            f"{', '.join(str(batch) for batch in result['edge_of_memory_batches'])}."
         )
     return "\n".join(lines)
 
