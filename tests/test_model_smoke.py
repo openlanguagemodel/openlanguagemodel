@@ -856,13 +856,15 @@ def test_gemma3_reference_presets_are_untied():
         gemma3_module.Gemma3_27B()
 
     four_b, twenty_seven_b = [call.kwargs for call in init.call_args_list]
-    assert four_b["vocab_size"] == 262144
+    assert four_b["vocab_size"] == 262208
+    assert four_b["query_pre_attn_scalar"] == 256.0
     assert four_b["embed_dim"] == 2560
     assert four_b["num_layers"] == 34
     assert four_b["sliding_window_pattern"] == 6
     assert twenty_seven_b["embed_dim"] == 5376
     assert twenty_seven_b["num_layers"] == 62
     assert twenty_seven_b["num_kv_heads"] == 16
+    assert twenty_seven_b["query_pre_attn_scalar"] == 168.0
 
 
 def test_mistral_small3_1_24b_reference_preset():

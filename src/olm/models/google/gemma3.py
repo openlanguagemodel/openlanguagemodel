@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 
+import torch
 import torch.nn as nn
 
 from olm.nn.structure import Block
@@ -38,6 +39,22 @@ class Gemma3Block(Block):
     Structure:
         x = x + post_attn_norm(Attn(input_norm(x)))
         x = x + post_ffn_norm(GeGLU(pre_ffn_norm(x)))
+
+    Args:
+        embed_dim (int): Model dimension.
+        intermediate_size (int): FFN hidden dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads.
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length (for the RoPE cache).
+        dropout (float): Dropout probability.
+        is_local (bool): Whether this is a local (sliding-window) layer.
+        sliding_window (int): Local attention window size.
+        local_rope_theta (float): RoPE base frequency for local layers.
+        global_rope_theta (float): RoPE base frequency for global layers.
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
+        query_pre_attn_scalar (float | None): Attention logits are scaled by
+            ``query_pre_attn_scalar ** -0.5``; ``None`` uses ``head_dim``.
     """
 
     def __init__(
@@ -54,8 +71,12 @@ class Gemma3Block(Block):
         local_rope_theta: float,
         global_rope_theta: float,
         rms_norm_eps: float,
+        query_pre_attn_scalar: float | None,
     ):
         super().__init__([])
+        attention_scale = (
+            query_pre_attn_scalar**-0.5 if query_pre_attn_scalar is not None else None
+        )
         self.input_layernorm = RMSNorm(embed_dim, eps=rms_norm_eps)
         if is_local:
             self.self_attn = SlidingWindowAttention(
@@ -70,6 +91,7 @@ class Gemma3Block(Block):
                 use_qk_norm=True,
                 rms_norm_eps=rms_norm_eps,
                 use_bias=False,
+                attention_scale=attention_scale,
             )
         else:
             self.self_attn = GroupedQueryAttention(
@@ -83,18 +105,23 @@ class Gemma3Block(Block):
                 use_qk_norm=True,
                 rms_norm_eps=rms_norm_eps,
                 use_bias=False,
+                attention_scale=attention_scale,
             )
         self.post_attention_layernorm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.pre_feedforward_layernorm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.mlp = GeGLUFFN(
-            embed_dim, hidden_dim=intermediate_size, dropout=dropout, bias=False
+            embed_dim,
+            hidden_dim=intermediate_size,
+            dropout=dropout,
+            bias=False,
+            approximate="tanh",
         )
         self.post_feedforward_layernorm = RMSNorm(embed_dim, eps=rms_norm_eps)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         residual = x
         x = self.input_layernorm(x)
-        x = self.self_attn(x)
+        x = self.self_attn(x, **{k: v for k, v in kwargs.items() if k == "mask"})
         x = self.post_attention_layernorm(x)
         x = residual + x
 
@@ -118,12 +145,22 @@ class Gemma3Model(Block):
     controls the period). Local layers use ``local_rope_theta`` (10k);
     global layers use ``global_rope_theta`` (1M). Gemma 3 does not use
     final-logit softcapping (removed relative to Gemma 2, replaced by
-    QK-norm). The vision tower present in the multimodal checkpoints is
-    omitted; this models the text-only language-model component.
+    QK-norm). The feed-forward uses the tanh approximation of GELU
+    (``gelu_pytorch_tanh``). The vision tower present in the multimodal
+    checkpoints is omitted; this models the text-only language-model
+    component. Its released embedding table has 262,208 rows
+    (``text_config.vocab_size``), which the named presets use as
+    ``vocab_size``.
+
+    Implementation note:
+        The released 4B and 27B checkpoints apply linear RoPE scaling (factor
+        8) on the global layers; this implementation uses plain RoPE with
+        ``global_rope_theta``, so global-layer positions are not interpolated.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits
-        shaped ``[batch, seq_len, vocab_size]``.
+        shaped ``[batch, seq_len, vocab_size]``. An optional boolean ``mask``
+        (True means attend) reaches every attention layer.
 
     Args:
         vocab_size (int): Vocabulary size.
@@ -141,6 +178,8 @@ class Gemma3Model(Block):
         sliding_window (int): Local attention window size.
         sliding_window_pattern (int): Period of the local:global pattern;
             every ``sliding_window_pattern``-th layer is global.
+        query_pre_attn_scalar (float | None): Attention logits are scaled by
+            ``query_pre_attn_scalar ** -0.5``; ``None`` uses ``head_dim``.
         tie_weights (bool): Whether to tie the output head to the embedding.
     """
 
@@ -160,6 +199,7 @@ class Gemma3Model(Block):
         rms_norm_eps: float = 1e-6,
         sliding_window: int = 1024,
         sliding_window_pattern: int = 6,
+        query_pre_attn_scalar: float | None = None,
         tie_weights: bool = True,
     ):
         embedding = Gemma3Embedding(vocab_size, embed_dim)
@@ -182,6 +222,7 @@ class Gemma3Model(Block):
                     local_rope_theta=local_rope_theta,
                     global_rope_theta=global_rope_theta,
                     rms_norm_eps=rms_norm_eps,
+                    query_pre_attn_scalar=query_pre_attn_scalar,
                 )
                 for layer_idx in range(num_layers)
             ]
@@ -198,10 +239,10 @@ class Gemma3Model(Block):
         super().__init__([embedding, final_norm, output_head])
         self.transformer_blocks = layers
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         x = self.blocks[0](x)
         for block in self.transformer_blocks:
-            x = block(x)
+            x = block(x, **kwargs)
         x = self.blocks[1](x)
         return self.blocks[2](x)
 
@@ -211,7 +252,7 @@ class Gemma3_4B(Gemma3Model):
 
     def __init__(self):
         super().__init__(
-            vocab_size=262144,
+            vocab_size=262208,
             embed_dim=2560,
             intermediate_size=10240,
             num_layers=34,
@@ -219,8 +260,12 @@ class Gemma3_4B(Gemma3Model):
             num_kv_heads=4,
             head_dim=256,
             max_seq_len=131072,
+            local_rope_theta=10000.0,
+            global_rope_theta=1000000.0,
+            rms_norm_eps=1e-6,
             sliding_window=1024,
             sliding_window_pattern=6,
+            query_pre_attn_scalar=256.0,
         )
 
 
@@ -229,7 +274,7 @@ class Gemma3_27B(Gemma3Model):
 
     def __init__(self):
         super().__init__(
-            vocab_size=262144,
+            vocab_size=262208,
             embed_dim=5376,
             intermediate_size=21504,
             num_layers=62,
@@ -237,6 +282,10 @@ class Gemma3_27B(Gemma3Model):
             num_kv_heads=16,
             head_dim=128,
             max_seq_len=131072,
+            local_rope_theta=10000.0,
+            global_rope_theta=1000000.0,
+            rms_norm_eps=1e-6,
             sliding_window=1024,
             sliding_window_pattern=6,
+            query_pre_attn_scalar=168.0,
         )

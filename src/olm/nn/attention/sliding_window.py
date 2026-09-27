@@ -36,6 +36,11 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         rms_norm_eps: Epsilon for QK-Norm.
         use_bias: Bias on output projection.
         qkv_bias: Bias on QKV projections.
+        use_rope: Apply rotary position embeddings to Q and K.
+        partial_rotary_factor: Fraction of ``head_dim`` rotated by RoPE.
+        use_attention_sink: Add a learnable per-head sink logit.
+        attention_scale: Multiplier on the ``QK^T`` logits. Defaults to
+            ``head_dim ** -0.5``; Gemma 2/3 use ``query_pre_attn_scalar ** -0.5``.
     """
 
     def __init__(
@@ -55,6 +60,7 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         use_rope: bool = True,
         partial_rotary_factor: float = 1.0,
         use_attention_sink: bool = False,
+        attention_scale: Optional[float] = None,
     ):
         nn.Module.__init__(self)
         self.head_dim = head_dim or embed_dim // num_heads
@@ -63,7 +69,9 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         self.num_groups = num_heads // num_kv_heads
         self.embed_dim = embed_dim
         self.window_size = window_size
-        self.scale = self.head_dim ** -0.5
+        self.scale = (
+            attention_scale if attention_scale is not None else self.head_dim**-0.5
+        )
         self.dropout_p = dropout
         self.max_seq_len = max_seq_len
         self.use_rope = use_rope
