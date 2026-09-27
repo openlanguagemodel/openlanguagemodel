@@ -4,6 +4,9 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 
 ## Start Here
 
+- [`why-olm.md`](why-olm.md): what OLM is for, who it is for, and what it deliberately is not.
+- [`comparison.md`](comparison.md): how OLM compares with nanoGPT, nanochat, LitGPT, torchtune, and Hugging Face `transformers`.
+- [`faq.md`](faq.md): short answers to common questions about weights, hardware, training, and extending OLM.
 - [`getting-started.md`](getting-started.md): install OLM and run a small local training loop.
 - [`installation.md`](installation.md): supported Python versions, extras, dependency ranges, and release-build commands.
 - [`release-v2.2.0.md`](release-v2.2.0.md): public release notes for the v2.2 stabilization release.
