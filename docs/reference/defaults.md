@@ -3,7 +3,7 @@ description: Every default of OLM's training stack in one place, taken from the 
 ---
 # Defaults Reference
 
-This page lists every default of OLM's training stack: the trainers, callbacks, optimizers, schedulers, losses and datasets, plus the choices OLM makes that no signature shows. The values are copied from the source, and `tests/test_defaults_reference.py` compares each table below with the real signatures, so the test fails when a default changes and this page does not.
+This page lists every default of OLM's training stack: the trainers, callbacks, optimizers, schedulers, losses and datasets, plus the choices OLM makes that no signature shows. The values are copied from the source. `tests/test_defaults_reference.py` compares every argument table (the sections named after an import path, such as `olm.train.Trainer`) with the real signatures, so the test fails when a default changes and this page does not. The first two tables, which describe behaviour rather than arguments, are maintained by hand.
 
 `required` means the argument has no default.
 
@@ -30,7 +30,7 @@ These are the defaults that surprise people, because you cannot see them by read
 | Validation loss | `trainer.loss` averaged over batches | Averaged over ranks under DDP and FSDP. Auxiliary and MTP losses are not included. fp16 autocast on CUDA only. |
 | Checkpoints | format version 1, `step_<N>.pt` and `best_model.pt` | See [Checkpointing & Resuming](../guides/checkpointing.md). |
 | Seeding | none | Nothing is seeded unless you call [`seed_everything`](../guides/reproducibility.md). |
-| Initial weights | PyTorch's defaults | `Embedding` keeps `nn.Embedding`'s N(0, 1), so a model with a tied output head starts at a loss near `embed_dim` instead of ln(vocab_size). See [Reproducibility](../guides/reproducibility.md#why-a-fresh-model-starts-at-a-loss-of-about-lnvocab_size). |
+| Initial weights | PyTorch's defaults | `Embedding` keeps `nn.Embedding`'s N(0, 1), so a model with a tied output head starts at a loss of the order of `embed_dim` instead of ln(vocab_size). See [Reproducibility](../guides/reproducibility.md#why-a-fresh-model-starts-at-a-loss-of-about-lnvocab_size). |
 
 ### How `AutoTrainer` chooses a trainer
 

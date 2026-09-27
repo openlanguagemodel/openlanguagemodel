@@ -87,7 +87,7 @@ trainer = Trainer(
 
 ### Scheduling, warmup, and decay
 
-By default the Trainer constructs a **warmup + cosine** schedule: the learning rate ramps up linearly, then decays along a cosine curve. Its length is the number of optimizer steps `train()` will take (with `grad_accum_steps=8`, an epoch of 800 batches is 100 steps), and warmup defaults to roughly 10% of it. A streaming dataset has no length, so pass `max_steps` to `train()` or `total_steps` to the Trainer; otherwise the schedule assumes 10,000 steps per epoch and warns. Override any of it, or supply your own scheduler via `scheduler=`, or disable the default with `use_warmup_cosine=False`. The [Defaults Reference](../reference/defaults.md) lists the exact formulas.
+By default the Trainer constructs a **warmup + cosine** schedule: the learning rate ramps up linearly, then decays along a cosine curve. Its length is the number of optimizer steps `train()` will take (with `grad_accum_steps=8`, an epoch of 800 batches is 100 steps), and warmup defaults to roughly 10% of it. For a streaming dataset, pass `max_steps` to `train()` or `total_steps` to the Trainer. OLM's text datasets have no length, except `FineWebEduDataset`, which reports an estimate (10B tokens for `sample-10BT`, 1B for other subsets) that the Trainer uses as the length of an epoch. Without a length, the schedule assumes 10,000 steps per epoch and warns. Override any of it, or supply your own scheduler via `scheduler=`, or disable the default with `use_warmup_cosine=False`. The [Defaults Reference](../reference/defaults.md) lists the exact formulas.
 
 ```python
 trainer = Trainer(

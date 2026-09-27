@@ -196,7 +196,7 @@ print("best validation at step", best["trainer"]["global_step"])
 
 ## Distributed training
 
-With `DDPTrainer`, every rank must take part in a save because the checkpoint collects each rank's random state; `CheckpointCallback` does this for you, and only rank 0 writes the file. To resume, give every rank the same `resume_from`. This script runs as one process too, where `DDPTrainer` trains like `Trainer`:
+With `DDPTrainer`, every rank must take part in a save because the checkpoint collects each rank's random state; `CheckpointCallback` does this for you, and only rank 0 writes the file. Pass `CheckpointCallback` and `ValidationCallback` to the trainer on **every rank**, not only on rank 0: both run collectives that every rank must join, so a rank without them would leave the others waiting. To resume, give every rank the same `resume_from`. This script runs as one process too, where `DDPTrainer` trains like `Trainer`:
 
 ```python
 from olm.core.dist import get_local_rank, setup_distributed

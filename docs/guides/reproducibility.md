@@ -46,7 +46,9 @@ The random data, the initial weights, dropout and the shuffle order all come fro
 
 ## Seed DataLoader shuffling and workers
 
-When an epoch starts, a shuffling `DataLoader` draws the seed of its permutation from the global torch generator. With `num_workers > 0` it also draws a base seed, from which PyTorch seeds each worker's torch, Python and NumPy generators (once, when persistent workers start). After `seed_everything` all of that is repeatable, but it shifts whenever the rest of your program draws a different number of random values first, for example after a change to the model changes how many numbers its initialization draws. `make_generator` gives the loader a stream of its own, so the data order stays fixed across such changes:
+Every time a `DataLoader` creates an iterator, usually once per epoch, it draws one number from its `generator`, or from the global torch generator when it has none. That number is the base seed from which PyTorch seeds each worker's torch, Python and NumPy generators when `num_workers > 0`; it is drawn with `num_workers=0` too. A shuffling loader also draws the seed of its permutation from the same generator. With persistent workers (the default in OLM's `DataLoader` when `num_workers > 0`) only the first iterator in a process is created this way; later epochs reset it and draw only the permutation seed.
+
+After `seed_everything` all of that is repeatable, but it shifts whenever the rest of your program draws a different number of random values first, for example after a change to the model changes how many numbers its initialization draws. `make_generator` gives the loader a stream of its own, so the data order stays fixed across such changes:
 
 ```python
 from olm.core import make_generator, seed_worker
@@ -107,7 +109,7 @@ expected first loss ≈ ln V + s²/2
 
 A logit spread of 0.16 adds 0.01; a spread of 0.58 adds 0.17. So **a first loss slightly above ln V is healthy**.
 
-Initialization can break this. OLM's `Embedding` keeps PyTorch's `nn.Embedding` default, a standard normal N(0, 1), and most OLM models reuse the embedding matrix as the output projection (a *tied* head). The last hidden state of token `x` is then close to its own embedding row, normalized, so the logit of `x` itself is roughly the squared length of a random N(0, 1) vector of size `embed_dim`: about `embed_dim`. That one logit dominates the softmax. The model confidently predicts that the next token repeats the current one, and the loss is about `embed_dim` instead of ln V.
+Initialization can break this. OLM's `Embedding` keeps PyTorch's `nn.Embedding` default, a standard normal N(0, 1), and most OLM models reuse the embedding matrix as the output projection (a *tied* head). The last hidden state of token `x` is then close to its own embedding row, normalized, so the logit of `x` itself is roughly the squared length of a random N(0, 1) vector of size `embed_dim`: about `embed_dim`. That one logit dominates the softmax. The model confidently predicts that the next token repeats the current one, and the loss is of the order of `embed_dim` instead of ln V.
 
 This measures it for `V = 1000` and `embed_dim = 64`, on CPU:
 
@@ -159,7 +161,7 @@ untied head                      7.05   logit std 0.58
 tied, N(0, 1), labels = inputs   0.00
 ```
 
-- With N(0, 1) embeddings and a tied head, the first loss is about `embed_dim` (it is about 250 for `embed_dim = 256`).
+- With N(0, 1) embeddings and a tied head, the first loss of `LM` is about `embed_dim` (it is about 250 for `embed_dim = 256`). OLM's `GPT2Model` starts at about two thirds of `embed_dim` instead, because it adds unit-scale learned position embeddings to the token embeddings before the first norm, so the normalized hidden state is only partly aligned with the token's own embedding.
 - With embeddings drawn at standard deviation 0.02, the value that the GPT-2, Llama and Qwen reference configurations use, the first loss is ln V.
 - An untied head does not have the problem: `OutputHead` normalizes the hidden state, and PyTorch's default `nn.Linear` initialization gives logits with a spread of about 1/√3 ≈ 0.58, so the loss is about ln V + 1/6.
 - The last line is a diagnostic: when labels equal the inputs (a dataset that forgot to shift its labels by one position), this model scores almost 0 before training.
@@ -171,7 +173,7 @@ How to read your first logged loss:
 | First loss | Likely meaning |
 |---|---|
 | a little above ln V | healthy |
-| far above ln V, near `embed_dim` | unit-scale embeddings with a tied head (see above) |
+| far above ln V, of the order of `embed_dim` | unit-scale embeddings with a tied head (see above) |
 | far below ln V | the labels leak the answer, for example labels equal to the inputs |
 
 > [!NOTE]
