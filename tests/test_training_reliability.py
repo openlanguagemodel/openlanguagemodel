@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import re
 import time
 
 import numpy as np
@@ -462,6 +463,23 @@ def test_default_schedule_warns_when_the_dataloader_has_no_length():
     assert trainer.total_steps == 10000
 
 
+def test_default_schedule_without_a_length_uses_the_shorter_limit():
+    trainer = Trainer(
+        _tiny_lm(dropout=0.0),
+        AdamW,
+        _loader(samples=12, iterable=True),  # 6 batches per epoch
+        device="cpu",
+        context_length=CONTEXT_LENGTH,
+        use_amp=False,
+        min_lr=0.0,
+    )
+
+    trainer.train(epochs=2, steps_per_epoch=3, max_steps=1000, log_interval=1000)
+
+    assert trainer.total_steps == trainer.global_step == 6
+    assert trainer.optimizer.param_groups[0]["lr"] == pytest.approx(0.0, abs=1e-12)
+
+
 def _early_stopping_trainer(callbacks, samples=40):
     return Trainer(
         _tiny_lm(dropout=0.0),
@@ -641,19 +659,22 @@ def test_masked_ce_loss_trains_without_a_mask():
     assert len(losses) == 2 and all(math.isfinite(loss) for loss in losses)
 
 
+class _SlowLM(nn.Module):
+    """The tiny LM, with a forward pass that takes at least 50 ms."""
+
+    def __init__(self):
+        super().__init__()
+        self.lm = _tiny_lm(dropout=0.0)
+
+    def forward(self, input_ids):
+        time.sleep(0.05)
+        return self.lm(input_ids)
+
+
 def test_throughput_callback_times_the_whole_step():
-    class SlowLM(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.lm = _tiny_lm(dropout=0.0)
-
-        def forward(self, input_ids):
-            time.sleep(0.05)
-            return self.lm(input_ids)
-
     throughput = ThroughputCallback(log_every=1)
     trainer = Trainer(
-        SlowLM(),
+        _SlowLM(),
         AdamW,
         _loader(samples=8),
         device="cpu",
@@ -673,6 +694,34 @@ def test_throughput_callback_times_the_whole_step():
 
     with pytest.warns(DeprecationWarning, match="batch_size"):
         ThroughputCallback(batch_size=8)
+
+
+def test_training_summary_throughput_counts_only_this_call(tmp_path, capsys):
+    def make_trainer(resume_from=None):
+        return Trainer(
+            _SlowLM(),
+            AdamW,
+            _loader(samples=16),  # 8 steps of one batch
+            device="cpu",
+            context_length=CONTEXT_LENGTH,
+            use_amp=False,
+            callbacks=[CheckpointCallback(str(tmp_path), save_every=4)],
+            resume_from=resume_from,
+        )
+
+    make_trainer().train(epochs=1, log_interval=1000)
+    capsys.readouterr()
+
+    make_trainer(tmp_path / "step_4.pt").train(epochs=1, log_interval=1000)
+    summary = capsys.readouterr().out
+    throughput = float(re.search(r"Average Throughput: (\d+)", summary).group(1))
+    # This call ran 4 batches of 2 x 8 tokens, each forward taking 50 ms or
+    # more. Counting the 4 restored batches too would about double the value.
+    assert throughput <= 4 * 2 * CONTEXT_LENGTH / (4 * 0.05)
+
+    # Resuming a finished run trains nothing, so there is no throughput.
+    make_trainer(tmp_path / "step_8.pt").train(epochs=1, log_interval=1000)
+    assert "Average Throughput" not in capsys.readouterr().out
 
 
 def test_callbacks_run_in_order():

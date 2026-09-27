@@ -218,6 +218,7 @@ class Trainer:
         self.total_tokens_processed = 0
         self.step_start_time = None
         self.training_start_time = None
+        self._training_start_tokens = 0
         self.training_state = {
             "current_loss": 0.0,
             "accumulated_loss": 0.0,
@@ -401,6 +402,8 @@ class Trainer:
                 total_steps = min(total_steps, max_steps)
             return total_steps
 
+        if steps_per_epoch is not None and max_steps is not None:
+            return min(max_steps, epochs * steps_per_epoch)
         if max_steps is not None:
             return max_steps
         if steps_per_epoch is not None:
@@ -678,8 +681,10 @@ class Trainer:
         # Call on_train_begin callbacks
         self._call_callbacks("on_train_begin", self)
 
-        # Initialize training start time
+        # Initialize training start time. A resumed run restores
+        # total_tokens_processed, so throughput counts from this call's start.
         self.training_start_time = time.time()
+        self._training_start_tokens = self.total_tokens_processed
 
         if is_main_process():
             print(
@@ -909,9 +914,15 @@ class Trainer:
         )
         self.load_state_dict(checkpoint, strict=strict)
         if is_main_process():
+            saved_epoch = checkpoint["trainer"]["epoch"] + 1
+            if checkpoint["trainer"].get("epoch_complete"):
+                position = f"at the end of epoch {saved_epoch}"
+            else:
+                position = (
+                    f"after {self.batches_in_epoch} batches of epoch {saved_epoch}"
+                )
             print(
-                f"Resumed from {path} after step {self.global_step}; training "
-                f"continues in epoch {self.current_epoch + 1}",
+                f"Resumed from {path}: step {self.global_step}, saved {position}",
                 flush=True,
             )
 
@@ -1138,10 +1149,13 @@ class Trainer:
             seconds = int(total_time % 60)
             print(f"  Total Training Time: {hours}h {minutes}m {seconds}s", flush=True)
 
-            avg_tokens_per_sec = self.total_tokens_processed / total_time
-            print(
-                f"  Average Throughput: {avg_tokens_per_sec:.0f} tokens/sec", flush=True
-            )
+            tokens_this_call = self.total_tokens_processed - self._training_start_tokens
+            if tokens_this_call > 0 and total_time > 0:
+                avg_tokens_per_sec = tokens_this_call / total_time
+                print(
+                    f"  Average Throughput: {avg_tokens_per_sec:.0f} tokens/sec",
+                    flush=True,
+                )
 
         if self.losses:
             final_loss = self.losses[-1]
