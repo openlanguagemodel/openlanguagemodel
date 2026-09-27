@@ -3,6 +3,7 @@ import torch
 from olm.nn.attention import (
     DeepSeekSparseAttention,
     LightningIndexer,
+    MultiHeadLatentAttention,
     causal_topk_selection,
     indexer_kl_alignment_loss,
 )
@@ -93,7 +94,7 @@ def test_deepseek_sparse_attention_can_use_scaled_rope():
         rope_scaling_type="yarn",
         rope_scaling_factor=4.0,
         original_max_seq_len=4,
-        yarn_beta=32.0,
+        yarn_beta_fast=32.0,
     )
 
     assert attention.rope.scaling_type == "yarn"
@@ -119,3 +120,113 @@ def test_indexer_kl_alignment_loss_supports_sparse_mask():
 
     assert torch.isfinite(dense_loss)
     assert torch.isfinite(sparse_loss)
+
+
+def test_dsa_uses_mla_query_latent_and_produces_alignment_loss():
+    attention = _dsa(index_n_heads=2)
+    x = torch.randn(2, 8, 32, requires_grad=True)
+
+    output = attention(x, compute_alignment_loss=True)
+    stats = attention.last_stats
+    assert stats is not None
+    assert stats.target_distribution is not None
+    assert stats.alignment_loss is not None
+
+    (output.square().mean() + stats.alignment_loss).backward()
+
+    assert attention.indexer.q_proj.in_features == 12
+    assert torch.isfinite(stats.alignment_loss)
+    assert attention.indexer.q_proj.weight.grad is not None
+    assert x.grad is not None
+
+
+def test_dsa_indexer_input_is_detached_by_default():
+    attention = _dsa()
+    x = torch.randn(1, 6, 32, requires_grad=True)
+
+    attention(x, compute_alignment_loss=True)
+    attention.last_stats.alignment_loss.backward()
+
+    # The KL loss trains the indexer only.
+    assert attention.indexer.q_proj.weight.grad is not None
+    assert attention.q_a_proj.weight.grad is None
+    assert x.grad is None
+
+
+def test_dsa_indexer_head_weights_stay_fp32_under_autocast():
+    attention = _dsa(embed_dim=16, num_heads=2, kv_lora_rank=4, q_lora_rank=8)
+    x = torch.randn(1, 5, 16)
+
+    with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+        attention(x)
+
+    assert attention.last_stats.index_scores.dtype == torch.float32
+
+
+def test_dsa_supports_both_rope_dimension_layouts():
+    torch.manual_seed(0)
+    # A single rotary pair is the same in both layouts, so use two pairs.
+    dims = dict(qk_nope_head_dim=4, qk_rope_head_dim=4)
+    interleaved = _dsa(**dims, rope_interleaved=True, indexer_rope_interleaved=True)
+    split_half = _dsa(**dims, rope_interleaved=False, indexer_rope_interleaved=False)
+    split_half.load_state_dict(interleaved.state_dict())
+    x = torch.randn(1, 5, 32)
+
+    assert interleaved(x).shape == split_half(x).shape == (1, 5, 32)
+    assert not torch.allclose(interleaved(x), split_half(x))
+
+
+def test_dsa_dense_stage_matches_mla_with_the_same_weights():
+    torch.manual_seed(0)
+    dsa = _dsa()
+    mla = MultiHeadLatentAttention(
+        embed_dim=32,
+        num_heads=4,
+        max_seq_len=16,
+        kv_lora_rank=8,
+        qk_nope_head_dim=6,
+        qk_rope_head_dim=2,
+        v_head_dim=6,
+        q_lora_rank=12,
+    )
+    missing, unexpected = mla.load_state_dict(dsa.state_dict(), strict=False)
+    assert not missing
+    assert all(key.startswith("indexer.") for key in unexpected)
+    x = torch.randn(2, 7, 32)
+
+    assert torch.allclose(dsa(x, use_sparse_attention=False), mla(x), atol=1e-6)
+    # Keeping every key makes the sparse stage dense too.
+    dsa.index_topk = 7
+    assert torch.allclose(dsa(x), mla(x), atol=1e-6)
+
+
+def test_dsa_supports_dense_indexer_warmup_and_sparse_adaptation():
+    attention = _dsa(index_topk=2)
+    x = torch.randn(1, 6, 32)
+
+    dense = attention(x, compute_alignment_loss=True, use_sparse_attention=False)
+    dense_loss = attention.last_stats.alignment_loss
+    sparse = attention(x, compute_alignment_loss=True, use_sparse_attention=True)
+    sparse_loss = attention.last_stats.alignment_loss
+
+    assert dense.shape == sparse.shape == x.shape
+    assert torch.isfinite(dense_loss)
+    assert torch.isfinite(sparse_loss)
+    assert not torch.allclose(dense, sparse)
+    assert attention.last_stats.metadata["use_sparse_attention"] is True
+
+
+def test_dsa_accepts_batch_first_3d_mask():
+    # batch (3) differs from num_heads (4): a 3-D mask must be read as
+    # [batch, seq, seq], not broadcast against the head dimension.
+    attention = _dsa()
+    x = torch.randn(3, 5, 32)
+    mask = torch.ones(3, 5, 5, dtype=torch.bool)
+    mask[1, :, 0] = False
+    mask[1, 0, 0] = True
+
+    out = attention(x, mask=mask, compute_alignment_loss=True)
+
+    assert out.shape == x.shape
+    assert not attention.last_stats.selection_mask[1, 1:, 0].any()
+    assert torch.isfinite(attention.last_stats.alignment_loss)
