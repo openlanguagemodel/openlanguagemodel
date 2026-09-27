@@ -12,20 +12,22 @@ import torch.nn.functional as F
 
 import olm.models.minimax as minimax_package
 from olm.models import (
+    GPT2Model,
     Gemma2Model,
     Gemma3Model,
     Ling2_5_Model,
     MiniMaxM2_5_Model,
     MistralSmall3_1_Model,
+    OPTModel,
     Olmo3Model,
     Step3_5_Flash_Model,
 )
+from olm.nn.activations import GeGLU
+from olm.nn.attention import LightningAttention, MultiHeadLatentAttention
 from olm.nn.embeddings.positional.rope import (
     PartialRotaryPositionalEmbedding,
     RotaryPositionalEmbedding,
 )
-from olm.nn.activations import GeGLU
-from olm.nn.attention import LightningAttention, MultiHeadLatentAttention
 from olm.nn.feedforward import GeGLUFFN
 
 
@@ -298,3 +300,23 @@ def test_ling2_5_places_mla_last_in_each_group_and_on_the_tail():
         MultiHeadLatentAttention,
     ]
     assert model(torch.randint(0, 128, (1, 8))).shape == (1, 8, 128)
+
+
+def test_gpt2_uses_tanh_gelu():
+    # config.json: activation_function="gelu_new", the tanh approximation.
+    model = GPT2Model(
+        vocab_size=128, embed_dim=32, num_layers=1, num_heads=4, max_seq_len=16
+    )
+    ffn = model.blocks[1].stack[0].blocks[1].block.blocks[1]
+
+    assert ffn.act.act.approximate == "tanh"
+
+
+def test_opt_layer_norms_use_torch_default_eps():
+    # HF OPT builds every LayerNorm with nn.LayerNorm's default eps (1e-5).
+    model = OPTModel(128, 32, 64, 1, 4, dropout=0.0)
+    block = model.blocks[3].stack[0]
+
+    assert block.blocks[0].block.blocks[0].eps == 1e-5
+    assert block.blocks[1].block.blocks[0].eps == 1e-5
+    assert model.blocks[4].eps == 1e-5
