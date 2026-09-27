@@ -504,16 +504,28 @@ class Trainer:
         )
 
         if resume is not None:
-            if (
-                resume["data_iterator_reused"]
-                and persistent
-                and self._last_data_iterator is None
-            ):
-                # With persistent workers, only the first iter() in a process
-                # creates an iterator (and draws a worker seed); later epochs
-                # reset it. The interrupted run was in such a later epoch, so
-                # create the iterator now to make the iter() below a reset too.
+            # With persistent workers, only the first iter() in a process
+            # creates an iterator (and draws a worker seed); later epochs reset
+            # it. Make the iter() below do what it did in the interrupted run.
+            existing = getattr(loader, "_iterator", self._last_data_iterator)
+            if persistent and resume["data_iterator_reused"] and existing is None:
+                # The interrupted run reset an iterator in this epoch: create
+                # one now, so the iter() below is a reset too.
                 self._last_data_iterator = iter(loader)
+            elif (
+                persistent
+                and not resume["data_iterator_reused"]
+                and existing is not None
+                and hasattr(loader, "_iterator")
+            ):
+                # The interrupted run created this epoch's iterator, but the
+                # loader still holds one from an earlier train() call in this
+                # process (load_checkpoint on a trainer that already trained):
+                # shut it down, so the iter() below creates a new one.
+                if hasattr(existing, "_shutdown_workers"):
+                    existing._shutdown_workers()
+                loader._iterator = None
+                self._last_data_iterator = None
             if resume["epoch_start_rng"] is not None:
                 self._restore_rng_state(resume["epoch_start_rng"])
             elif resume["current_rng"] is not None:

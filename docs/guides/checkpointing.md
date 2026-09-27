@@ -84,6 +84,8 @@ trainer.train(epochs=2, log_interval=100)
 
 `resume_from` also accepts a directory (the newest `step_<N>.pt` in it) and works the same way on `DDPTrainer` and `AutoTrainer`. To resume an existing `Trainer` object, call `trainer.load_checkpoint(path)` before `train()`.
 
+`load_checkpoint` can also roll a trainer back to an earlier checkpoint of the same run. `CheckpointCallback` overwrites the later `step_<N>.pt` files only when training reaches those steps again, and `keep_last_n` may delete the new files first, so `resume_from="latest"` could pick a file from the abandoned steps. Move the later files out of the directory when you roll back.
+
 ### What is restored
 
 | State | Restored | Notes |

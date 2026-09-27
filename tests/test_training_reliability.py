@@ -196,6 +196,19 @@ def test_validation_leaves_the_training_random_state_alone(tmp_path):
     assert _resumable_run(tmp_path / "unvalidated").losses == reference.losses
 
 
+def test_load_checkpoint_rolls_back_a_trainer_with_persistent_workers(tmp_path):
+    trainer = _resumable_run(tmp_path, num_workers=2)
+    reference = list(trainer.losses)
+
+    # The loader now holds the persistent iterator of the last epoch. Step 2 is
+    # in the first epoch, whose iterator the interrupted run created afresh;
+    # steps 5 and 7 continue in the second epoch, which reset it.
+    for step in (2, 5, 7):
+        trainer.load_checkpoint(tmp_path / f"step_{step}.pt")
+        trainer.train(epochs=3, log_interval=1000)
+        assert trainer.losses == reference
+
+
 def test_resume_restores_the_lazily_created_default_scheduler(tmp_path):
     seed_everything(0)
     trainer = Trainer(
