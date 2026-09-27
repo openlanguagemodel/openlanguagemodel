@@ -351,7 +351,7 @@ step 29  lm 0.267  balance 0.00406
 [0.158203125, 0.0859375, 0.119140625, 0.08984375, 0.15625, 0.1171875, 0.1171875, 0.15625]
 ```
 
-The balance term is 0.001 times the Switch loss summed over the two MoE layers, and each layer's Switch loss is 1.0 when routing is perfectly even, so perfectly balanced routing would read 0.002. The last line shows that all 8 experts in the first layer still receive work (an even split would be 0.125 each).
+The balance term is 0.001 times `LoadBalanceLoss` summed over the two MoE layers. The expert fractions `f_i` count every one of a token's `top_k` choices, so they sum to 2 here, and each layer's loss equals `top_k` = 2.0 when routing is perfectly even. Perfectly balanced routing would therefore read 0.004, and the run stays within 2% of that. The last line shows that all 8 experts in the first layer still receive work (an even split would be 0.125 each).
 
 ## Known differences from the reference
 
