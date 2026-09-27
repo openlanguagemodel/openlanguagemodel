@@ -7,22 +7,23 @@ and the website need one answer per cell, chosen by a fixed rule:
 
 1. keep complete, warmup-stabilized rows and group them by batch size;
 2. take the median of each metric across the seeds that completed that batch;
-3. consider only batches that every successful seed in the cell completed, so
+3. consider only batches that every seed with rows in the cell completed, so
    a batch that fit one seed at the edge of memory is never the headline;
 4. select the batch with the highest median tokens/second (larger batch on a
    tie). For a fixed cell, MFU is proportional to tokens/second, so the same
    batch also has the highest MFU.
 
-Cells with rows but no complete batch are reported as OOM. Cells without rows
-were not run: the context sweep only extends models that trained at 2,048
-tokens, and 16,384/32,768 tokens only for models that fit the previous length.
+A cell with rows but no such batch is reported as OOM when an attempt ran out
+of memory, and as incomplete otherwise. Cells without rows were not run: the
+context sweep only extends models that trained at 2,048 tokens, and
+16,384/32,768 tokens only for models that fit the previous length.
 
 The 2,048-token sweep doubles the batch from 1 until it runs out of memory,
 two doublings in a row fail to add 1% throughput, or it reaches 64. Other
-contexts test only three batches
-around the token-equivalent batch. When the largest tested batch fits every
-seed and is also the fastest, a larger batch was simply not tried; such cells
-are flagged ``search_capped`` so consumers can say so.
+contexts test only three batches around the token-equivalent batch. When the
+largest tested batch fits every seed and is also the fastest, a larger batch
+was simply not tried; such cells are flagged ``search_capped`` so consumers
+can say so.
 
 Prices are joined here as well so every consumer derives cost the same way.
 """
@@ -130,8 +131,8 @@ def median_of(rows: list[dict[str, Any]], field: str) -> float | None:
 def summarize_cell(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Apply the selection rule in the module docstring to one cell's rows."""
 
+    seeds_run = sorted({row["seed"] for row in rows})
     complete = [row for row in rows if row["status"] == "complete" and row["stable"]]
-    successful_seeds = sorted({row["seed"] for row in complete})
     by_batch: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for row in complete:
         by_batch[row["batch"]].append(row)
@@ -143,7 +144,7 @@ def summarize_cell(rows: list[dict[str, Any]]) -> dict[str, Any]:
             {
                 "batch": batch,
                 "seeds": seeds,
-                "shared": seeds == successful_seeds,
+                "shared": seeds == seeds_run,
                 "tokens_per_second": median_of(batch_rows, "tokens_per_second"),
                 "step_ms": median_of(batch_rows, "step_ms"),
                 "mfu_pct": median_of(batch_rows, "mfu_pct"),
@@ -173,9 +174,10 @@ def summarize_cell(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if any(item["batch"] == batch for item in batches)
     )
 
-    candidates = [item for item in batches if item["shared"]] or batches
+    # No fallback to the other batches: a cell where no batch fit every seed
+    # has no headline number.
     selected = max(
-        candidates,
+        (item for item in batches if item["shared"]),
         key=lambda item: (item["tokens_per_second"], item["batch"]),
         default=None,
     )
@@ -194,10 +196,10 @@ def summarize_cell(rows: list[dict[str, Any]]) -> dict[str, Any]:
     elif oom_batches or build_oom:
         status = "oom"
     else:
-        status = "not_run"
+        status = "incomplete"
     return {
         "status": status,
-        "seeds_run": sorted({row["seed"] for row in rows}),
+        "seeds_run": seeds_run,
         "selected": selected,
         "batches": batches,
         "oom_batches": oom_batches,

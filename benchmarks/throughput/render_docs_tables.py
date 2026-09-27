@@ -76,7 +76,13 @@ def headline_table(
             name += f" ({profile['vram_gb']} GB)"
         cell = cells.get((gpu, model, HEADLINE_CONTEXT))
         if cell is None or cell["selected"] is None:
-            status = "out of memory" if cell else "not run"
+            if cell is None:
+                status = "not run"
+            elif cell["batches"]:
+                # Some batch fit some seeds, but none fit them all.
+                status = "no batch completed for every seed"
+            else:
+                status = "out of memory"
             lines.append(f"| {name} | {status} | | | | | |")
             continue
         selected = cell["selected"]

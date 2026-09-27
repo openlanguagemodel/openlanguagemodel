@@ -2,9 +2,10 @@
 """Look up the best measured batch for a GPU/model/context training point.
 
 The best batch follows the same rule as the published tables (see
-``catalog.py``): only batches that completed for every seed that trained in
-the cell are candidates. A batch that fit one seed and ran out of memory on
-another sits at the edge of memory; it is reported but never selected.
+``catalog.py``): only batches that completed, with a stable warmup, for every
+seed that ran in the cell are candidates. A batch that fit one seed and ran
+out of memory on another sits at the edge of memory; it is reported but never
+selected, even when no other batch fit.
 """
 
 from __future__ import annotations
@@ -109,8 +110,22 @@ def lookup(
             f"multiple physical GPUs match; choose --gpu-uuid from {uuids}"
         )
 
-    successful = [row for row in matching if row["status"] == "complete"]
-    if not successful:
+    successful = [
+        row
+        for row in matching
+        if row["status"] == "complete" and row["stable"] == "True"
+    ]
+    groups: dict[int, list[dict[str, str]]] = defaultdict(list)
+    for row in successful:
+        groups[int(row["batch_size"])].append(row)
+    seeds_run = {row["seed"] for row in matching}
+    shared = {
+        batch: batch_rows
+        for batch, batch_rows in groups.items()
+        if {row["seed"] for row in batch_rows} == seeds_run
+    }
+    edge_batches = sorted(set(groups) - set(shared))
+    if not shared:
         attempted_batches = sorted(
             {
                 int(row["batch_size"])
@@ -121,32 +136,25 @@ def lookup(
         model_build_oom = any(
             row["status"] == "oom_during_model_build" for row in matching
         )
+        if model_build_oom:
+            status = "oom_during_model_build"
+        elif edge_batches:
+            status = "no_batch_fit_every_seed"
+        else:
+            status = "no_successful_batch"
         return {
             "gpu_name": gpu_name,
             "gpu_uuid": uuids[0] if uuids else None,
             "model_key": model_key,
             "sequence_length": context_length,
-            "status": (
-                "oom_during_model_build" if model_build_oom else "no_successful_batch"
-            ),
+            "status": status,
             "attempted_batches": attempted_batches,
+            "edge_of_memory_batches": edge_batches,
         }
 
-    groups: dict[int, list[dict[str, str]]] = defaultdict(list)
-    for row in successful:
-        groups[int(row["batch_size"])].append(row)
-    successful_seeds = {row["seed"] for row in successful}
-    shared = {
-        batch: batch_rows
-        for batch, batch_rows in groups.items()
-        if {row["seed"] for row in batch_rows} == successful_seeds
-    }
-    edge_batches = sorted(set(groups) - set(shared))
-    candidates = shared or groups
-
-    tps_batch = best_batch(candidates, "tokens_per_second")
+    tps_batch = best_batch(shared, "tokens_per_second")
     mfu_batch = best_batch(
-        candidates,
+        shared,
         "configured_clock_model_flops_utilization_pct",
     )
     selected_batch = tps_batch
@@ -225,6 +233,13 @@ def markdown(result: dict[str, Any]) -> str:
                 f"S={result['sequence_length']}: OOM during model "
                 "construction; no batch was attempted."
             )
+        if result["status"] == "no_batch_fit_every_seed":
+            edge = ", ".join(str(batch) for batch in result["edge_of_memory_batches"])
+            return (
+                f"{result['gpu_name']} · {result['model_key']} · "
+                f"S={result['sequence_length']}: no batch completed for every "
+                f"seed; completed for only some seeds (edge of memory): {edge}."
+            )
         return (
             f"{result['gpu_name']} · {result['model_key']} · "
             f"S={result['sequence_length']}: no successful batch; "
@@ -266,9 +281,7 @@ def markdown(result: dict[str, Any]) -> str:
         ]
     )
     if result["first_measured_oom_batch"] is not None:
-        lines.append(
-            f"First measured OOM batch: " f"{result['first_measured_oom_batch']}."
-        )
+        lines.append(f"First measured OOM batch: {result['first_measured_oom_batch']}.")
     if result["edge_of_memory_batches"]:
         lines.append(
             "Completed for only some seeds (edge of memory, not selected): "
