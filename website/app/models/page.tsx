@@ -4,39 +4,95 @@ import Sidebar from "../components/Sidebar";
 import { SITE } from "../../site.config";
 import { SITE_META, SITE_NAV_LINKS } from "../lib/siteNav";
 import { jsonLd, pageMetadata } from "../lib/seo";
+import {
+  familiesByOrganisation,
+  formatParams,
+  guideHref,
+  loadZoo,
+  sourceHref,
+  type ZooFamily,
+} from "../lib/models";
 
-const families = [
-  ["GPT-2", "GPT2 · GPT2Medium · GPT2Large · GPT2XL", "src/olm/models/openai/gpt2.py"],
-  ["Llama 2", "Llama2_7B · Llama2_13B · Llama2_70B", "src/olm/models/meta/llama2.py"],
-  ["Llama 3.x", "Llama3_1_8B · Llama3_1_70B · Llama3_1_405B · Llama3_2_1B · Llama3_2_3B", "src/olm/models/meta/llama3.py"],
-  ["Qwen 2.5", "0.5B · 1.5B · 3B · 7B · 14B · 32B · 72B", "src/olm/models/alibaba/qwen2.py"],
-  ["Phi-3", "Phi3_5_Mini · Phi3_Small", "src/olm/models/microsoft/phi3.py"],
-  ["Phi-4", "Phi4_14B", "src/olm/models/microsoft/phi4.py"],
-  ["Gemma 2", "Gemma2_2B · Gemma2_9B · Gemma2_27B", "src/olm/models/google/gemma2.py"],
-  ["OLMo", "OLMo_7B", "src/olm/models/allenai/olmo.py"],
-  ["OPT", "OPT125M", "src/olm/models/facebook/opt.py"],
-] as const;
+// Everything on this page comes from docs/models/zoo.json, which
+// scripts/gen_model_zoo.py generates from the code in src/olm/models.
+const zoo = loadZoo();
+const { families, presets, organisations } = zoo.summary;
+const description = `${families} readable PyTorch model families and ${presets} named presets in OpenLanguageModel, from GPT-2 to trillion-parameter mixtures of experts, with parameter counts measured from the code.`;
 
 export const metadata: Metadata = pageMetadata({
   title: "Model Families",
-  description:
-    "Source-linked model families implemented in OpenLanguageModel, including GPT-2, Llama, Qwen, Phi, Gemma, OLMo, and OPT.",
+  description,
   path: "/models/",
 });
 
+function presetCount(family: ZooFamily): string {
+  return `${family.presets.length} preset${family.presets.length === 1 ? "" : "s"}`;
+}
+
+function FamilyCard({ family }: { family: ZooFamily }) {
+  const guide = guideHref(family);
+  return (
+    <div className="model-family">
+      <span className="model-count">{presetCount(family)}</span>
+      <span className="model-family-name">{family.name}</span>
+      <p className="model-tags">{family.tags.join(" · ")}</p>
+      <ul className="model-presets">
+        {family.presets.map((preset) => (
+          <li key={preset.name}>
+            <a
+              href={sourceHref(SITE.repo, family, preset.line)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {preset.name}
+            </a>
+            <span className="model-preset-size">
+              {formatParams(preset.params.total)}
+              {preset.params.active !== null &&
+                ` · ${formatParams(preset.params.active)} active`}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <span className="model-card-links">
+        <a
+          className="model-card-link"
+          href={sourceHref(SITE.repo, family)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`View ${family.name} source code on GitHub`}
+        >
+          Source ↗
+        </a>
+        {guide && (
+          <Link className="model-card-link" href={guide}>
+            Architecture guide →
+          </Link>
+        )}
+      </span>
+    </div>
+  );
+}
+
 export default function ModelsPage() {
+  // One entry per guide page; a guide can cover several families.
+  const guides = new Map<string, string[]>();
+  for (const family of zoo.families) {
+    const href = guideHref(family);
+    if (href) guides.set(href, [...(guides.get(href) ?? []), family.name]);
+  }
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: "OpenLanguageModel model families",
-    description:
-      "Readable PyTorch implementations of GPT-2, Llama, Qwen, Phi, Gemma, OLMo, and OPT model families.",
+    description,
     url: `${SITE.url}/models/`,
-    hasPart: families.map(([name, sizes, source]) => ({
+    hasPart: zoo.families.map((family) => ({
       "@type": "SoftwareSourceCode",
-      name,
-      description: sizes,
-      codeRepository: `${SITE.repo}/blob/main/${source}`,
+      name: family.name,
+      description: family.presets.map((p) => p.name).join(" · "),
+      codeRepository: sourceHref(SITE.repo, family),
       programmingLanguage: "Python",
     })),
   };
@@ -56,33 +112,58 @@ export default function ModelsPage() {
 
         <article className="doc-body prose">
           <p>
-            OLM model presets are not hidden runtimes. Each family links to the
-            source file that assembles the architecture from public blocks.
+            {families} model families from {organisations} organisations, with{" "}
+            {presets}{" "}
+            named presets that follow the published architecture of a
+            released model. Each family is one source file that assembles the
+            architecture from public OLM blocks, and every parameter count on
+            this page comes from building the preset on PyTorch&apos;s{" "}
+            <code>meta</code> device.
           </p>
 
-          <div className="model-grid">
-            {families.map(([name, sizes, source]) => (
-              <a
-                className="model-family"
-                href={`${SITE.repo}/blob/main/${source}`}
-                key={name}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span className="subtitle">{name}</span>
-                <p className="mono">{sizes}</p>
-                <span className="model-card-link">View source ↗</span>
-              </a>
-            ))}
+          <div className="markdown-alert markdown-alert-important">
+            <p className="markdown-alert-title">Important</p>
+            <p>
+              <strong>Presets are architectures, not checkpoints.</strong>{" "}
+              A preset builds the released model&apos;s architecture with randomly
+              initialised weights; OLM does not download or load pretrained
+              weights. Use presets to train from scratch, to study or ablate an
+              architecture, or to check shapes and sizes on the{" "}
+              <code>meta</code> device.
+            </p>
           </div>
 
+          <h2>Architecture guides</h2>
           <p>
-            For the concepts behind these implementations, read the{" "}
-            <Link href="/docs/tutorials/modern-language-modelling/">
-              Modern Language Modelling guide
-            </Link>
-            .
+            These guides walk through a family&apos;s source section by section,
+            map its arguments to the Hugging Face config, train a tiny version on
+            a CPU, and list where OLM differs from the release.
           </p>
+          <ul>
+            {Array.from(guides.entries()).map(([href, names]) => (
+              <li key={href}>
+                <Link href={href}>{names.join(" and ")}</Link>
+              </li>
+            ))}
+          </ul>
+
+          <h2>All families</h2>
+          <p>
+            Sizes are total parameters; for mixtures of experts the second number
+            is the parameters one token uses. The{" "}
+            <Link href="/docs/models/">Model Zoo tables</Link> add layers, hidden
+            size, context length, vocabulary and the layer mix of every preset.
+          </p>
+          {familiesByOrganisation(zoo).map(([organisation, group]) => (
+            <div className="model-organisation" key={organisation}>
+              <h3>{organisation}</h3>
+              <div className="model-grid">
+                {group.map((family) => (
+                  <FamilyCard family={family} key={family.class} />
+                ))}
+              </div>
+            </div>
+          ))}
         </article>
       </main>
     </>

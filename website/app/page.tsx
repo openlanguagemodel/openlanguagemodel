@@ -4,6 +4,7 @@ import ScrambleText from "./components/ScrambleText";
 import { BASE_PATH, SITE } from "../site.config";
 import { SITE_META } from "./lib/siteNav";
 import { jsonLd } from "./lib/seo";
+import { loadZoo, sourceHref } from "./lib/models";
 
 const navLinks = [
   { href: "#overview", label: "Overview" },
@@ -156,62 +157,33 @@ const paths = [
   },
 ];
 
-const models = [
-  {
-    name: "GPT-2",
-    count: "4 presets",
-    sizes: "GPT2 · GPT2Medium · GPT2Large · GPT2XL",
-    source: "src/olm/models/openai/gpt2.py",
-  },
-  {
-    name: "Llama 2",
-    count: "3 presets",
-    sizes: "Llama2_7B · Llama2_13B · Llama2_70B",
-    source: "src/olm/models/meta/llama2.py",
-  },
-  {
-    name: "Llama 3.x",
-    count: "5 presets",
-    sizes: "Llama3_1_8B · Llama3_1_70B · Llama3_1_405B · Llama3_2_1B · Llama3_2_3B",
-    source: "src/olm/models/meta/llama3.py",
-  },
-  {
-    name: "Qwen 2.5",
-    count: "7 presets",
-    sizes: "Qwen2_5_0_5B · Qwen2_5_1_5B · Qwen2_5_3B · Qwen2_5_7B · Qwen2_5_14B · Qwen2_5_32B · Qwen2_5_72B",
-    source: "src/olm/models/alibaba/qwen2.py",
-  },
-  {
-    name: "Phi-3",
-    count: "2 presets",
-    sizes: "Phi3_5_Mini · Phi3_Small",
-    source: "src/olm/models/microsoft/phi3.py",
-  },
-  {
-    name: "Phi-4",
-    count: "1 preset",
-    sizes: "Phi4_14B",
-    source: "src/olm/models/microsoft/phi4.py",
-  },
-  {
-    name: "Gemma 2",
-    count: "3 presets",
-    sizes: "Gemma2_2B · Gemma2_9B · Gemma2_27B",
-    source: "src/olm/models/google/gemma2.py",
-  },
-  {
-    name: "OLMo",
-    count: "1 preset",
-    sizes: "OLMo_7B",
-    source: "src/olm/models/allenai/olmo.py",
-  },
-  {
-    name: "OPT",
-    count: "1 preset",
-    sizes: "OPT125M",
-    source: "src/olm/models/facebook/opt.py",
-  },
+// Curated homepage cards, by family class name. Everything shown on a card
+// (name, preset names, counts, source link) comes from docs/models/zoo.json,
+// which scripts/gen_model_zoo.py generates from the code; /models/ lists all.
+const FEATURED_FAMILIES = [
+  "GPT2Model",
+  "Llama2Model",
+  "Llama3Model",
+  "Qwen2Model",
+  "Phi3Model",
+  "Phi4Model",
+  "Gemma2Model",
+  "OLMoModel",
+  "OPTModel",
 ];
+
+const zoo = loadZoo();
+const models = FEATURED_FAMILIES.map((name) => {
+  const family = zoo.families.find((f) => f.class === name);
+  if (!family) throw new Error(`Featured model family ${name} is not in zoo.json`);
+  const count = family.presets.length;
+  return {
+    name: family.name,
+    count: `${count} preset${count === 1 ? "" : "s"}`,
+    sizes: family.presets.map((p) => p.name).join(" · "),
+    href: sourceHref(SITE.repo, family),
+  };
+});
 
 const roadmap = [
   { version: "v1.0", desc: "Foundation, core architectures, streaming data, single-GPU training.", done: true },
@@ -314,10 +286,10 @@ export default function Home() {
                 <span>LM training runs from 100M to 1B scale.</span>
               </div>
               <div className="hero-metric">
-                <strong>27</strong>
+                <strong>{zoo.summary.presets}</strong>
                 <span>
-                  Named model presets implemented, including GPT-2, Llama,
-                  Qwen, Phi, Gemma, OLMo, and OPT.
+                  Named model presets across {zoo.summary.families} families,
+                  from GPT-2 to DeepSeek-V3 and Kimi K2.
                 </span>
               </div>
             </div>
@@ -504,14 +476,16 @@ export default function Home() {
                 <h3>Reference Architectures, Reproduced With OLM</h3>
                 <p>
                   The presets in <code className="inline">olm.models</code> are
-                  readable implementations of familiar model families.
+                  readable implementations of {zoo.summary.families} model
+                  families, with randomly initialised weights: architectures to
+                  train and study, not pretrained checkpoints.
                 </p>
                 <div className="model-grid">
-                  {models.map(({ name, count, sizes, source }) => (
+                  {models.map(({ name, count, sizes, href }) => (
                     <a
                       key={name}
                       className="model-family"
-                      href={`${SITE.repo}/blob/main/${source}`}
+                      href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`View ${name} source code on GitHub`}
@@ -529,7 +503,7 @@ export default function Home() {
                   </Link>
                   {" "}
                   <Link href="/models/" className="hover-link">
-                    Browse model source →
+                    All {zoo.summary.families} families →
                   </Link>
                 </p>
               </article>
