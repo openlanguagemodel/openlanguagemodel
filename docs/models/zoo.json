@@ -1,0 +1,3189 @@
+{
+  "generated_by": "scripts/gen_model_zoo.py",
+  "note": "Presets are architectures with randomly initialised weights; OLM does not load pretrained checkpoints.",
+  "summary": {
+    "families": 27,
+    "presets": 47,
+    "organisations": 14
+  },
+  "families": [
+    {
+      "name": "OLMo",
+      "class": "OLMoModel",
+      "module": "olm.models.allenai.olmo",
+      "organisation": "Ai2",
+      "source": "src/olm/models/allenai/olmo.py",
+      "line": 68,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.",
+      "tags": [
+        "MHA",
+        "RoPE",
+        "SwiGLU",
+        "LayerNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "OLMo_7B",
+          "summary": "OLMo 7B Model.",
+          "line": 113,
+          "exported": true,
+          "params": {
+            "total": 11010473984,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 32/32",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "MHA",
+            "RoPE",
+            "SwiGLU",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 2048,
+            "vocab": 50280
+          },
+          "config": {
+            "vocab_size": 50280,
+            "embed_dim": 4096,
+            "intermediate_size": 22016,
+            "num_layers": 32,
+            "num_heads": 32,
+            "max_seq_len": 2048,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "OLMo 3",
+      "class": "Olmo3Model",
+      "module": "olm.models.allenai.olmo3",
+      "organisation": "Ai2",
+      "source": "src/olm/models/allenai/olmo3.py",
+      "line": 94,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Olmo3Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "sliding-window MHA + MHA / sliding-window GQA + GQA",
+        "QK-norm",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Olmo3_7B",
+          "summary": "OLMo 3 7B Model.",
+          "line": 180,
+          "exported": true,
+          "params": {
+            "total": 7297757184,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "sliding-window MHA (4096) 32/32",
+              "count": 24
+            },
+            {
+              "layer": "MHA 32/32",
+              "count": 8
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "sliding-window MHA + MHA",
+            "QK-norm",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 65536,
+            "vocab": 100278
+          },
+          "config": {
+            "vocab_size": 100278,
+            "embed_dim": 4096,
+            "intermediate_size": 11008,
+            "num_layers": 32,
+            "num_heads": 32,
+            "num_kv_heads": 32,
+            "head_dim": 128,
+            "max_seq_len": 65536,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "sliding_window": 4096,
+            "sliding_window_pattern": 4,
+            "tie_weights": false
+          }
+        },
+        {
+          "name": "Olmo3_32B",
+          "summary": "OLMo 3 32B Model.",
+          "line": 200,
+          "exported": true,
+          "params": {
+            "total": 32233145344,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "sliding-window GQA (4096) 40/8",
+              "count": 48
+            },
+            {
+              "layer": "GQA 40/8",
+              "count": 16
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 64
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "QK-norm",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 64,
+            "hidden": 5120,
+            "context": 65536,
+            "vocab": 100278
+          },
+          "config": {
+            "vocab_size": 100278,
+            "embed_dim": 5120,
+            "intermediate_size": 27648,
+            "num_layers": 64,
+            "num_heads": 40,
+            "num_kv_heads": 8,
+            "head_dim": 128,
+            "max_seq_len": 65536,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "sliding_window": 4096,
+            "sliding_window_pattern": 4,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Qwen 2.5",
+      "class": "Qwen2Model",
+      "module": "olm.models.alibaba.qwen2",
+      "organisation": "Alibaba (Qwen)",
+      "source": "src/olm/models/alibaba/qwen2.py",
+      "line": 44,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Qwen2_5_72B",
+          "summary": "Qwen 2.5 72B Model.",
+          "line": 78,
+          "exported": true,
+          "params": {
+            "total": 71460495360,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 64/8",
+              "count": 80
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 80
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 80,
+            "hidden": 8192,
+            "context": 131072,
+            "vocab": 152064
+          },
+          "config": {
+            "vocab_size": 152064,
+            "embed_dim": 8192,
+            "intermediate_size": 29568,
+            "num_layers": 80,
+            "num_heads": 64,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05
+          }
+        },
+        {
+          "name": "Qwen2_5_32B",
+          "summary": "Qwen 2.5 32B Model.",
+          "line": 93,
+          "exported": true,
+          "params": {
+            "total": 31985308672,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 40/8",
+              "count": 64
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 64
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 64,
+            "hidden": 5120,
+            "context": 131072,
+            "vocab": 152064
+          },
+          "config": {
+            "vocab_size": 152064,
+            "embed_dim": 5120,
+            "intermediate_size": 27648,
+            "num_layers": 64,
+            "num_heads": 40,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05
+          }
+        },
+        {
+          "name": "Qwen2_5_14B",
+          "summary": "Qwen 2.5 14B Model.",
+          "line": 108,
+          "exported": true,
+          "params": {
+            "total": 13991465984,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 40/8",
+              "count": 48
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 48
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 48,
+            "hidden": 5120,
+            "context": 131072,
+            "vocab": 152064
+          },
+          "config": {
+            "vocab_size": 152064,
+            "embed_dim": 5120,
+            "intermediate_size": 13824,
+            "num_layers": 48,
+            "num_heads": 40,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05
+          }
+        },
+        {
+          "name": "Qwen2_5_7B",
+          "summary": "Qwen 2.5 7B Model.",
+          "line": 123,
+          "exported": true,
+          "params": {
+            "total": 7070619136,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 28/4",
+              "count": 28
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 28
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 28,
+            "hidden": 3584,
+            "context": 131072,
+            "vocab": 152064
+          },
+          "config": {
+            "vocab_size": 152064,
+            "embed_dim": 3584,
+            "intermediate_size": 18944,
+            "num_layers": 28,
+            "num_heads": 28,
+            "num_kv_heads": 4,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06
+          }
+        },
+        {
+          "name": "Qwen2_5_3B",
+          "summary": "Qwen 2.5 3B Model.",
+          "line": 137,
+          "exported": true,
+          "params": {
+            "total": 3085938688,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 16/2",
+              "count": 36
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 36
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 36,
+            "hidden": 2048,
+            "context": 32768,
+            "vocab": 151936
+          },
+          "config": {
+            "vocab_size": 151936,
+            "embed_dim": 2048,
+            "intermediate_size": 11008,
+            "num_layers": 36,
+            "num_heads": 16,
+            "num_kv_heads": 2,
+            "max_seq_len": 32768,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06
+          }
+        },
+        {
+          "name": "Qwen2_5_1_5B",
+          "summary": "Qwen 2.5 1.5B Model.",
+          "line": 151,
+          "exported": true,
+          "params": {
+            "total": 1543714304,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 12/2",
+              "count": 28
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 28
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 28,
+            "hidden": 1536,
+            "context": 131072,
+            "vocab": 151936
+          },
+          "config": {
+            "vocab_size": 151936,
+            "embed_dim": 1536,
+            "intermediate_size": 8960,
+            "num_layers": 28,
+            "num_heads": 12,
+            "num_kv_heads": 2,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06
+          }
+        },
+        {
+          "name": "Qwen2_5_0_5B",
+          "summary": "Qwen 2.5 0.5B Model.",
+          "line": 165,
+          "exported": true,
+          "params": {
+            "total": 494032768,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 14/2",
+              "count": 24
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 24
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 24,
+            "hidden": 896,
+            "context": 32768,
+            "vocab": 151936
+          },
+          "config": {
+            "vocab_size": 151936,
+            "embed_dim": 896,
+            "intermediate_size": 4864,
+            "num_layers": 24,
+            "num_heads": 14,
+            "num_kv_heads": 2,
+            "max_seq_len": 32768,
+            "rope_theta": 1000000.0,
+            "tie_weights": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06
+          }
+        }
+      ]
+    },
+    {
+      "name": "Qwen3 MoE",
+      "class": "Qwen3Model",
+      "module": "olm.models.alibaba.qwen3",
+      "organisation": "Alibaba (Qwen)",
+      "source": "src/olm/models/alibaba/qwen3.py",
+      "line": 90,
+      "exported": true,
+      "guide": "docs/models/qwen-3.md",
+      "structure": "Embedding -> [Qwen3Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "GQA",
+        "QK-norm",
+        "RoPE",
+        "MoE (128 SwiGLU experts, top-8)",
+        "softmax routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Qwen3_235B_A22B",
+          "summary": "Qwen3-235B-A22B (235B total, ~22B active).",
+          "line": 173,
+          "exported": true,
+          "params": {
+            "total": 235093634560,
+            "active": 22190763520,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 64/4",
+              "count": 94
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 128e top-8",
+              "count": 94
+            }
+          ],
+          "tags": [
+            "GQA",
+            "QK-norm",
+            "RoPE",
+            "MoE (128 SwiGLU experts, top-8)",
+            "softmax routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 94,
+            "hidden": 4096,
+            "context": 32768,
+            "vocab": 151936
+          },
+          "config": {
+            "vocab_size": 151936,
+            "embed_dim": 4096,
+            "moe_intermediate_size": 1536,
+            "num_layers": 94,
+            "num_heads": 64,
+            "num_kv_heads": 4,
+            "max_seq_len": 32768,
+            "num_experts": 128,
+            "top_k": 8,
+            "head_dim": 128,
+            "rope_theta": 1000000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Qwen3.5",
+      "class": "Qwen3_5_Model",
+      "module": "olm.models.alibaba.qwen3_5",
+      "organisation": "Alibaba (Qwen)",
+      "source": "src/olm/models/alibaba/qwen3_5.py",
+      "line": 133,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [DeltaNet | GatedAttn] x 60 -> RMSNorm -> OutputHead + MultiTokenPredictionHead (1 head)",
+      "tags": [
+        "Gated DeltaNet + gated GQA",
+        "QK-norm",
+        "partial RoPE",
+        "MoE (512 SwiGLU experts, top-10, 1 shared)",
+        "softmax routing",
+        "RMSNorm",
+        "MTP head",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Qwen3_5_397B",
+          "summary": "Qwen3.5 397B-A17B with default config.",
+          "line": 236,
+          "exported": true,
+          "params": {
+            "total": 397377798304,
+            "active": 17329811616,
+            "mtp": 1050677248
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "Gated DeltaNet 16h",
+              "count": 45
+            },
+            {
+              "layer": "gated GQA 32/2",
+              "count": 15
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 512e top-10 +1 shared",
+              "count": 60
+            }
+          ],
+          "tags": [
+            "Gated DeltaNet + gated GQA",
+            "QK-norm",
+            "partial RoPE",
+            "MoE (512 SwiGLU experts, top-10, 1 shared)",
+            "softmax routing",
+            "RMSNorm",
+            "MTP head",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 60,
+            "hidden": 4096,
+            "context": 262144,
+            "vocab": 248320
+          },
+          "config": {
+            "vocab_size": 248320,
+            "embed_dim": 4096,
+            "num_layers": 60,
+            "full_attn_heads": 32,
+            "full_attn_kv_heads": 2,
+            "full_attn_head_dim": 256,
+            "linear_num_key_heads": 16,
+            "linear_num_value_heads": 64,
+            "linear_key_head_dim": 128,
+            "linear_value_head_dim": 128,
+            "linear_conv_kernel_dim": 4,
+            "max_seq_len": 262144,
+            "moe_intermediate_size": 1024,
+            "shared_expert_intermediate_size": 1024,
+            "num_experts": 512,
+            "num_experts_per_tok": 10,
+            "num_mtp_heads": 1,
+            "rope_theta": 10000000.0,
+            "partial_rotary_factor": 0.25,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Qwen3-Next",
+      "class": "Qwen3NextModel",
+      "module": "olm.models.alibaba.qwen3_next",
+      "organisation": "Alibaba (Qwen)",
+      "source": "src/olm/models/alibaba/qwen3_next.py",
+      "line": 110,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Qwen3NextBlock] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "Gated DeltaNet + gated GQA",
+        "QK-norm",
+        "partial RoPE",
+        "MoE (512 SwiGLU experts, top-10, 1 shared)",
+        "softmax routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Qwen3Next80BA3B",
+          "summary": "Qwen3-Next-80B-A3B (80B total, 512-expert MoE, ~3B active per token).",
+          "line": 221,
+          "exported": true,
+          "params": {
+            "total": 79671126144,
+            "active": 3871664256,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "Gated DeltaNet 16h",
+              "count": 36
+            },
+            {
+              "layer": "gated GQA 16/2",
+              "count": 12
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 512e top-10 +1 shared",
+              "count": 48
+            }
+          ],
+          "tags": [
+            "Gated DeltaNet + gated GQA",
+            "QK-norm",
+            "partial RoPE",
+            "MoE (512 SwiGLU experts, top-10, 1 shared)",
+            "softmax routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 48,
+            "hidden": 2048,
+            "context": 262144,
+            "vocab": 151936
+          },
+          "config": {
+            "vocab_size": 151936,
+            "embed_dim": 2048,
+            "num_layers": 48,
+            "num_heads": 16,
+            "num_kv_heads": 2,
+            "head_dim": 256,
+            "max_seq_len": 262144,
+            "linear_num_key_heads": 16,
+            "linear_num_value_heads": 32,
+            "linear_key_head_dim": 128,
+            "linear_value_head_dim": 128,
+            "linear_conv_kernel_size": 4,
+            "moe_intermediate_size": 512,
+            "num_experts": 512,
+            "num_shared_experts": 1,
+            "top_k": 10,
+            "full_attention_interval": 4,
+            "rope_theta": 10000000.0,
+            "partial_rotary_factor": 0.25,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "DeepSeek-V3",
+      "class": "DeepSeekV3Model",
+      "module": "olm.models.deepseekai.deepseek_v3",
+      "organisation": "DeepSeek",
+      "source": "src/olm/models/deepseekai/deepseek_v3.py",
+      "line": 123,
+      "exported": true,
+      "guide": "docs/models/deepseek-v3.md",
+      "structure": "Embedding -> [DeepSeekV3Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "MLA",
+        "RoPE",
+        "MoE (256 SwiGLU experts, top-8, 1 shared)",
+        "3 dense + 58 MoE layers",
+        "sigmoid routing with aux-loss-free bias",
+        "RMSNorm",
+        "MTP head",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "DeepSeekV3_671B",
+          "summary": "DeepSeek-V3 / R1 (671B total, ~37B active; language-model component).",
+          "line": 278,
+          "exported": true,
+          "params": {
+            "total": 672055880704,
+            "active": 37552312320,
+            "mtp": 1029446656
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "MLA 128h",
+              "count": 61
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 256e top-8 +1 shared",
+              "count": 58
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 3
+            }
+          ],
+          "tags": [
+            "MLA",
+            "RoPE",
+            "MoE (256 SwiGLU experts, top-8, 1 shared)",
+            "3 dense + 58 MoE layers",
+            "sigmoid routing with aux-loss-free bias",
+            "RMSNorm",
+            "MTP head",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 61,
+            "hidden": 7168,
+            "context": 163840,
+            "vocab": 129280
+          },
+          "config": {
+            "vocab_size": 129280,
+            "embed_dim": 7168,
+            "num_layers": 61,
+            "num_heads": 128,
+            "max_seq_len": 163840,
+            "kv_lora_rank": 512,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "q_lora_rank": 1536,
+            "dense_intermediate_size": 18432,
+            "moe_intermediate_size": 2048,
+            "num_experts": 256,
+            "num_shared_experts": 1,
+            "top_k": 8,
+            "first_k_dense_replace": 3,
+            "routed_scaling_factor": 2.5,
+            "num_mtp_modules": 1,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gemma 2",
+      "class": "Gemma2Model",
+      "module": "olm.models.google.gemma2",
+      "organisation": "Google",
+      "source": "src/olm/models/google/gemma2.py",
+      "line": 110,
+      "exported": true,
+      "guide": null,
+      "structure": "Scaled token embedding -> [Gemma2Block] x N -> RMSNorm -> tied OutputHead -> optional final logit softcap.",
+      "tags": [
+        "sliding-window GQA + GQA",
+        "attention-logit softcap",
+        "RoPE",
+        "GeGLU",
+        "RMSNorm",
+        "final-logit softcap",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Gemma2_27B",
+          "summary": "Gemma 2 27B Model.",
+          "line": 177,
+          "exported": true,
+          "params": {
+            "total": 27227128320,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 32/16",
+              "count": 23
+            },
+            {
+              "layer": "sliding-window GQA (4096) 32/16",
+              "count": 23
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 46
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "attention-logit softcap",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "final-logit softcap",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 46,
+            "hidden": 4608,
+            "context": 8192,
+            "vocab": 256000
+          },
+          "config": {
+            "vocab_size": 256000,
+            "embed_dim": 4608,
+            "intermediate_size": 36864,
+            "num_layers": 46,
+            "num_heads": 32,
+            "num_kv_heads": 16,
+            "head_dim": 128,
+            "max_seq_len": 8192,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "sliding_window": 4096,
+            "attn_logit_softcap": 50.0,
+            "final_logit_softcap": 30.0,
+            "query_pre_attn_scalar": 256.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Gemma2_9B",
+          "summary": "Gemma 2 9B Model.",
+          "line": 194,
+          "exported": true,
+          "params": {
+            "total": 9241705984,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 16/8",
+              "count": 21
+            },
+            {
+              "layer": "sliding-window GQA (4096) 16/8",
+              "count": 21
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 42
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "attention-logit softcap",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "final-logit softcap",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 42,
+            "hidden": 3584,
+            "context": 8192,
+            "vocab": 256000
+          },
+          "config": {
+            "vocab_size": 256000,
+            "embed_dim": 3584,
+            "intermediate_size": 14336,
+            "num_layers": 42,
+            "num_heads": 16,
+            "num_kv_heads": 8,
+            "head_dim": 256,
+            "max_seq_len": 8192,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "sliding_window": 4096,
+            "attn_logit_softcap": 50.0,
+            "final_logit_softcap": 30.0,
+            "query_pre_attn_scalar": 256.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Gemma2_2B",
+          "summary": "Gemma 2 2B Model.",
+          "line": 211,
+          "exported": true,
+          "params": {
+            "total": 2614341888,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 8/4",
+              "count": 13
+            },
+            {
+              "layer": "sliding-window GQA (4096) 8/4",
+              "count": 13
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 26
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "attention-logit softcap",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "final-logit softcap",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 26,
+            "hidden": 2304,
+            "context": 8192,
+            "vocab": 256000
+          },
+          "config": {
+            "vocab_size": 256000,
+            "embed_dim": 2304,
+            "intermediate_size": 9216,
+            "num_layers": 26,
+            "num_heads": 8,
+            "num_kv_heads": 4,
+            "head_dim": 256,
+            "max_seq_len": 8192,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "sliding_window": 4096,
+            "attn_logit_softcap": 50.0,
+            "final_logit_softcap": 30.0,
+            "query_pre_attn_scalar": 256.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gemma 3",
+      "class": "Gemma3Model",
+      "module": "olm.models.google.gemma3",
+      "organisation": "Google",
+      "source": "src/olm/models/google/gemma3.py",
+      "line": 108,
+      "exported": true,
+      "guide": "docs/models/gemma-3.md",
+      "structure": "Scaled token embedding -> [Gemma3Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "sliding-window GQA + GQA",
+        "QK-norm",
+        "RoPE",
+        "GeGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Gemma3_4B",
+          "summary": "Gemma 3 4B Model (text-only language-model component).",
+          "line": 209,
+          "exported": true,
+          "params": {
+            "total": 3880099328,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "sliding-window GQA (1024) 8/4",
+              "count": 29
+            },
+            {
+              "layer": "GQA 8/4",
+              "count": 5
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 34
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "QK-norm",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 34,
+            "hidden": 2560,
+            "context": 131072,
+            "vocab": 262144
+          },
+          "config": {
+            "vocab_size": 262144,
+            "embed_dim": 2560,
+            "intermediate_size": 10240,
+            "num_layers": 34,
+            "num_heads": 8,
+            "num_kv_heads": 4,
+            "head_dim": 256,
+            "max_seq_len": 131072,
+            "local_rope_theta": 10000.0,
+            "global_rope_theta": 1000000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "sliding_window": 1024,
+            "sliding_window_pattern": 6,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Gemma3_27B",
+          "summary": "Gemma 3 27B Model (text-only language-model component).",
+          "line": 227,
+          "exported": true,
+          "params": {
+            "total": 27009002240,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "sliding-window GQA (1024) 32/16",
+              "count": 52
+            },
+            {
+              "layer": "GQA 32/16",
+              "count": 10
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 62
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "QK-norm",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 62,
+            "hidden": 5376,
+            "context": 131072,
+            "vocab": 262144
+          },
+          "config": {
+            "vocab_size": 262144,
+            "embed_dim": 5376,
+            "intermediate_size": 21504,
+            "num_layers": 62,
+            "num_heads": 32,
+            "num_kv_heads": 16,
+            "head_dim": 128,
+            "max_seq_len": 131072,
+            "local_rope_theta": 10000.0,
+            "global_rope_theta": 1000000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "sliding_window": 1024,
+            "sliding_window_pattern": 6,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ling 2.5",
+      "class": "Ling2_5_Model",
+      "module": "olm.models.inclusionai.ling2_5",
+      "organisation": "inclusionAI",
+      "source": "src/olm/models/inclusionai/ling2_5.py",
+      "line": 194,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [MLA | Lightning] x 80 -> RMSNorm -> OutputHead",
+      "tags": [
+        "MLA + Lightning Attention",
+        "QK-norm",
+        "RoPE",
+        "MoE (256 SwiGLU experts, top-8, 1 shared)",
+        "4 dense + 76 MoE layers",
+        "sigmoid routing with aux-loss-free bias",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Ling2_5_1T",
+          "summary": "Ling 2.5 1T with default config (63B active of 1T total).",
+          "line": 292,
+          "exported": true,
+          "params": {
+            "total": 1012230606336,
+            "active": 63579704832,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "Lightning Attention 64h",
+              "count": 70
+            },
+            {
+              "layer": "MLA 64h",
+              "count": 10
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 256e top-8 +1 shared",
+              "count": 76
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 4
+            }
+          ],
+          "tags": [
+            "MLA + Lightning Attention",
+            "QK-norm",
+            "RoPE",
+            "MoE (256 SwiGLU experts, top-8, 1 shared)",
+            "4 dense + 76 MoE layers",
+            "sigmoid routing with aux-loss-free bias",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 80,
+            "hidden": 8192,
+            "context": 131072,
+            "vocab": 157184
+          },
+          "config": {
+            "vocab_size": 157184,
+            "embed_dim": 8192,
+            "intermediate_size": 18432,
+            "moe_intermediate_size": 2048,
+            "num_layers": 80,
+            "num_heads": 64,
+            "head_dim": 128,
+            "kv_lora_rank": 512,
+            "q_lora_rank": 1536,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "max_seq_len": 131072,
+            "num_experts": 256,
+            "num_experts_per_tok": 8,
+            "layer_group_size": 8,
+            "first_k_dense": 4,
+            "rope_theta": 6000000.0,
+            "rms_norm_eps": 1e-06,
+            "routed_scaling_factor": 2.5,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "OPT",
+      "class": "OPTModel",
+      "module": "olm.models.facebook.opt",
+      "organisation": "Meta",
+      "source": "src/olm/models/facebook/opt.py",
+      "line": 69,
+      "exported": true,
+      "guide": null,
+      "structure": null,
+      "tags": [
+        "MHA",
+        "learned positions",
+        "ReLU MLP",
+        "LayerNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "OPT125M",
+          "summary": "OPT 125M Model Definition.",
+          "line": 131,
+          "exported": true,
+          "params": {
+            "total": 125237760,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 12/12",
+              "count": 12
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "ReLU MLP",
+              "count": 12
+            }
+          ],
+          "tags": [
+            "MHA",
+            "learned positions",
+            "ReLU MLP",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 12,
+            "hidden": 768,
+            "context": 2048,
+            "vocab": 50272
+          },
+          "config": {
+            "vocab_size": 50272,
+            "embed_dim": 768,
+            "intermediate_size": 3072,
+            "num_layers": 12,
+            "num_heads": 12,
+            "dropout": 0.1,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Llama 2",
+      "class": "Llama2Model",
+      "module": "olm.models.meta.llama2",
+      "organisation": "Meta",
+      "source": "src/olm/models/meta/llama2.py",
+      "line": 80,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Llama2Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "MHA / GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Llama2_7B",
+          "summary": "Llama 2 7B (MHA).",
+          "line": 133,
+          "exported": true,
+          "params": {
+            "total": 6607343616,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 32/32",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "MHA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 4096,
+            "vocab": 32000
+          },
+          "config": {
+            "vocab_size": 32000,
+            "embed_dim": 4096,
+            "intermediate_size": 11008,
+            "num_layers": 32,
+            "num_heads": 32,
+            "num_kv_heads": 32,
+            "max_seq_len": 4096,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama2_13B",
+          "summary": "Llama 2 13B (MHA).",
+          "line": 149,
+          "exported": true,
+          "params": {
+            "total": 12852024320,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 40/40",
+              "count": 40
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 40
+            }
+          ],
+          "tags": [
+            "MHA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 40,
+            "hidden": 5120,
+            "context": 4096,
+            "vocab": 32000
+          },
+          "config": {
+            "vocab_size": 32000,
+            "embed_dim": 5120,
+            "intermediate_size": 13824,
+            "num_layers": 40,
+            "num_heads": 40,
+            "num_kv_heads": 40,
+            "max_seq_len": 4096,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama2_70B",
+          "summary": "Llama 2 70B (GQA).",
+          "line": 165,
+          "exported": true,
+          "params": {
+            "total": 68714504192,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 64/8",
+              "count": 80
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 80
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 80,
+            "hidden": 8192,
+            "context": 4096,
+            "vocab": 32000
+          },
+          "config": {
+            "vocab_size": 32000,
+            "embed_dim": 8192,
+            "intermediate_size": 28672,
+            "num_layers": 80,
+            "num_heads": 64,
+            "num_kv_heads": 8,
+            "max_seq_len": 4096,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Llama 3.1 / 3.2",
+      "class": "Llama3Model",
+      "module": "olm.models.meta.llama3",
+      "organisation": "Meta",
+      "source": "src/olm/models/meta/llama3.py",
+      "line": 75,
+      "exported": true,
+      "guide": "docs/models/llama-3.md",
+      "structure": "Embedding -> [Llama3Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Llama3_1_405B",
+          "summary": "Llama 3.1 405B Model (Flagship).",
+          "line": 139,
+          "exported": true,
+          "params": {
+            "total": 403752042496,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 128/8",
+              "count": 126
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 126
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 126,
+            "hidden": 16384,
+            "context": 131072,
+            "vocab": 128256
+          },
+          "config": {
+            "vocab_size": 128256,
+            "embed_dim": 16384,
+            "intermediate_size": 53248,
+            "num_layers": 126,
+            "num_heads": 128,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama3_1_70B",
+          "summary": "Llama 3.1 70B Model.",
+          "line": 155,
+          "exported": true,
+          "params": {
+            "total": 69503033344,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 64/8",
+              "count": 80
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 80
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 80,
+            "hidden": 8192,
+            "context": 131072,
+            "vocab": 128256
+          },
+          "config": {
+            "vocab_size": 128256,
+            "embed_dim": 8192,
+            "intermediate_size": 28672,
+            "num_layers": 80,
+            "num_heads": 64,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama3_1_8B",
+          "summary": "Llama 3.1 8B Model.",
+          "line": 171,
+          "exported": true,
+          "params": {
+            "total": 7504924672,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 32/8",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 131072,
+            "vocab": 128256
+          },
+          "config": {
+            "vocab_size": 128256,
+            "embed_dim": 4096,
+            "intermediate_size": 14336,
+            "num_layers": 32,
+            "num_heads": 32,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama3_2_3B",
+          "summary": "Llama 3.2 3B Model (Edge-optimized).",
+          "line": 190,
+          "exported": true,
+          "params": {
+            "total": 3212749824,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 24/8",
+              "count": 28
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 28
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 28,
+            "hidden": 3072,
+            "context": 131072,
+            "vocab": 128256
+          },
+          "config": {
+            "vocab_size": 128256,
+            "embed_dim": 3072,
+            "intermediate_size": 8192,
+            "num_layers": 28,
+            "num_heads": 24,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Llama3_2_1B",
+          "summary": "Llama 3.2 1B Model (Pruned/Distilled).",
+          "line": 206,
+          "exported": true,
+          "params": {
+            "total": 1235814400,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 32/8",
+              "count": 16
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 16
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 16,
+            "hidden": 2048,
+            "context": 131072,
+            "vocab": 128256
+          },
+          "config": {
+            "vocab_size": 128256,
+            "embed_dim": 2048,
+            "intermediate_size": 8192,
+            "num_layers": 16,
+            "num_heads": 32,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Llama 4 Maverick",
+      "class": "Llama4MaverickModel",
+      "module": "olm.models.meta.llama4",
+      "organisation": "Meta",
+      "source": "src/olm/models/meta/llama4.py",
+      "line": 132,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Llama4Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "sliding-window GQA + GQA",
+        "RoPE",
+        "NoPE on 12 layers",
+        "MoE (128 SwiGLU experts, top-1, 1 shared)",
+        "24 dense + 24 MoE layers",
+        "sigmoid routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Llama4Maverick_400B",
+          "summary": "Llama 4 Maverick (400B total, 17B active; language-model component).",
+          "line": 255,
+          "exported": true,
+          "params": {
+            "total": 397691950080,
+            "active": 14164792320,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "sliding-window GQA (8192) 40/8",
+              "count": 36
+            },
+            {
+              "layer": "GQA 40/8",
+              "count": 12
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 128e top-1 +1 shared",
+              "count": 24
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 24
+            }
+          ],
+          "tags": [
+            "sliding-window GQA + GQA",
+            "RoPE",
+            "NoPE on 12 layers",
+            "MoE (128 SwiGLU experts, top-1, 1 shared)",
+            "24 dense + 24 MoE layers",
+            "sigmoid routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 48,
+            "hidden": 5120,
+            "context": 1048576,
+            "vocab": 202048
+          },
+          "config": {
+            "vocab_size": 202048,
+            "embed_dim": 5120,
+            "intermediate_size": 8192,
+            "moe_intermediate_size": 8192,
+            "num_layers": 48,
+            "num_heads": 40,
+            "num_kv_heads": 8,
+            "head_dim": 128,
+            "max_seq_len": 1048576,
+            "chunk_size": 8192,
+            "num_experts": 128,
+            "top_k": 1,
+            "interleave_moe_layer_step": 2,
+            "nope_layer_interval": 4,
+            "rope_theta": 500000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phi-3 / Phi-3.5",
+      "class": "Phi3Model",
+      "module": "olm.models.microsoft.phi3",
+      "organisation": "Microsoft",
+      "source": "src/olm/models/microsoft/phi3.py",
+      "line": 83,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "MHA / GQA",
+        "RoPE",
+        "SwiGLU / GeGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Phi3_5_Mini",
+          "summary": "Phi-3.5 Mini 3.8B Model.",
+          "line": 144,
+          "exported": true,
+          "params": {
+            "total": 3722578944,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 32/32",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "MHA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 3072,
+            "context": 131072,
+            "vocab": 32064
+          },
+          "config": {
+            "vocab_size": 32064,
+            "embed_dim": 3072,
+            "intermediate_size": 8192,
+            "num_layers": 32,
+            "num_heads": 32,
+            "num_kv_heads": 32,
+            "max_seq_len": 131072,
+            "rope_theta": 10000.0,
+            "activation": "swiglu",
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "Phi3_Small",
+          "summary": "Phi-3 Small 7B Model.",
+          "line": 165,
+          "exported": true,
+          "params": {
+            "total": 7390629888,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 32/8",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GeGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "GeGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 131072,
+            "vocab": 100352
+          },
+          "config": {
+            "vocab_size": 100352,
+            "embed_dim": 4096,
+            "intermediate_size": 14336,
+            "num_layers": 32,
+            "num_heads": 32,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000.0,
+            "activation": "geglu",
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phi-4",
+      "class": "Phi4Model",
+      "module": "olm.models.microsoft.phi4",
+      "organisation": "Microsoft",
+      "source": "src/olm/models/microsoft/phi4.py",
+      "line": 73,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.",
+      "tags": [
+        "GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Phi4_14B",
+          "summary": "Phi-4 14B Model.",
+          "line": 130,
+          "exported": true,
+          "params": {
+            "total": 14145704960,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "GQA 40/10",
+              "count": 40
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 40
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 40,
+            "hidden": 5120,
+            "context": 16384,
+            "vocab": 100352
+          },
+          "config": {
+            "vocab_size": 100352,
+            "embed_dim": 5120,
+            "intermediate_size": 17920,
+            "num_layers": 40,
+            "num_heads": 40,
+            "num_kv_heads": 10,
+            "max_seq_len": 16384,
+            "rope_theta": 250000.0,
+            "dropout": 0.0,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "MiniMax-M2.5",
+      "class": "MiniMaxM2_5_Model",
+      "module": "olm.models.minimax.m2_5",
+      "organisation": "MiniMax",
+      "source": "src/olm/models/minimax/m2_5.py",
+      "line": 77,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [MiniMaxM2_5_Block] x 62 -> RMSNorm -> OutputHead + MultiTokenPredictionHead (3 heads)",
+      "tags": [
+        "GQA",
+        "QK-norm",
+        "RoPE",
+        "MoE (256 SwiGLU experts, top-8)",
+        "sigmoid routing",
+        "RMSNorm",
+        "MTP head",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "MiniMaxM2_5_230B",
+          "summary": "MiniMax M2.5 230B -- 256 experts, top-8, 10B active.",
+          "line": 162,
+          "exported": true,
+          "params": {
+            "total": 229360565248,
+            "active": 11030124544,
+            "mtp": 671228928
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 48/8",
+              "count": 62
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 256e top-8",
+              "count": 62
+            }
+          ],
+          "tags": [
+            "GQA",
+            "QK-norm",
+            "RoPE",
+            "MoE (256 SwiGLU experts, top-8)",
+            "sigmoid routing",
+            "RMSNorm",
+            "MTP head",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 62,
+            "hidden": 3072,
+            "context": 196608,
+            "vocab": 200064
+          },
+          "config": {
+            "vocab_size": 200064,
+            "embed_dim": 3072,
+            "num_layers": 62,
+            "num_heads": 48,
+            "num_kv_heads": 8,
+            "head_dim": 128,
+            "max_seq_len": 196608,
+            "moe_intermediate_size": 1536,
+            "num_experts": 256,
+            "num_experts_per_tok": 8,
+            "num_mtp_modules": 3,
+            "rope_theta": 5000000.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "MiniMax-M2",
+      "class": "MiniMaxM2Model",
+      "module": "olm.models.minimax.minimax_m2",
+      "organisation": "MiniMax",
+      "source": "src/olm/models/minimax/minimax_m2.py",
+      "line": 124,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [MiniMaxM2Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "GQA",
+        "QK-norm",
+        "partial RoPE",
+        "MoE (256 SwiGLU experts, top-8)",
+        "sigmoid routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "MiniMaxM2",
+          "summary": "MiniMax-M2 (230B total, 256-expert MoE, ~10B active per token).",
+          "line": 212,
+          "exported": true,
+          "params": {
+            "total": 228689320448,
+            "active": 11030108672,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 48/8",
+              "count": 62
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 256e top-8",
+              "count": 62
+            }
+          ],
+          "tags": [
+            "GQA",
+            "QK-norm",
+            "partial RoPE",
+            "MoE (256 SwiGLU experts, top-8)",
+            "sigmoid routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 62,
+            "hidden": 3072,
+            "context": 196608,
+            "vocab": 200064
+          },
+          "config": {
+            "vocab_size": 200064,
+            "embed_dim": 3072,
+            "moe_intermediate_size": 1536,
+            "num_layers": 62,
+            "num_heads": 48,
+            "num_kv_heads": 8,
+            "max_seq_len": 196608,
+            "num_experts": 256,
+            "top_k": 8,
+            "head_dim": 128,
+            "rope_theta": 5000000.0,
+            "rotary_percentage": 0.5,
+            "use_qk_norm": true,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mistral Large 3",
+      "class": "MistralLarge3Model",
+      "module": "olm.models.mistralai.mistral_large3",
+      "organisation": "Mistral AI",
+      "source": "src/olm/models/mistralai/mistral_large3.py",
+      "line": 97,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [MistralLarge3Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "MLA",
+        "RoPE",
+        "MoE (128 SwiGLU experts, top-4, 1 shared)",
+        "3 dense + 58 MoE layers",
+        "softmax routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "MistralLarge3",
+          "summary": "Mistral Large 3 (675B total, ~41B active; language-model component).",
+          "line": 206,
+          "exported": true,
+          "params": {
+            "total": 673421089792,
+            "active": 39946968064,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "MLA 128h",
+              "count": 61
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 128e top-4 +1 shared",
+              "count": 58
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 3
+            }
+          ],
+          "tags": [
+            "MLA",
+            "RoPE",
+            "MoE (128 SwiGLU experts, top-4, 1 shared)",
+            "3 dense + 58 MoE layers",
+            "softmax routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 61,
+            "hidden": 7168,
+            "context": 262144,
+            "vocab": 131072
+          },
+          "config": {
+            "vocab_size": 131072,
+            "embed_dim": 7168,
+            "num_layers": 61,
+            "num_heads": 128,
+            "max_seq_len": 262144,
+            "kv_lora_rank": 512,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "q_lora_rank": 1536,
+            "dense_intermediate_size": 16384,
+            "moe_intermediate_size": 4096,
+            "num_experts": 128,
+            "num_shared_experts": 1,
+            "top_k": 4,
+            "first_k_dense_replace": 3,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mistral Small 3.1",
+      "class": "MistralSmall3_1_Model",
+      "module": "olm.models.mistralai.mistral_small3_1",
+      "organisation": "Mistral AI",
+      "source": "src/olm/models/mistralai/mistral_small3_1.py",
+      "line": 77,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [MistralSmall3_1_Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "MistralSmall3_1_24B",
+          "summary": "Mistral Small 3.1 (24B; language-model component).",
+          "line": 154,
+          "exported": true,
+          "params": {
+            "total": 24096691200,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 32/8",
+              "count": 40
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 40
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 40,
+            "hidden": 5120,
+            "context": 131072,
+            "vocab": 131072
+          },
+          "config": {
+            "vocab_size": 131072,
+            "embed_dim": 5120,
+            "intermediate_size": 32768,
+            "num_layers": 40,
+            "num_heads": 32,
+            "num_kv_heads": 8,
+            "max_seq_len": 131072,
+            "rope_theta": 1000000000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kimi K2",
+      "class": "KimiK2Model",
+      "module": "olm.models.moonshotai.kimi_k2",
+      "organisation": "Moonshot AI",
+      "source": "src/olm/models/moonshotai/kimi_k2.py",
+      "line": 124,
+      "exported": true,
+      "guide": "docs/models/kimi.md",
+      "structure": "Embedding -> [KimiK2Block] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "MLA",
+        "RoPE",
+        "MoE (384 SwiGLU experts, top-8, 1 shared)",
+        "1 dense + 60 MoE layers",
+        "sigmoid routing with aux-loss-free bias",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "KimiK2_1T",
+          "summary": "Kimi K2 (1T total, ~32B active; language-model component).",
+          "line": 244,
+          "exported": true,
+          "params": {
+            "total": 1026408255488,
+            "active": 32861523968,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "MLA 64h",
+              "count": 61
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 384e top-8 +1 shared",
+              "count": 60
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 1
+            }
+          ],
+          "tags": [
+            "MLA",
+            "RoPE",
+            "MoE (384 SwiGLU experts, top-8, 1 shared)",
+            "1 dense + 60 MoE layers",
+            "sigmoid routing with aux-loss-free bias",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 61,
+            "hidden": 7168,
+            "context": 131072,
+            "vocab": 163840
+          },
+          "config": {
+            "vocab_size": 163840,
+            "embed_dim": 7168,
+            "num_layers": 61,
+            "num_heads": 64,
+            "max_seq_len": 131072,
+            "kv_lora_rank": 512,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "q_lora_rank": 1536,
+            "dense_intermediate_size": 18432,
+            "moe_intermediate_size": 2048,
+            "num_experts": 384,
+            "num_shared_experts": 1,
+            "top_k": 8,
+            "first_k_dense_replace": 1,
+            "routed_scaling_factor": 2.827,
+            "rope_theta": 10000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kimi Linear",
+      "class": "KimiLinearModel",
+      "module": "olm.models.moonshotai.kimi_linear",
+      "organisation": "Moonshot AI",
+      "source": "src/olm/models/moonshotai/kimi_linear.py",
+      "line": 169,
+      "exported": true,
+      "guide": "docs/models/kimi.md",
+      "structure": "Embedding -> [KimiLinearBlock] x N -> RMSNorm -> OutputHead.",
+      "tags": [
+        "Kimi Delta Attention + MLA",
+        "QK-norm",
+        "RoPE",
+        "MoE (256 SwiGLU experts, top-8, 1 shared)",
+        "1 dense + 26 MoE layers",
+        "sigmoid routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "KimiLinear48BA3B",
+          "summary": "Kimi Linear 48B-A3B (48B total, 256-expert MoE, ~3B active per token).",
+          "line": 295,
+          "exported": true,
+          "params": {
+            "total": 49466644352,
+            "active": 3828422528,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "Kimi Delta Attention 32h",
+              "count": 20
+            },
+            {
+              "layer": "MLA 32h",
+              "count": 7
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 256e top-8 +1 shared",
+              "count": 26
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 1
+            }
+          ],
+          "tags": [
+            "Kimi Delta Attention + MLA",
+            "QK-norm",
+            "RoPE",
+            "MoE (256 SwiGLU experts, top-8, 1 shared)",
+            "1 dense + 26 MoE layers",
+            "sigmoid routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 27,
+            "hidden": 2304,
+            "context": 1048576,
+            "vocab": 163840
+          },
+          "config": {
+            "vocab_size": 163840,
+            "embed_dim": 2304,
+            "num_layers": 27,
+            "kda_num_heads": 32,
+            "kda_head_dim": 128,
+            "kda_conv_kernel_size": 4,
+            "mla_num_heads": 32,
+            "max_seq_len": 1048576,
+            "kv_lora_rank": 512,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "q_lora_rank": null,
+            "intermediate_size": 9216,
+            "moe_intermediate_size": 1024,
+            "num_experts": 256,
+            "num_shared_experts": 1,
+            "top_k": 8,
+            "full_attention_interval": 4,
+            "first_k_dense_replace": 1,
+            "rope_theta": 10000.0,
+            "routed_scaling_factor": 2.446,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Nanbeige 4.1",
+      "class": "Nanbeige4_1_Model",
+      "module": "olm.models.nanbeige.nanbeige4_1",
+      "organisation": "Nanbeige",
+      "source": "src/olm/models/nanbeige/nanbeige4_1.py",
+      "line": 56,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [Nanbeige4_1_Block] x N -> RMSNorm -> OutputHead",
+      "tags": [
+        "GQA",
+        "RoPE",
+        "SwiGLU",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Nanbeige4_1_3B",
+          "summary": "Nanbeige 4.1 3B -- small on-device model with 262K context.",
+          "line": 106,
+          "exported": true,
+          "params": {
+            "total": 3933637120,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 20/4",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "SwiGLU",
+              "count": 32
+            }
+          ],
+          "tags": [
+            "GQA",
+            "RoPE",
+            "SwiGLU",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 2560,
+            "context": 262144,
+            "vocab": 166144
+          },
+          "config": {
+            "vocab_size": 166144,
+            "embed_dim": 2560,
+            "intermediate_size": 10496,
+            "num_layers": 32,
+            "num_heads": 20,
+            "num_kv_heads": 4,
+            "max_seq_len": 262144,
+            "head_dim": 128,
+            "rope_theta": 70000000.0,
+            "dropout": 0.0,
+            "rms_norm_eps": 1e-05,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "GPT-2",
+      "class": "GPT2Model",
+      "module": "olm.models.openai.gpt2",
+      "organisation": "OpenAI",
+      "source": "src/olm/models/openai/gpt2.py",
+      "line": 34,
+      "exported": true,
+      "guide": "docs/models/gpt-2.md",
+      "structure": "Token embedding + learned positional embedding -> GPT2Block x N -> tied OutputHead.",
+      "tags": [
+        "MHA",
+        "learned positions",
+        "GELU MLP",
+        "LayerNorm",
+        "tied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "GPT2",
+          "summary": "GPT-2 Small (124M).",
+          "line": 63,
+          "exported": true,
+          "params": {
+            "total": 124439808,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 12/12",
+              "count": 12
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GELU MLP",
+              "count": 12
+            }
+          ],
+          "tags": [
+            "MHA",
+            "learned positions",
+            "GELU MLP",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 12,
+            "hidden": 768,
+            "context": 1024,
+            "vocab": 50257
+          },
+          "config": {
+            "vocab_size": 50257,
+            "embed_dim": 768,
+            "num_layers": 12,
+            "num_heads": 12,
+            "max_seq_len": 1024,
+            "dropout": 0.1,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "GPT2Medium",
+          "summary": "GPT-2 Medium (355M).",
+          "line": 74,
+          "exported": true,
+          "params": {
+            "total": 354823168,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 16/16",
+              "count": 24
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GELU MLP",
+              "count": 24
+            }
+          ],
+          "tags": [
+            "MHA",
+            "learned positions",
+            "GELU MLP",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 24,
+            "hidden": 1024,
+            "context": 1024,
+            "vocab": 50257
+          },
+          "config": {
+            "vocab_size": 50257,
+            "embed_dim": 1024,
+            "num_layers": 24,
+            "num_heads": 16,
+            "max_seq_len": 1024,
+            "dropout": 0.1,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "GPT2Large",
+          "summary": "GPT-2 Large (774M).",
+          "line": 85,
+          "exported": true,
+          "params": {
+            "total": 774030080,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 20/20",
+              "count": 36
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GELU MLP",
+              "count": 36
+            }
+          ],
+          "tags": [
+            "MHA",
+            "learned positions",
+            "GELU MLP",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 36,
+            "hidden": 1280,
+            "context": 1024,
+            "vocab": 50257
+          },
+          "config": {
+            "vocab_size": 50257,
+            "embed_dim": 1280,
+            "num_layers": 36,
+            "num_heads": 20,
+            "max_seq_len": 1024,
+            "dropout": 0.1,
+            "tie_weights": true
+          }
+        },
+        {
+          "name": "GPT2XL",
+          "summary": "GPT-2 XL (1.5B).",
+          "line": 96,
+          "exported": true,
+          "params": {
+            "total": 1557611200,
+            "active": null,
+            "mtp": 0
+          },
+          "tied_embeddings": true,
+          "token_mixers": [
+            {
+              "layer": "MHA 25/25",
+              "count": 48
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "GELU MLP",
+              "count": 48
+            }
+          ],
+          "tags": [
+            "MHA",
+            "learned positions",
+            "GELU MLP",
+            "LayerNorm",
+            "tied embeddings"
+          ],
+          "dims": {
+            "layers": 48,
+            "hidden": 1600,
+            "context": 1024,
+            "vocab": 50257
+          },
+          "config": {
+            "vocab_size": 50257,
+            "embed_dim": 1600,
+            "num_layers": 48,
+            "num_heads": 25,
+            "max_seq_len": 1024,
+            "dropout": 0.1,
+            "tie_weights": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sarvam 30B",
+      "class": "Sarvam30B_Model",
+      "module": "olm.models.sarvam.sarvam",
+      "organisation": "Sarvam AI",
+      "source": "src/olm/models/sarvam/sarvam.py",
+      "line": 117,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [DenseBlock, MoEBlock x 18] -> RMSNorm -> OutputHead",
+      "tags": [
+        "GQA",
+        "QK-norm",
+        "RoPE",
+        "MoE (128 SwiGLU experts, top-6, 1 shared)",
+        "1 dense + 18 MoE layers",
+        "sigmoid routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Sarvam30B",
+          "summary": "Sarvam 30B with default config.",
+          "line": 188,
+          "exported": true,
+          "params": {
+            "total": 32152650368,
+            "active": 4520575616,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "GQA 64/4",
+              "count": 19
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 128e top-6 +1 shared",
+              "count": 18
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 1
+            }
+          ],
+          "tags": [
+            "GQA",
+            "QK-norm",
+            "RoPE",
+            "MoE (128 SwiGLU experts, top-6, 1 shared)",
+            "1 dense + 18 MoE layers",
+            "sigmoid routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 19,
+            "hidden": 4096,
+            "context": 131072,
+            "vocab": 262144
+          },
+          "config": {
+            "vocab_size": 262144,
+            "embed_dim": 4096,
+            "intermediate_size": 8192,
+            "moe_intermediate_size": 1024,
+            "shared_expert_intermediate_size": 1024,
+            "num_layers": 19,
+            "num_heads": 64,
+            "num_kv_heads": 4,
+            "head_dim": 64,
+            "max_seq_len": 131072,
+            "num_experts": 128,
+            "num_experts_per_tok": 6,
+            "first_k_dense": 1,
+            "rope_theta": 8000000.0,
+            "rms_norm_eps": 1e-06,
+            "routed_scaling_factor": 2.5,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sarvam 105B",
+      "class": "Sarvam105B_Model",
+      "module": "olm.models.sarvam.sarvam",
+      "organisation": "Sarvam AI",
+      "source": "src/olm/models/sarvam/sarvam.py",
+      "line": 299,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [DenseBlock, MoEBlock x 31] -> RMSNorm -> OutputHead",
+      "tags": [
+        "MLA",
+        "RoPE",
+        "MoE (128 SwiGLU experts, top-8, 1 shared)",
+        "1 dense + 31 MoE layers",
+        "sigmoid routing",
+        "RMSNorm",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Sarvam105B",
+          "summary": "Sarvam 105B with default config.",
+          "line": 372,
+          "exported": true,
+          "params": {
+            "total": 106031767424,
+            "active": 12414902144,
+            "mtp": 0
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "MLA 64h",
+              "count": 32
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 128e top-8 +1 shared",
+              "count": 31
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 1
+            }
+          ],
+          "tags": [
+            "MLA",
+            "RoPE",
+            "MoE (128 SwiGLU experts, top-8, 1 shared)",
+            "1 dense + 31 MoE layers",
+            "sigmoid routing",
+            "RMSNorm",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 32,
+            "hidden": 4096,
+            "context": 131072,
+            "vocab": 262144
+          },
+          "config": {
+            "vocab_size": 262144,
+            "embed_dim": 4096,
+            "intermediate_size": 16384,
+            "moe_intermediate_size": 2048,
+            "num_layers": 32,
+            "num_heads": 64,
+            "kv_lora_rank": 512,
+            "qk_nope_head_dim": 128,
+            "qk_rope_head_dim": 64,
+            "v_head_dim": 128,
+            "max_seq_len": 131072,
+            "num_experts": 128,
+            "num_experts_per_tok": 8,
+            "first_k_dense": 1,
+            "rope_theta": 10000.0,
+            "rms_norm_eps": 1e-06,
+            "routed_scaling_factor": 2.5,
+            "tie_weights": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Step 3.5 Flash",
+      "class": "Step3_5_Flash_Model",
+      "module": "olm.models.stepfun.step3_5",
+      "organisation": "StepFun",
+      "source": "src/olm/models/stepfun/step3_5.py",
+      "line": 145,
+      "exported": true,
+      "guide": null,
+      "structure": "Embedding -> [FullAttn | SlidingAttn] x 48 -> RMSNorm -> OutputHead + MultiTokenPredictionHead (3 heads)",
+      "tags": [
+        "GQA + sliding-window GQA",
+        "QK-norm",
+        "per-head attention gate",
+        "RoPE",
+        "MoE (288 SwiGLU experts, top-8, 1 shared)",
+        "6 dense + 42 MoE layers",
+        "sigmoid routing",
+        "RMSNorm",
+        "MTP head",
+        "untied embeddings"
+      ],
+      "presets": [
+        {
+          "name": "Step3_5_Flash_196B",
+          "summary": "Step 3.5 Flash 196B with default config.",
+          "line": 263,
+          "exported": true,
+          "params": {
+            "total": 198328360768,
+            "active": 12730920768,
+            "mtp": 628633600
+          },
+          "tied_embeddings": false,
+          "token_mixers": [
+            {
+              "layer": "sliding-window GQA (512) 96/8",
+              "count": 36
+            },
+            {
+              "layer": "GQA 64/8",
+              "count": 12
+            }
+          ],
+          "feed_forward": [
+            {
+              "layer": "MoE 288e top-8 +1 shared",
+              "count": 42
+            },
+            {
+              "layer": "SwiGLU",
+              "count": 6
+            }
+          ],
+          "tags": [
+            "GQA + sliding-window GQA",
+            "QK-norm",
+            "per-head attention gate",
+            "RoPE",
+            "MoE (288 SwiGLU experts, top-8, 1 shared)",
+            "6 dense + 42 MoE layers",
+            "sigmoid routing",
+            "RMSNorm",
+            "MTP head",
+            "untied embeddings"
+          ],
+          "dims": {
+            "layers": 48,
+            "hidden": 4096,
+            "context": 262144,
+            "vocab": 128896
+          },
+          "config": {
+            "vocab_size": 128896,
+            "embed_dim": 4096,
+            "intermediate_size": 11264,
+            "moe_intermediate_size": 1280,
+            "num_layers": 48,
+            "full_attn_heads": 64,
+            "sliding_attn_heads": 96,
+            "num_kv_heads": 8,
+            "head_dim": 128,
+            "max_seq_len": 262144,
+            "window_size": 512,
+            "num_experts": 288,
+            "num_experts_per_tok": 8,
+            "num_mtp_heads": 3,
+            "routed_scaling_factor": 3.0,
+            "rms_norm_eps": 1e-06,
+            "tie_weights": false,
+            "layer_types": null,
+            "moe_layers": null,
+            "rope_thetas": null
+          }
+        }
+      ]
+    }
+  ]
+}
