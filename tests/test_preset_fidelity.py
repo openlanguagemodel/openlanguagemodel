@@ -17,8 +17,12 @@ from olm.models import (
     MiniMaxM2_5_Model,
     MistralSmall3_1_Model,
     Olmo3Model,
+    Step3_5_Flash_Model,
 )
-from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
+from olm.nn.embeddings.positional.rope import (
+    PartialRotaryPositionalEmbedding,
+    RotaryPositionalEmbedding,
+)
 from olm.nn.activations import GeGLU
 from olm.nn.feedforward import GeGLUFFN
 
@@ -184,3 +188,76 @@ def test_minimax_m2_5_applies_partial_rope():
     assert isinstance(rope, PartialRotaryPositionalEmbedding)
     assert rope.rotary_dim == 4
     assert model(torch.randint(0, 128, (1, 8))).shape == (1, 8, 128)
+
+
+def _tiny_step3_5():
+    # One period of the released schedule plus a second full layer:
+    # full, sliding, sliding, sliding, full; dense then MoE.
+    return Step3_5_Flash_Model(
+        vocab_size=128,
+        embed_dim=32,
+        intermediate_size=64,
+        moe_intermediate_size=16,
+        num_layers=5,
+        full_attn_heads=4,
+        sliding_attn_heads=4,
+        num_kv_heads=2,
+        head_dim=8,
+        max_seq_len=16,
+        window_size=4,
+        num_experts=4,
+        num_experts_per_tok=2,
+        num_mtp_heads=1,
+        moe_layers={3, 4},
+    )
+
+
+def test_step3_5_applies_partial_rope_on_full_attention_layers_only():
+    blocks = _tiny_step3_5().transformer_blocks
+    full_rope = blocks[0].self_attn.rope
+    sliding_rope = blocks[1].self_attn.rope
+
+    # partial_rotary_factors is [0.5, 1.0, 1.0, 1.0] * 12 in the release.
+    assert isinstance(full_rope, PartialRotaryPositionalEmbedding)
+    assert full_rope.rotary_dim == 4
+    assert isinstance(sliding_rope, RotaryPositionalEmbedding)
+    assert isinstance(blocks[4].self_attn.rope, PartialRotaryPositionalEmbedding)
+    assert blocks[0].self_attn.rope.base == 5000000.0
+    assert blocks[1].self_attn.rope.base == 10000.0
+
+
+class _ZeroFFN(torch.nn.Module):
+    def forward(self, x):
+        return torch.zeros_like(x)
+
+
+@pytest.mark.parametrize("layer_idx", [0, 1], ids=["full", "sliding"])
+@pytest.mark.parametrize("seq_len", [4, 8], ids=["seq_eq_heads", "seq_ne_heads"])
+def test_step3_5_head_gate_scales_heads_before_the_output_projection(
+    layer_idx, seq_len
+):
+    torch.manual_seed(0)
+    block = _tiny_step3_5().transformer_blocks[layer_idx]
+    block.ffn = _ZeroFFN()
+    x = torch.randn(2, seq_len, 32)
+
+    with torch.no_grad():
+        h = block.attn_norm(x)
+        heads = block.self_attn(h).view(2, seq_len, block.num_heads, -1)
+        gate = torch.sigmoid(h @ block.head_gate.gate_proj.T)
+        gated = (heads * gate.unsqueeze(-1)).reshape(2, seq_len, -1)
+        expected = x + block.o_proj(gated)
+
+        torch.testing.assert_close(block(x), expected)
+
+
+def test_step3_5_tiny_model_runs_with_mtp():
+    model = _tiny_step3_5()
+    tokens = torch.randint(0, 128, (1, 8))
+    logits, mtp_logits = model.forward_with_mtp(tokens)
+
+    assert logits.shape == (1, 8, 128)
+    assert len(mtp_logits) == 1
+    # Layers 0-2 are dense; the MoE layers record their router logits.
+    assert model.transformer_blocks[2].last_router_logits is None
+    assert model.transformer_blocks[3].last_router_logits is not None
