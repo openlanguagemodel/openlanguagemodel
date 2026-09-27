@@ -537,6 +537,9 @@ function PriceCell({
   editing: boolean;
   onChange: (value: string) => void;
 }) {
+  // While the field has focus it shows what was typed, so clearing it to type
+  // a new price does not snap back to the quoted one.
+  const [draft, setDraft] = useState<string | null>(null);
   if (editing) {
     return (
       <input
@@ -546,9 +549,13 @@ function PriceCell({
         step="0.01"
         inputMode="decimal"
         aria-label={`Price per GPU-hour for ${row.gpu.name}`}
-        value={row.price ?? ""}
+        value={draft ?? row.price ?? ""}
         placeholder="—"
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          onChange(event.target.value);
+        }}
+        onBlur={() => setDraft(null)}
       />
     );
   }
