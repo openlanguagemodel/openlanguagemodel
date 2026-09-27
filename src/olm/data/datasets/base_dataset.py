@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from typing import Iterator, Tuple, Any
+from typing import Iterator, List, Tuple, Any
 from torch.utils.data import IterableDataset, get_worker_info
 from itertools import islice
 
@@ -13,13 +13,19 @@ class BaseTextDataset(IterableDataset, ABC):
     construction, worker sharding, and distributed-rank sharding. Subclasses
     only need to implement ``_get_text_iterator`` and yield raw text strings.
 
+    Tokens from consecutive texts go into one buffer, so a sample can span the
+    end of one text and the start of the next. Each sample takes
+    ``context_length + 1`` fresh tokens from the buffer, and tokens left over
+    when the source runs out are dropped.
+
     Iteration:
         Yields ``(input_ids, labels)`` tuples. Both tensors have shape
         ``[context_length]`` and dtype ``torch.long``. ``labels`` is the
         one-token-shifted target sequence for causal language modeling.
 
     Args:
-        tokenizer: Tokenizer with an ``encode`` method.
+        tokenizer: Tokenizer with an ``encode`` method that returns a 1-D
+            tensor or a list of token ids.
         context_length (int): Number of input tokens per sample.
         skip_batches (int): Number of yielded samples to skip, useful for
             coarse resume behavior. The count applies to each worker and rank
@@ -65,6 +71,19 @@ class BaseTextDataset(IterableDataset, ABC):
         """
         return False
 
+    def _encode(self, text: str) -> List[int]:
+        """Tokenize one text chunk, asking for no special tokens, as a list of ids."""
+        try:
+            tokens = self.tokenizer.encode(text, add_special_tokens=False)
+        except TypeError:
+            # Older/simple tokenizers may not expose add_special_tokens.
+            tokens = self.tokenizer.encode(text)
+
+        # Extending a list with a tensor would store one 0-d tensor per token.
+        if isinstance(tokens, torch.Tensor):
+            tokens = tokens.tolist()
+        return tokens
+
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         """
         Iterate over tokens, yielding (input, target) tensors.
@@ -78,6 +97,7 @@ class BaseTextDataset(IterableDataset, ABC):
         worker_info = get_worker_info()
         batches_yielded = 0
         token_buffer = []
+        sample_length = self.context_length + 1
 
         # Get the text source
         text_iter = self._get_text_iterator()
@@ -103,21 +123,16 @@ class BaseTextDataset(IterableDataset, ABC):
             text_iter = islice(text_iter, shard_id, None, num_shards)
 
         for text in text_iter:
-            try:
-                tokens = self.tokenizer.encode(text, add_special_tokens=False)
-            except TypeError:
-                # Older/simple tokenizers may not expose add_special_tokens.
-                tokens = self.tokenizer.encode(text)
+            token_buffer.extend(self._encode(text))
 
-            token_buffer.extend(tokens)
-
-            # Yield complete sequences
-            while len(token_buffer) >= self.context_length + 1:
-                # Extract sequence
-                sequence = token_buffer[: self.context_length + 1]
-
+            # Yield complete sequences. ``start`` walks through the buffer, and
+            # the used tokens are removed once per text, so a long text costs
+            # linear rather than quadratic time.
+            start = 0
+            while len(token_buffer) - start >= sample_length:
                 # Non-overlapping sliding window
-                token_buffer = token_buffer[self.context_length + 1 :]
+                sequence = token_buffer[start : start + sample_length]
+                start += sample_length
 
                 # Skip batches if needed (e.g. resumption)
                 if batches_yielded < self.skip_batches:
@@ -129,3 +144,5 @@ class BaseTextDataset(IterableDataset, ABC):
 
                 batches_yielded += 1
                 yield input_ids, labels
+
+            del token_buffer[:start]
