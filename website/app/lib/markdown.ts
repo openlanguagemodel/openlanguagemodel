@@ -5,7 +5,8 @@
  *  - GitHub-style alerts ("> [!NOTE]") -> styled callouts
  *  - mermaid code fences -> <div class="mermaid"> for client rendering
  *  - syntax highlighting (highlight.js classes, themed in globals.css)
- *  - rewriting of internal ".md" links to site routes (with basePath)
+ *  - rewriting of internal ".md" links to site routes (with basePath), and of
+ *    relative links that leave docs/ to the same file on GitHub
  */
 import fs from "fs";
 import path from "path";
@@ -19,7 +20,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeHighlight from "rehype-highlight";
 import rehypeStringify from "rehype-stringify";
 import { visit } from "unist-util-visit";
-import { BASE_PATH } from "../../site.config";
+import { BASE_PATH, SITE } from "../../site.config";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -88,6 +89,18 @@ function rehypeAlerts() {
   };
 }
 
+/** Whether a repository-relative path is a directory (for GitHub tree/blob URLs). */
+function isRepoDirectory(repoPath: string): boolean {
+  try {
+    // Build-time only; the ignore comment keeps Turbopack from tracing the repo.
+    return fs
+      .statSync(path.join(/*turbopackIgnore: true*/ process.cwd(), "..", repoPath))
+      .isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 /** Rewrite internal ".md" links to site routes (e.g. /docs/guides/architecture/). */
 function rehypeRewriteLinks(currentDir: string) {
   return (tree: any) => {
@@ -110,7 +123,21 @@ function rehypeRewriteLinks(currentDir: string) {
       }
 
       const [p, hash] = href.split("#");
-      if (!p || !p.endsWith(".md")) return;
+      if (!p) return;
+
+      // A relative link that leaves docs/ (source files, examples, benchmark
+      // data) has no site route; send it to the same path on GitHub, which is
+      // also where it resolves when the Markdown is read on GitHub.
+      const docsRelative = path.posix.normalize(path.posix.join(currentDir || ".", p));
+      if (docsRelative.startsWith("../")) {
+        const repoPath = path.posix.normalize(path.posix.join("docs", docsRelative));
+        const kind = isRepoDirectory(repoPath) ? "tree" : "blob";
+        node.properties.href = `${SITE.repo}/${kind}/main/${repoPath}${hash ? `#${hash}` : ""}`;
+        node.properties.target = "_blank";
+        node.properties.rel = "noopener noreferrer";
+        return;
+      }
+      if (!p.endsWith(".md")) return;
 
       let target = path.posix
         .normalize(path.posix.join(currentDir || ".", p))
