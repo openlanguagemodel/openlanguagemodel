@@ -673,7 +673,15 @@ class _WorkerRandom(torch.utils.data.Dataset):
         return 4
 
     def __getitem__(self, index):
-        return torch.tensor([random.random(), float(np.random.rand())])
+        worker_seed = torch.initial_seed() % 2**32
+        return torch.tensor(
+            [
+                random.random(),
+                random.Random(worker_seed).random(),
+                float(np.random.rand()),
+            ],
+            dtype=torch.float64,
+        )
 
 
 def test_seed_worker_and_make_generator_make_workers_reproducible():
@@ -687,11 +695,12 @@ def test_seed_worker_and_make_generator_make_workers_reproducible():
         )
         return torch.cat(list(loader))
 
-    first, second = draw(0), draw(0)
-    assert torch.equal(first, second)
-    # Batches 0 and 1 come from different workers, which must not repeat
-    # each other's Python and NumPy random numbers.
-    assert not torch.equal(first[0], first[1])
+    first = draw(0)
+    # Batches 0 and 1 are each worker's first draw: seed_worker seeded
+    # Python's generator from the worker's torch seed.
+    assert torch.equal(first[:2, 0], first[:2, 1])
+    assert torch.equal(first, draw(0))
+    assert not torch.equal(first[0], first[1])  # the two workers differ
     assert not torch.equal(first, draw(1))
 
 

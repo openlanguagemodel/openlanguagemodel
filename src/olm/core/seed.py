@@ -5,7 +5,7 @@ Every source of randomness in a training run draws from one of four random
 number generators: Python's ``random`` module, NumPy's global generator, the
 torch CPU generator, and one torch generator per CUDA device. These helpers
 seed all of them together, capture and restore their state for checkpoints,
-and seed ``DataLoader`` worker processes and shuffling.
+and give ``DataLoader`` shuffling and workers a seeded stream of their own.
 """
 
 import os
@@ -67,12 +67,16 @@ def seed_everything(
 
 def seed_worker(worker_id: int) -> None:
     """
-    Seed Python and NumPy inside a ``DataLoader`` worker process.
+    Seed Python and NumPy in a ``DataLoader`` worker from the worker's torch seed.
 
-    PyTorch already gives each worker its own torch seed (``base_seed +
-    worker_id``), but it does not reseed Python's ``random`` module or NumPy,
-    so without this every worker would repeat the same random numbers. Pass it
-    as ``worker_init_fn``.
+    Pass it as ``worker_init_fn``. PyTorch seeds each worker's torch, Python
+    and NumPy generators from a base seed that the loader draws from its
+    ``generator`` (or the global torch generator), so workers already differ
+    and are reproducible once that base seed is. ``seed_worker`` is the
+    recipe from PyTorch's reproducibility notes: it reseeds Python and NumPy
+    with ``torch.initial_seed() % 2**32``, so all three generators of a
+    worker follow from its torch seed. Datasets that seed other libraries
+    can do the same in their own ``worker_init_fn``.
 
     Args:
         worker_id: The worker index. Unused; the torch seed already encodes it.
@@ -97,9 +101,10 @@ def make_generator(seed: int) -> torch.Generator:
     Create a CPU ``torch.Generator`` seeded with ``seed``.
 
     Pass it as ``DataLoader(generator=...)`` to give shuffling and worker
-    seeds their own random stream. The shuffle order then no longer depends
-    on how many random numbers the rest of the program drew before the epoch
-    started.
+    seeds their own random stream. The shuffle order and the workers' seeds
+    then no longer depend on how many random numbers the rest of the program
+    drew before the epoch started, for example after a change to the model
+    that draws more numbers at initialization.
 
     Args:
         seed: Seed for the generator.
