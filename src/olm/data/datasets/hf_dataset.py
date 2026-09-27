@@ -34,6 +34,13 @@ class HuggingFaceTextDataset(BaseTextDataset):
     Needs the Hugging Face ``datasets`` package, which is imported when the
     dataset is created, not when ``olm`` is imported.
 
+    Implementation note:
+        A streaming ``datasets.IterableDataset`` gives each DataLoader worker
+        its own subset of the source files, so this class leaves the worker
+        split to ``datasets`` and only splits across distributed ranks itself.
+        Workers beyond the number of source shards (``self.dataset.n_shards``)
+        get no files and yield nothing.
+
     Iteration:
         Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
 
@@ -98,6 +105,13 @@ class HuggingFaceTextDataset(BaseTextDataset):
             self.dataset = self.dataset.shuffle(
                 seed=self.seed, buffer_size=self.shuffle_buffer_size
             )
+
+    def _source_splits_across_workers(self) -> bool:
+        """Whether ``datasets`` splits this dataset across DataLoader workers."""
+        # ``datasets`` makes its streaming ``IterableDataset`` a subclass of the
+        # PyTorch one and, inside a DataLoader worker, iterates only that
+        # worker's files. This is the same check it makes before doing so.
+        return isinstance(self.dataset, torch.utils.data.IterableDataset)
 
     def _get_text_iterator(self) -> Iterator[str]:
         """Yields text from the Hugging Face dataset."""

@@ -22,7 +22,8 @@ class BaseTextDataset(IterableDataset, ABC):
         tokenizer: Tokenizer with an ``encode`` method.
         context_length (int): Number of input tokens per sample.
         skip_batches (int): Number of yielded samples to skip, useful for
-            coarse resume behavior.
+            coarse resume behavior. The count applies to each worker and rank
+            shard separately.
         shuffle (bool): Whether the concrete dataset should shuffle its source
             stream when supported.
         seed (int): Shuffle seed.
@@ -54,6 +55,16 @@ class BaseTextDataset(IterableDataset, ABC):
         """
         pass
 
+    def _source_splits_across_workers(self) -> bool:
+        """
+        Whether the text source already gives each DataLoader worker its own data.
+
+        When this returns ``True``, ``__iter__`` shards only across distributed
+        ranks and leaves the worker split to the source. Override it for sources
+        that split themselves, or every worker would keep only part of its share.
+        """
+        return False
+
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         """
         Iterate over tokens, yielding (input, target) tensors.
@@ -79,7 +90,7 @@ class BaseTextDataset(IterableDataset, ABC):
 
         # Handle distributed-rank and multi-worker sharding together so iterable
         # datasets do not replay the same text on every rank.
-        if worker_info is not None:
+        if worker_info is not None and not self._source_splits_across_workers():
             worker_id = worker_info.id
             num_workers = worker_info.num_workers
         else:
