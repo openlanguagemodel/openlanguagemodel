@@ -27,13 +27,13 @@ One row per configurable base class. *Architecture* is read from the modules eac
 | Family | Organisation | Architecture | Presets (total parameters) |
 |---|---|---|---|
 | [OLMo](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/allenai/olmo.py#L68)<br>`OLMoModel` | Ai2 | MHA · RoPE · SwiGLU · LayerNorm · tied embeddings | `OLMo_7B` (11.0B) |
-| [OLMo 3](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/allenai/olmo3.py#L94)<br>`Olmo3Model` | Ai2 | MHA / GQA · QK-norm · RoPE · SwiGLU · RMSNorm · untied embeddings | `Olmo3_7B` (7.30B) · `Olmo3_32B` (32.2B) |
+| [OLMo 3](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/allenai/olmo3.py#L94)<br>`Olmo3Model` | Ai2 | sliding-window MHA + MHA / sliding-window GQA + GQA · QK-norm · RoPE · SwiGLU · RMSNorm · untied embeddings | `Olmo3_7B` (7.30B) · `Olmo3_32B` (32.2B) |
 | [Qwen 2.5](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/alibaba/qwen2.py#L44)<br>`Qwen2Model` | Alibaba (Qwen) | GQA · RoPE · SwiGLU · RMSNorm · tied embeddings | `Qwen2_5_72B` (71.5B) · `Qwen2_5_32B` (32.0B) · `Qwen2_5_14B` (14.0B) · `Qwen2_5_7B` (7.07B) · `Qwen2_5_3B` (3.09B) · `Qwen2_5_1_5B` (1.54B) · `Qwen2_5_0_5B` (494.0M) |
 | [Qwen3 MoE](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/alibaba/qwen3.py#L90) · [guide](qwen-3.md)<br>`Qwen3Model` | Alibaba (Qwen) | GQA · QK-norm · RoPE · MoE (128 SwiGLU experts, top-8) · softmax routing · RMSNorm · untied embeddings | `Qwen3_235B_A22B` (235.1B) |
 | [Qwen3.5](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/alibaba/qwen3_5.py#L133)<br>`Qwen3_5_Model` | Alibaba (Qwen) | Gated DeltaNet + gated GQA · QK-norm · partial RoPE · MoE (512 SwiGLU experts, top-10, 1 shared) · softmax routing · RMSNorm · MTP head · untied embeddings | `Qwen3_5_397B` (397.4B) |
 | [Qwen3-Next](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/alibaba/qwen3_next.py#L110)<br>`Qwen3NextModel` | Alibaba (Qwen) | Gated DeltaNet + gated GQA · QK-norm · partial RoPE · MoE (512 SwiGLU experts, top-10, 1 shared) · softmax routing · RMSNorm · untied embeddings | `Qwen3Next80BA3B` (79.7B) |
 | [DeepSeek-V3](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/deepseekai/deepseek_v3.py#L123) · [guide](deepseek-v3.md)<br>`DeepSeekV3Model` | DeepSeek | MLA · RoPE · MoE (256 SwiGLU experts, top-8, 1 shared) · 3 dense + 58 MoE layers · sigmoid routing with aux-loss-free bias · RMSNorm · MTP head · untied embeddings | `DeepSeekV3_671B` (672.1B) |
-| [Gemma 2](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/google/gemma2.py#L110)<br>`Gemma2Model` | Google | GQA · attention-logit softcap · RoPE · GeGLU · RMSNorm · final-logit softcap · tied embeddings | `Gemma2_27B` (27.2B) · `Gemma2_9B` (9.24B) · `Gemma2_2B` (2.61B) |
+| [Gemma 2](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/google/gemma2.py#L110)<br>`Gemma2Model` | Google | sliding-window GQA + GQA · attention-logit softcap · RoPE · GeGLU · RMSNorm · final-logit softcap · tied embeddings | `Gemma2_27B` (27.2B) · `Gemma2_9B` (9.24B) · `Gemma2_2B` (2.61B) |
 | [Gemma 3](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/google/gemma3.py#L108) · [guide](gemma-3.md)<br>`Gemma3Model` | Google | sliding-window GQA + GQA · QK-norm · RoPE · GeGLU · RMSNorm · tied embeddings | `Gemma3_4B` (3.88B) · `Gemma3_27B` (27.0B) |
 | [Ling 2.5](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/inclusionai/ling2_5.py#L194)<br>`Ling2_5_Model` | inclusionAI | MLA + Lightning Attention · QK-norm · RoPE · MoE (256 SwiGLU experts, top-8, 1 shared) · 4 dense + 76 MoE layers · sigmoid routing with aux-loss-free bias · RMSNorm · untied embeddings | `Ling2_5_1T` (1.01T) |
 | [OPT](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/src/olm/models/facebook/opt.py#L69)<br>`OPTModel` | Meta | MHA · learned positions · ReLU MLP · LayerNorm · tied embeddings | `OPT125M` (125.2M) |
@@ -118,15 +118,15 @@ One row per configurable base class. *Architecture* is read from the modules eac
 
 ## Layer mix
 
-The token mixers (attention and its linear-time alternatives) and feed-forward layers each preset builds, counted per layer. Attention entries read `query heads/key-value heads`; sliding-window entries give the window in tokens; `MoE 256e top-8 +1 shared` is 256 routed experts of which each token uses 8, plus one expert every token uses.
+The token mixers (attention and its linear-time alternatives) and feed-forward layers each preset builds, counted per layer. Attention entries read `query heads/key-value heads`; MLA and the linear-time mixers give their head count alone (`MLA 128h`); sliding-window entries give the window in tokens; `MoE 256e top-8 +1 shared` is 256 routed experts of which each token uses 8, plus one expert every token uses.
 
 <div class="table-scroll">
 
 | Preset | Token mixers | Feed-forward |
 |---|---|---|
-| `OLMo_7B` | 32 × MHA 32h | 32 × SwiGLU |
-| `Olmo3_7B` | 32 × MHA 32/32 | 32 × SwiGLU |
-| `Olmo3_32B` | 64 × GQA 40/8 | 64 × SwiGLU |
+| `OLMo_7B` | 32 × MHA 32/32 | 32 × SwiGLU |
+| `Olmo3_7B` | 24 × sliding-window MHA (4096) 32/32 + 8 × MHA 32/32 | 32 × SwiGLU |
+| `Olmo3_32B` | 48 × sliding-window GQA (4096) 40/8 + 16 × GQA 40/8 | 64 × SwiGLU |
 | `Qwen2_5_72B` | 80 × GQA 64/8 | 80 × SwiGLU |
 | `Qwen2_5_32B` | 64 × GQA 40/8 | 64 × SwiGLU |
 | `Qwen2_5_14B` | 48 × GQA 40/8 | 48 × SwiGLU |
@@ -138,15 +138,15 @@ The token mixers (attention and its linear-time alternatives) and feed-forward l
 | `Qwen3_5_397B` | 45 × Gated DeltaNet 16h + 15 × gated GQA 32/2 | 60 × MoE 512e top-10 +1 shared |
 | `Qwen3Next80BA3B` | 36 × Gated DeltaNet 16h + 12 × gated GQA 16/2 | 48 × MoE 512e top-10 +1 shared |
 | `DeepSeekV3_671B` | 61 × MLA 128h | 58 × MoE 256e top-8 +1 shared + 3 × SwiGLU |
-| `Gemma2_27B` | 46 × GQA 32/16 | 46 × GeGLU |
-| `Gemma2_9B` | 42 × GQA 16/8 | 42 × GeGLU |
-| `Gemma2_2B` | 26 × GQA 8/4 | 26 × GeGLU |
+| `Gemma2_27B` | 23 × GQA 32/16 + 23 × sliding-window GQA (4096) 32/16 | 46 × GeGLU |
+| `Gemma2_9B` | 21 × GQA 16/8 + 21 × sliding-window GQA (4096) 16/8 | 42 × GeGLU |
+| `Gemma2_2B` | 13 × GQA 8/4 + 13 × sliding-window GQA (4096) 8/4 | 26 × GeGLU |
 | `Gemma3_4B` | 29 × sliding-window GQA (1024) 8/4 + 5 × GQA 8/4 | 34 × GeGLU |
 | `Gemma3_27B` | 52 × sliding-window GQA (1024) 32/16 + 10 × GQA 32/16 | 62 × GeGLU |
 | `Ling2_5_1T` | 70 × Lightning Attention 64h + 10 × MLA 64h | 76 × MoE 256e top-8 +1 shared + 4 × SwiGLU |
-| `OPT125M` | 12 × MHA 12h | 12 × ReLU MLP |
-| `Llama2_7B` | 32 × MHA 32h | 32 × SwiGLU |
-| `Llama2_13B` | 40 × MHA 40h | 40 × SwiGLU |
+| `OPT125M` | 12 × MHA 12/12 | 12 × ReLU MLP |
+| `Llama2_7B` | 32 × MHA 32/32 | 32 × SwiGLU |
+| `Llama2_13B` | 40 × MHA 40/40 | 40 × SwiGLU |
 | `Llama2_70B` | 80 × GQA 64/8 | 80 × SwiGLU |
 | `Llama3_1_405B` | 126 × GQA 128/8 | 126 × SwiGLU |
 | `Llama3_1_70B` | 80 × GQA 64/8 | 80 × SwiGLU |
@@ -154,7 +154,7 @@ The token mixers (attention and its linear-time alternatives) and feed-forward l
 | `Llama3_2_3B` | 28 × GQA 24/8 | 28 × SwiGLU |
 | `Llama3_2_1B` | 16 × GQA 32/8 | 16 × SwiGLU |
 | `Llama4Maverick_400B` | 36 × sliding-window GQA (8192) 40/8 + 12 × GQA 40/8 | 24 × MoE 128e top-1 +1 shared + 24 × SwiGLU |
-| `Phi3_5_Mini` | 32 × MHA 32h | 32 × SwiGLU |
+| `Phi3_5_Mini` | 32 × MHA 32/32 | 32 × SwiGLU |
 | `Phi3_Small` | 32 × GQA 32/8 | 32 × GeGLU |
 | `Phi4_14B` | 40 × GQA 40/10 | 40 × SwiGLU |
 | `MiniMaxM2_5_230B` | 62 × GQA 48/8 | 62 × MoE 256e top-8 |
@@ -164,10 +164,10 @@ The token mixers (attention and its linear-time alternatives) and feed-forward l
 | `KimiK2_1T` | 61 × MLA 64h | 60 × MoE 384e top-8 +1 shared + 1 × SwiGLU |
 | `KimiLinear48BA3B` | 20 × Kimi Delta Attention 32h + 7 × MLA 32h | 26 × MoE 256e top-8 +1 shared + 1 × SwiGLU |
 | `Nanbeige4_1_3B` | 32 × GQA 20/4 | 32 × SwiGLU |
-| `GPT2` | 12 × MHA 12h | 12 × GELU MLP |
-| `GPT2Medium` | 24 × MHA 16h | 24 × GELU MLP |
-| `GPT2Large` | 36 × MHA 20h | 36 × GELU MLP |
-| `GPT2XL` | 48 × MHA 25h | 48 × GELU MLP |
+| `GPT2` | 12 × MHA 12/12 | 12 × GELU MLP |
+| `GPT2Medium` | 24 × MHA 16/16 | 24 × GELU MLP |
+| `GPT2Large` | 36 × MHA 20/20 | 36 × GELU MLP |
+| `GPT2XL` | 48 × MHA 25/25 | 48 × GELU MLP |
 | `Sarvam30B` | 19 × GQA 64/4 | 18 × MoE 128e top-6 +1 shared + 1 × SwiGLU |
 | `Sarvam105B` | 32 × MLA 64h | 31 × MoE 128e top-8 +1 shared + 1 × SwiGLU |
 | `Step3_5_Flash_196B` | 36 × sliding-window GQA (512) 96/8 + 12 × GQA 64/8 | 42 × MoE 288e top-8 +1 shared + 6 × SwiGLU |

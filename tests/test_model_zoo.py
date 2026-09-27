@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 import olm.models
-from olm.models import DeepSeekV3Model, Llama3Model
+from olm.models import DeepSeekV3Model, Gemma2Model, GPT2Model, Llama3Model, Olmo3Model
 
 ROOT = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
@@ -65,6 +65,43 @@ class _TinyDeepSeek(DeepSeekV3Model):
         )
 
 
+class _TinyOlmo3(Olmo3Model):
+    def __init__(self):
+        super().__init__(
+            vocab_size=64,
+            embed_dim=32,
+            intermediate_size=48,
+            num_layers=4,
+            num_heads=4,
+            num_kv_heads=4,
+            head_dim=8,
+            max_seq_len=16,
+            sliding_window=4,
+        )
+
+
+class _TinyGemma2(Gemma2Model):
+    def __init__(self):
+        super().__init__(
+            vocab_size=64,
+            embed_dim=32,
+            intermediate_size=48,
+            num_layers=4,
+            num_heads=4,
+            num_kv_heads=2,
+            head_dim=8,
+            max_seq_len=16,
+            sliding_window=4,
+        )
+
+
+class _TinyGPT2(GPT2Model):
+    def __init__(self):
+        super().__init__(
+            vocab_size=64, embed_dim=32, num_layers=2, num_heads=4, max_seq_len=16
+        )
+
+
 def _measured(cls, base):
     preset = zoo.Preset(cls=cls, exported=False)
     zoo.measure(preset, base)
@@ -110,6 +147,24 @@ def test_measure_counts_active_moe_parameters_without_unused_experts_or_mtp():
     assert preset.tags["layer_split"] == "1 dense + 2 MoE layers"
     assert preset.tags["routing"] == "sigmoid routing with aux-loss-free bias"
     assert preset.tags["mtp"] == "MTP head"
+
+
+def test_measure_reads_sliding_windows_set_on_blocks():
+    # OLMo 3 and Gemma 2 mask in the block, per layer, not in the attention module.
+    olmo3 = _measured(_TinyOlmo3, Olmo3Model)
+    gemma2 = _measured(_TinyGemma2, Gemma2Model)
+
+    assert olmo3.mixers == [("sliding-window MHA (4) 4/4", 3), ("MHA 4/4", 1)]
+    assert olmo3.tags["mixer"] == "sliding-window MHA + MHA"
+    assert gemma2.mixers == [("GQA 4/2", 2), ("sliding-window GQA (4) 4/2", 2)]
+    assert gemma2.tags["mixer"] == "sliding-window GQA + GQA"
+
+
+def test_multi_head_attention_labels_give_both_head_counts():
+    preset = _measured(_TinyGPT2, GPT2Model)
+
+    assert preset.mixers == [("MHA 4/4", 2)]
+    assert preset.tags["mixer"] == "MHA"
 
 
 def test_family_tags_merge_presets_per_category():

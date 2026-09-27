@@ -367,21 +367,57 @@ def outermost(model: nn.Module, predicate, skip=is_mtp) -> list[nn.Module]:
     return found
 
 
-def mixer_label(module: nn.Module) -> str:
+def block_windows(model: nn.Module) -> dict[int, int]:
+    """Sliding windows that enclosing blocks set for their mixers, by mixer id.
+
+    Some families keep the attention module unchanged and mask its scores in the
+    block instead, with an int ``sliding_window`` attribute that the model sets
+    per layer (``None`` on the global layers). The nearest enclosing module with
+    that attribute decides.
+    """
+    windows: dict[int, int] = {}
+
+    def visit(module: nn.Module, window: int | None) -> None:
+        if hasattr(module, "sliding_window"):
+            value = module.sliding_window
+            window = value if type(value) is int else None
+        if is_mixer(module):
+            if window is not None:
+                windows[id(module)] = window
+            return
+        for child in module.children():
+            visit(child, window)
+
+    visit(model, None)
+    return windows
+
+
+def mixer_label(module: nn.Module, window: int | None = None) -> str:
+    """Label a token mixer, e.g. ``sliding-window GQA (4096) 32/16``.
+
+    Args:
+        module: The attention module or linear-time mixer.
+        window: Sliding window applied by the enclosing block, if any. A
+            ``window_size`` on the module itself takes precedence.
+    """
     name = type(module).__name__
     heads = getattr(module, "num_heads", None)
     kv_heads = getattr(module, "num_kv_heads", None)
     if isinstance(heads, int) and isinstance(kv_heads, int):
         kind = "MHA" if kv_heads == heads else "MQA" if kv_heads == 1 else "GQA"
-        if name == "GatedAttention":
-            label = f"gated {kind}"
-        else:
-            label = kind
-        window = getattr(module, "window_size", None)
-        if isinstance(window, int):
-            label = f"sliding-window {label} ({window})"
+        label = f"gated {kind}" if name == "GatedAttention" else kind
+    else:
+        label = MIXER_LABELS.get(name, name)
+        if isinstance(heads, int) and label.startswith("MHA"):
+            # Plain multi-head attention has one key-value head per query head.
+            kv_heads = heads
+    own_window = getattr(module, "window_size", None)
+    if isinstance(own_window, int):
+        window = own_window
+    if window is not None:
+        label = f"sliding-window {label} ({window})"
+    if isinstance(heads, int) and isinstance(kv_heads, int):
         return f"{label} {heads}/{kv_heads}"
-    label = MIXER_LABELS.get(name, name)
     if isinstance(heads, int):
         return f"{label} {heads}h"
     return label
@@ -440,6 +476,8 @@ def measure(preset: Preset, base: type) -> None:
     preset.params_mtp = sum(count(m) for m in mtp_modules)
 
     mixers = outermost(model, is_mixer)
+    windows = block_windows(model)
+    labels = [mixer_label(m, windows.get(id(m))) for m in mixers]
     ffns = outermost(model, is_ffn)
     moes = [m for m in ffns if is_moe(m)]
     if moes:
@@ -450,28 +488,31 @@ def measure(preset: Preset, base: type) -> None:
     if heads:
         preset.tied = type(heads[-1].projection).__name__ == "_TiedEmbeddingProjection"
 
-    preset.mixers = summarise(Counter(mixer_label(m) for m in mixers))
+    preset.mixers = summarise(Counter(labels))
     preset.ffns = summarise(Counter(ffn_label(m) for m in ffns))
-    preset.tags = architecture_tags(model, mixers, ffns, moes, preset)
+    preset.tags = architecture_tags(model, mixers, labels, ffns, moes, preset)
     preset.dims = dimensions(model, mixers, preset.config)
 
     del model
     gc.collect()
 
 
-def architecture_tags(model, mixers, ffns, moes, preset: Preset) -> dict[str, str]:
+def architecture_tags(
+    model, mixers, labels, ffns, moes, preset: Preset
+) -> dict[str, str]:
     """Short, code-derived description of what the architecture is made of.
 
-    Returns one tag per category in ``TAG_CATEGORIES`` that applies.
+    ``labels`` are the ``mixer_label`` of each module in ``mixers``. Returns one
+    tag per category in ``TAG_CATEGORIES`` that applies.
     """
     tags: dict[str, str] = {}
 
     kinds = []
-    for mixer in mixers:
-        label = re.sub(r" \d+(/\d+|h)$", "", mixer_label(mixer))
-        label = re.sub(r" \(\d+\)$", "", label)
-        if label not in kinds:
-            kinds.append(label)
+    for label in labels:
+        kind = re.sub(r" \d+(/\d+|h)$", "", label)  # drop the head counts
+        kind = re.sub(r" \(\d+\)$", "", kind)  # and the window size
+        if kind not in kinds:
+            kinds.append(kind)
     if kinds:
         tags["mixer"] = " + ".join(kinds)
 
@@ -796,7 +837,8 @@ def to_markdown(families: list[Family]) -> str:
         "",
         "The token mixers (attention and its linear-time alternatives) and "
         "feed-forward layers each preset builds, counted per layer. Attention entries "
-        "read `query heads/key-value heads`; sliding-window entries give the window "
+        "read `query heads/key-value heads`; MLA and the linear-time mixers give "
+        "their head count alone (`MLA 128h`); sliding-window entries give the window "
         "in tokens; `MoE 256e top-8 +1 shared` is 256 routed experts of which each "
         "token uses 8, plus one expert every token uses.",
         "",

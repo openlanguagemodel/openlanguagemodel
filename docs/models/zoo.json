@@ -38,7 +38,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 32h",
+              "layer": "MHA 32/32",
               "count": 32
             }
           ],
@@ -85,7 +85,7 @@
       "guide": null,
       "structure": "Embedding -> [Olmo3Block] x N -> RMSNorm -> OutputHead.",
       "tags": [
-        "MHA / GQA",
+        "sliding-window MHA + MHA / sliding-window GQA + GQA",
         "QK-norm",
         "RoPE",
         "SwiGLU",
@@ -106,8 +106,12 @@
           "tied_embeddings": false,
           "token_mixers": [
             {
+              "layer": "sliding-window MHA (4096) 32/32",
+              "count": 24
+            },
+            {
               "layer": "MHA 32/32",
-              "count": 32
+              "count": 8
             }
           ],
           "feed_forward": [
@@ -117,7 +121,7 @@
             }
           ],
           "tags": [
-            "MHA",
+            "sliding-window MHA + MHA",
             "QK-norm",
             "RoPE",
             "SwiGLU",
@@ -160,8 +164,12 @@
           "tied_embeddings": false,
           "token_mixers": [
             {
+              "layer": "sliding-window GQA (4096) 40/8",
+              "count": 48
+            },
+            {
               "layer": "GQA 40/8",
-              "count": 64
+              "count": 16
             }
           ],
           "feed_forward": [
@@ -171,7 +179,7 @@
             }
           ],
           "tags": [
-            "GQA",
+            "sliding-window GQA + GQA",
             "QK-norm",
             "RoPE",
             "SwiGLU",
@@ -931,7 +939,7 @@
       "guide": null,
       "structure": "Scaled token embedding -> [Gemma2Block] x N -> RMSNorm -> tied OutputHead -> optional final logit softcap.",
       "tags": [
-        "GQA",
+        "sliding-window GQA + GQA",
         "attention-logit softcap",
         "RoPE",
         "GeGLU",
@@ -954,7 +962,11 @@
           "token_mixers": [
             {
               "layer": "GQA 32/16",
-              "count": 46
+              "count": 23
+            },
+            {
+              "layer": "sliding-window GQA (4096) 32/16",
+              "count": 23
             }
           ],
           "feed_forward": [
@@ -964,7 +976,7 @@
             }
           ],
           "tags": [
-            "GQA",
+            "sliding-window GQA + GQA",
             "attention-logit softcap",
             "RoPE",
             "GeGLU",
@@ -1010,7 +1022,11 @@
           "token_mixers": [
             {
               "layer": "GQA 16/8",
-              "count": 42
+              "count": 21
+            },
+            {
+              "layer": "sliding-window GQA (4096) 16/8",
+              "count": 21
             }
           ],
           "feed_forward": [
@@ -1020,7 +1036,7 @@
             }
           ],
           "tags": [
-            "GQA",
+            "sliding-window GQA + GQA",
             "attention-logit softcap",
             "RoPE",
             "GeGLU",
@@ -1066,7 +1082,11 @@
           "token_mixers": [
             {
               "layer": "GQA 8/4",
-              "count": 26
+              "count": 13
+            },
+            {
+              "layer": "sliding-window GQA (4096) 8/4",
+              "count": 13
             }
           ],
           "feed_forward": [
@@ -1076,7 +1096,7 @@
             }
           ],
           "tags": [
-            "GQA",
+            "sliding-window GQA + GQA",
             "attention-logit softcap",
             "RoPE",
             "GeGLU",
@@ -1374,7 +1394,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 12h",
+              "layer": "MHA 12/12",
               "count": 12
             }
           ],
@@ -1440,7 +1460,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 32h",
+              "layer": "MHA 32/32",
               "count": 32
             }
           ],
@@ -1489,7 +1509,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 40h",
+              "layer": "MHA 40/40",
               "count": 40
             }
           ],
@@ -1963,7 +1983,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 32h",
+              "layer": "MHA 32/32",
               "count": 32
             }
           ],
@@ -2724,7 +2744,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 12h",
+              "layer": "MHA 12/12",
               "count": 12
             }
           ],
@@ -2770,7 +2790,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 16h",
+              "layer": "MHA 16/16",
               "count": 24
             }
           ],
@@ -2816,7 +2836,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 20h",
+              "layer": "MHA 20/20",
               "count": 36
             }
           ],
@@ -2862,7 +2882,7 @@
           "tied_embeddings": true,
           "token_mixers": [
             {
-              "layer": "MHA 25h",
+              "layer": "MHA 25/25",
               "count": 48
             }
           ],
