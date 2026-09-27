@@ -385,10 +385,16 @@ class WandBCallback(TrainerCallback):
 
             # Save checkpoint to temporary file, in the same format as
             # CheckpointCallback (see olm.train.checkpointing), so the
-            # artifact can resume a run with Trainer(resume_from=...).
+            # artifact can resume a run with Trainer(resume_from=...). It
+            # holds only this process's random state: it resumes a
+            # single-process run exactly, while DDP runs should resume from
+            # CheckpointCallback files, which hold every rank's.
+            checkpoint = trainer.state_dict()
+            # The artifact layout before format version 1 had a "loss" key.
+            checkpoint["loss"] = trainer.losses[-1] if trainer.losses else None
             with tempfile.TemporaryDirectory() as tmpdir:
                 checkpoint_path = os.path.join(tmpdir, "checkpoint.pt")
-                torch.save(trainer.state_dict(), checkpoint_path)
+                torch.save(checkpoint, checkpoint_path)
 
                 # Add file to artifact
                 artifact.add_file(checkpoint_path)

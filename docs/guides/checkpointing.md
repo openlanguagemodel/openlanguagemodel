@@ -145,7 +145,9 @@ A checkpoint is one `torch.save` file that loads with `torch.load(weights_only=T
 | `callbacks` | state of each callback that has some, keyed by class name |
 | `losses` | the loss of every step |
 
-The keys of earlier OLM versions, `model_state_dict`, `optimizer_state_dict`, `scheduler_state_dict`, `scaler_state_dict`, `step` and `epoch`, are kept as aliases of the same objects (they take no extra space), so scripts that read them keep working.
+The keys of earlier OLM versions are kept as aliases of the same objects (they take no extra space), so scripts that read them keep working: `model_state_dict`, `scaler_state_dict`, `step`, `global_step` and `epoch` always, `optimizer_state_dict` when the file has optimizer state, and `scheduler_state_dict` when it has a scheduler.
+
+`WandBCallback(log_model=True)` uploads the same format at the end of every epoch, plus the `loss` key of its earlier artifacts. An artifact holds only the random state of the process that uploaded it, so it resumes a single-process run exactly; resume DDP runs from `CheckpointCallback` files, which hold every rank's.
 
 ## Load weights without resuming
 
