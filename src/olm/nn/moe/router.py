@@ -35,6 +35,13 @@ class MoERouter(nn.Module):
           balancing via a learnable expert bias. Used by Sarvam, Ling 2.5,
           DeepSeek V3.
 
+    Group-limited routing (DeepSeek-V3): with ``num_expert_groups > 1`` the
+    experts are split into equal contiguous groups. Each group is scored by
+    the sum of its two highest selection scores (after ``expert_bias``), only
+    the ``top_k_groups`` best groups stay eligible, and the usual top-k then
+    runs over the experts of those groups. The defaults
+    (``num_expert_groups=1``, ``top_k_groups=1``) disable it.
+
     Args:
         embed_dim: Hidden dimension of input tokens.
         num_experts: Total number of routable experts.
@@ -43,13 +50,16 @@ class MoERouter(nn.Module):
         routing_method: ``"topk"`` or ``"noaux_tc"``.
         use_bias: Learnable bias added to router logits before scoring.
         norm_weights: Re-normalize top-k weights to sum to 1.
-        fp32_gate: Cast logits to float32 before scoring for stability.
+        fp32_gate: Compute the gate projection and scores in float32, with
+            autocast disabled, for routing stability under mixed precision.
         routed_scaling_factor: Multiplicative factor applied to the
             combined expert output (e.g. 2.5 in Sarvam / Ling 2.5).
-        num_expert_groups: Number of logical expert groups.
-        top_k_groups: Number of groups made eligible before expert top-k.
         expert_weight_norm: Normalize expert gate logits by expert output
             L2 norm (Step 3.5 Flash).
+        num_expert_groups: Number of equal expert groups for group-limited
+            routing. Must divide ``num_experts``. Defaults to 1 (no grouping).
+        top_k_groups: Number of groups each token may route into. Must be in
+            ``[1, num_expert_groups]``. Defaults to 1.
     """
 
     def __init__(
@@ -63,19 +73,26 @@ class MoERouter(nn.Module):
         norm_weights: bool = True,
         fp32_gate: bool = False,
         routed_scaling_factor: float = 1.0,
+        expert_weight_norm: bool = False,
         num_expert_groups: int = 1,
         top_k_groups: int = 1,
-        expert_weight_norm: bool = False,
     ):
         super().__init__()
-        if num_experts % num_expert_groups != 0:
-            raise ValueError("num_experts must be divisible by num_expert_groups")
+        if num_expert_groups < 1 or num_experts % num_expert_groups != 0:
+            raise ValueError(
+                f"num_expert_groups ({num_expert_groups}) must be a positive "
+                f"divisor of num_experts ({num_experts})"
+            )
         if not 1 <= top_k_groups <= num_expert_groups:
-            raise ValueError("top_k_groups must be in [1, num_expert_groups]")
-
+            raise ValueError(
+                f"top_k_groups must be in [1, {num_expert_groups}], got {top_k_groups}"
+            )
         experts_per_group = num_experts // num_expert_groups
-        if top_k > top_k_groups * experts_per_group:
-            raise ValueError("top_k exceeds the experts available in selected groups")
+        if num_expert_groups > 1 and top_k > top_k_groups * experts_per_group:
+            raise ValueError(
+                f"top_k ({top_k}) exceeds the {top_k_groups * experts_per_group} "
+                "experts in the selected groups"
+            )
 
         self.num_experts = num_experts
         self.top_k = top_k
@@ -92,10 +109,14 @@ class MoERouter(nn.Module):
 
         if routing_method == "noaux_tc":
             self.expert_bias = nn.Parameter(torch.zeros(num_experts))
-            self.register_buffer("expert_bias_momentum", torch.zeros(num_experts))
+            # Momentum for ``update_expert_bias_softclamped_momentum_``. Kept out
+            # of the state dict so existing checkpoints load unchanged.
+            self.register_buffer(
+                "expert_bias_momentum", torch.zeros(num_experts), persistent=False
+            )
         else:
             self.expert_bias = None
-            self.register_buffer("expert_bias_momentum", None)
+            self.register_buffer("expert_bias_momentum", None, persistent=False)
         self.last_stats: Optional[MoERouterStats] = None
 
     def forward(
@@ -137,6 +158,8 @@ class MoERouter(nn.Module):
             selection_scores = scores + self.expert_bias
 
         if self.num_expert_groups > 1:
+            # Group-limited routing: keep only the experts of the top_k_groups
+            # groups whose two best selection scores sum highest.
             experts_per_group = self.num_experts // self.num_expert_groups
             grouped_scores = selection_scores.view(
                 *selection_scores.shape[:-1],
@@ -228,18 +251,35 @@ class MoERouter(nn.Module):
         momentum: float = 0.5,
         clamp_scale: float = 2.0,
     ) -> None:
-        """Update loss-free routing biases with soft-clamped momentum.
+        """
+        Apply a Soft-clamped Momentum Expert Bias Update (SMEBU).
 
-        The normalized load error is centered across experts, bounded with
-        ``tanh``, and smoothed before being applied to the selection bias.
-        This is the SMEBU update used by Arcee Trinity.
+        SMEBU is the auxiliary-loss-free balancing update from the Arcee Trinity
+        Large technical report (arXiv:2602.17004). It replaces the fixed-size
+        sign step of loss-free balancing with a step that grows with each
+        expert's relative load violation, is soft-clamped with ``tanh``,
+        centered to zero mean and smoothed with momentum:
+
+        ``v = (1/E - f) / (1/E)``, ``u = update_rate * tanh(clamp_scale * v)``,
+        ``u = u - mean(u)``, ``m = momentum * m + (1 - momentum) * u``,
+        ``expert_bias += m``
+
+        where ``f`` is the per-expert fraction of routed assignments and ``E``
+        is ``num_experts``. The Trinity report uses ``update_rate=5e-4``,
+        ``momentum=0.5`` and ``clamp_scale=2``, which are the defaults.
+
+        Like ``update_expert_bias_``, this is opt-in: call it after the
+        optimizer step. The momentum buffer ``m`` is not saved in the state
+        dict.
 
         Args:
-            expert_fraction: Observed fraction of routed assignments per expert.
-                Uses the most recent router statistics when omitted.
-            update_rate: Maximum update magnitude before momentum smoothing.
-            momentum: Fraction of the previous update retained.
-            clamp_scale: Multiplier applied before the ``tanh`` soft clamp.
+            expert_fraction: Observed fraction of routed assignments per
+                expert, ``[num_experts]``. Uses the most recent router
+                statistics when omitted.
+            update_rate: Largest per-step update before centering and momentum.
+            momentum: Fraction of the previous update kept, in ``[0, 1)``.
+            clamp_scale: Multiplier applied to the load violation before the
+                ``tanh`` soft clamp.
         """
         if self.expert_bias is None or self.expert_bias_momentum is None:
             raise ValueError("SMEBU updates require routing_method='noaux_tc'")

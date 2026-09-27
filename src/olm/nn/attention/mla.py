@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
 
@@ -7,6 +8,34 @@ from olm.nn.torch_nn_wrappers import Linear
 from olm.nn.embeddings.positional.rope import RotaryPositionalEmbedding
 from olm.nn.attention.masks import attention_mask_to_bool
 from olm.nn.norms import RMSNorm
+
+
+def _apply_rope_layout(
+    rope: nn.Module, x: torch.Tensor, interleaved: bool
+) -> torch.Tensor:
+    """
+    Apply an interleaved-pair RoPE module in either rotary dimension layout.
+
+    OLM's RoPE modules rotate adjacent pairs ``(x[2i], x[2i + 1])``. Checkpoints
+    in the split-half ("rotate_half") layout pair ``x[i]`` with
+    ``x[i + d/2]`` instead. For that layout the halves are interleaved, rotated,
+    and split back, which is exactly the rotate-half rotation.
+
+    Args:
+        rope (nn.Module): RoPE module taking ``[batch, seq, heads, dim]``.
+        x (torch.Tensor): Tensor shaped ``[batch, seq, heads, dim]``.
+        interleaved (bool): True for adjacent pairs, False for split halves.
+
+    Returns:
+        torch.Tensor: The rotated tensor, same shape as ``x``.
+    """
+    if interleaved:
+        return rope(x)
+
+    half = x.shape[-1] // 2
+    paired = torch.stack((x[..., :half], x[..., half:]), dim=-1).flatten(-2)
+    paired = rope(paired).view(*x.shape[:-1], half, 2)
+    return torch.cat((paired[..., 0], paired[..., 1]), dim=-1)
 
 
 class MultiHeadLatentAttention(AttentionwithRoPEBase):
@@ -45,8 +74,16 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
             Defaults to 1e-6.
         attention_scale (float, optional): Override for the softmax scale. Defaults
             to ``(qk_nope_head_dim + qk_rope_head_dim) ** -0.5``.
-        rope_interleaved (bool, optional): Pair adjacent rotary dimensions when
-            True; use split-half rotary pairs when False. Defaults to True.
+        rope_interleaved (bool, optional): Rotary dimension layout of the
+            ``qk_rope_head_dim`` slice. True pairs adjacent dimensions
+            ``(2i, 2i + 1)`` (OLM's native layout); False pairs ``i`` with
+            ``i + qk_rope_head_dim / 2`` (the "rotate_half" layout). Defaults
+            to True.
+
+    Forward:
+        Takes ``x`` shaped ``[batch, seq_len, embed_dim]`` and an optional
+        ``mask`` broadcastable to ``[batch, heads, seq_len, seq_len]``.
+        Returns ``[batch, seq_len, embed_dim]``.
     """
 
     def __init__(
@@ -194,14 +231,19 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
     def _project_qkv(
         self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Project MLA heads and expose the normalized query latent.
+        """
+        Project ``x`` to per-head queries, keys and values.
 
-        The final tensor is the input to ``q_b_proj`` when query LoRA is
-        enabled, or the original hidden state otherwise. DSA reuses it for
-        the lightning indexer without duplicating MLA's projections.
+        Returns ``(q, k, value, q_latent)`` where ``q`` and ``k`` are
+        ``[batch, heads, seq, qk_head_dim]``, ``value`` is
+        ``[batch, heads, seq, v_head_dim]``, and ``q_latent`` is the input to
+        ``q_b_proj`` (the normalized query latent) when ``q_lora_rank`` is set,
+        or ``x`` itself otherwise. ``DeepSeekSparseAttention`` feeds
+        ``q_latent`` to its lightning indexer.
         """
         B, N, _ = x.shape
 
+        # --- Queries ---
         if self.q_lora_rank is None:
             q_latent = x
             q = self.q_proj(x)
@@ -213,6 +255,7 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
             q, [self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1
         )
 
+        # --- Keys / Values ---
         kv = self.kv_a_proj_with_mqa(x)
         compressed_kv, k_rope = torch.split(
             kv, [self.kv_lora_rank, self.qk_rope_head_dim], dim=-1
@@ -223,10 +266,13 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
             kv, [self.qk_nope_head_dim, self.v_head_dim], dim=-1
         )
 
+        # --- Decoupled RoPE ---
+        # Query rope part is per-head; key rope part is shared across heads (MQA).
         q_rope = self._apply_rope(q_rope)
         k_rope = self._apply_rope(k_rope.view(B, N, 1, self.qk_rope_head_dim))
         k_rope = k_rope.expand(B, N, self.num_heads, self.qk_rope_head_dim)
 
+        # --- Assemble full query/key per head, then [B, N, H, D] -> [B, H, N, D] ---
         q = torch.cat([q_nope, q_rope], dim=-1).transpose(1, 2)
         k = torch.cat([k_nope, k_rope], dim=-1).transpose(1, 2)
         value = value.transpose(1, 2)
@@ -234,10 +280,4 @@ class MultiHeadLatentAttention(AttentionwithRoPEBase):
 
     def _apply_rope(self, x: torch.Tensor) -> torch.Tensor:
         """Apply RoPE using interleaved or split-half dimension pairs."""
-        if self.rope_interleaved:
-            return self.rope(x)
-
-        half = x.shape[-1] // 2
-        paired = torch.stack((x[..., :half], x[..., half:]), dim=-1).flatten(-2)
-        paired = self.rope(paired).view(*x.shape[:-1], half, 2)
-        return torch.cat((paired[..., 0], paired[..., 1]), dim=-1)
+        return _apply_rope_layout(self.rope, x, self.rope_interleaved)

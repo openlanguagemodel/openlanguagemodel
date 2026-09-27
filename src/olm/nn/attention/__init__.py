@@ -19,6 +19,7 @@ from .dsa import (
     indexer_kl_alignment_loss,
 )
 
+# fmt: off
 __all__ = [
     "MultiHeadAttention", "MultiHeadAttentionwithRoPE",
     "AttentionBase", "AttentionwithRoPEBase",
@@ -33,3 +34,4 @@ __all__ = [
     "DeepSeekSparseAttention", "DeepSeekSparseAttentionStats",
     "LightningIndexer", "causal_topk_selection", "indexer_kl_alignment_loss",
 ]
+# fmt: on

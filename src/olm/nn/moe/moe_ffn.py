@@ -28,8 +28,10 @@ class MoEFeedForward(FeedForwardBase):
         norm_weights: Re-normalize top-k weights.
         fp32_gate: Run gate in FP32.
         routed_scaling_factor: Scale factor on routed output.
-        num_expert_groups: Number of logical expert groups.
-        top_k_groups: Number of groups eligible for per-token routing.
+        num_expert_groups: Number of equal expert groups for DeepSeek-V3
+            group-limited routing (see ``MoERouter``). Defaults to 1 (off).
+        top_k_groups: Number of groups each token may route into. Defaults
+            to 1.
     """
 
     def __init__(
