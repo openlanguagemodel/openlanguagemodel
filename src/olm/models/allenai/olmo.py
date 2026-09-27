@@ -70,7 +70,10 @@ class OLMoModel(Block):
     Base class for the OLMo (Open Language Model) architecture.
 
     Structure:
-        Embedding -> [OLMoBlock] x N -> LayerNorm -> tied OutputHead.
+        Embedding -> [OLMoBlock] x N -> LayerNorm -> OutputHead.
+
+    OLMo 7B does not tie input/output embeddings (``weight_tying: false``);
+    the named preset passes ``tie_weights=False``.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -111,14 +114,22 @@ class OLMoModel(Block):
 
 
 class OLMo_7B(OLMoModel):
-    """OLMo 7B Model."""
+    """
+    OLMo 7B Model.
+
+    ``vocab_size`` is the released embedding size (50304, the 50280-token
+    tokenizer padded to a multiple of 64), and ``intermediate_size`` is the
+    per-branch SwiGLU width: OLMo's own config lists the fused width
+    ``mlp_hidden_size=22016``, which is twice this value.
+    """
 
     def __init__(self):
         super().__init__(
-            vocab_size=50280,
+            vocab_size=50304,
             embed_dim=4096,
-            intermediate_size=22016,
+            intermediate_size=11008,
             num_layers=32,
             num_heads=32,
             max_seq_len=2048,
+            tie_weights=False,
         )

@@ -1,0 +1,19 @@
+{
+  "preset": "Qwen2_5_14B",
+  "reference": "https://huggingface.co/Qwen/Qwen2.5-14B",
+  "source": "https://huggingface.co/Qwen/Qwen2.5-14B/blob/97e1e76335b7017d8f67c08a19d103c0504298c9/config.json",
+  "config": {
+    "vocab_size": 152064,
+    "hidden_size": 5120,
+    "num_hidden_layers": 48,
+    "num_attention_heads": 40,
+    "num_key_value_heads": 8,
+    "max_position_embeddings": 131072,
+    "rope_theta": 1000000.0,
+    "tie_word_embeddings": false,
+    "intermediate_size": 13824,
+    "rms_norm_eps": 1e-05
+  },
+  "num_parameters": 14770033664,
+  "num_parameters_source": "transformers 5.12.1 Qwen2ForCausalLM.from_config(<source config>) on the meta device"
+}

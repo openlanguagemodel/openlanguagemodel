@@ -182,6 +182,14 @@ class KimiLinearModel(Block):
     MoE with a shared expert. Kimi Linear does not tie input/output
     embeddings; the named preset passes ``tie_weights=False``.
 
+    Implementation note:
+        The released MLA layers use no positional encoding
+        (``mla_use_nope: true``), while ``MultiHeadLatentAttention`` always
+        rotates its ``qk_rope_head_dim`` slice. The released KDA layers also
+        use low-rank (rank ``head_dim``) projections for the decay and output
+        gates, which ``KimiDeltaAttention`` does not reproduce, so the
+        preset has about 0.34B more parameters than the checkpoint.
+
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
         ``[batch, seq_len, vocab_size]``.

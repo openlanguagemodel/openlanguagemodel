@@ -1,0 +1,16 @@
+{
+  "preset": "Phi3_Small",
+  "reference": "https://huggingface.co/microsoft/Phi-3-small-128k-instruct",
+  "source": "https://huggingface.co/microsoft/Phi-3-small-128k-instruct/blob/e95b185a59a58450c9b1dd7347a9dee78f18113e/config.json",
+  "config": {
+    "vocab_size": 100352,
+    "hidden_size": 4096,
+    "ff_intermediate_size": 14336,
+    "num_hidden_layers": 32,
+    "num_attention_heads": 32,
+    "num_key_value_heads": 8,
+    "max_position_embeddings": 131072,
+    "rope_embedding_base": 1000000,
+    "hidden_act": "gegelu"
+  }
+}

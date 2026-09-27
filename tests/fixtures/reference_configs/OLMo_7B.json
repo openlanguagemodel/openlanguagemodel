@@ -1,0 +1,16 @@
+{
+  "preset": "OLMo_7B",
+  "reference": "https://huggingface.co/allenai/OLMo-7B-hf",
+  "source": "https://huggingface.co/allenai/OLMo-7B-hf/blob/11fb3186a2e4f681edea621fa8b4345147a9db6a/config.json",
+  "config": {
+    "vocab_size": 50304,
+    "hidden_size": 4096,
+    "intermediate_size": 11008,
+    "num_hidden_layers": 32,
+    "num_attention_heads": 32,
+    "max_position_embeddings": 2048,
+    "tie_word_embeddings": false
+  },
+  "num_parameters": 6888095744,
+  "num_parameters_source": "transformers 5.12.1 OlmoForCausalLM.from_config(<source config>) on the meta device"
+}

@@ -46,7 +46,10 @@ class Qwen2Model(Block):
     Base class for Qwen 2 / 2.5 models.
 
     Structure:
-        Embedding -> [Qwen2Block] x N -> RMSNorm -> tied OutputHead.
+        Embedding -> [Qwen2Block] x N -> RMSNorm -> OutputHead.
+
+    Qwen 2.5 ties input/output embeddings only in its small releases (0.5B,
+    1.5B, 3B); the 7B, 14B, 32B and 72B presets pass ``tie_weights=False``.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -87,7 +90,8 @@ class Qwen2_5_72B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            rms_norm_eps=1e-5
+            rms_norm_eps=1e-5,
+            tie_weights=False,
         )
 
 class Qwen2_5_32B(Qwen2Model):
@@ -102,7 +106,8 @@ class Qwen2_5_32B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            rms_norm_eps=1e-5
+            rms_norm_eps=1e-5,
+            tie_weights=False,
         )
 
 class Qwen2_5_14B(Qwen2Model):
@@ -117,7 +122,8 @@ class Qwen2_5_14B(Qwen2Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=1000000.0,
-            rms_norm_eps=1e-5
+            rms_norm_eps=1e-5,
+            tie_weights=False,
         )
 
 class Qwen2_5_7B(Qwen2Model):
@@ -132,6 +138,7 @@ class Qwen2_5_7B(Qwen2Model):
             num_kv_heads=4,
             max_seq_len=131072,
             rope_theta=1000000.0,
+            tie_weights=False,
         )
 
 class Qwen2_5_3B(Qwen2Model):

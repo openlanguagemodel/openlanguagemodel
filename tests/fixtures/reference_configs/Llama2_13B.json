@@ -1,0 +1,18 @@
+{
+  "preset": "Llama2_13B",
+  "reference": "https://huggingface.co/meta-llama/Llama-2-13b-hf",
+  "source": "https://huggingface.co/NousResearch/Llama-2-13b-hf/blob/4b54e9fdd2ebd8db0901d37b98d3a53bbfaa4503/config.json",
+  "source_note": "meta-llama/Llama-2-13b-hf is gated, so the fields were read from this ungated copy of its config.",
+  "config": {
+    "vocab_size": 32000,
+    "hidden_size": 5120,
+    "num_hidden_layers": 40,
+    "num_attention_heads": 40,
+    "num_key_value_heads": 40,
+    "max_position_embeddings": 4096,
+    "tie_word_embeddings": false,
+    "intermediate_size": 13824
+  },
+  "num_parameters": 13015864320,
+  "num_parameters_source": "transformers 5.12.1 LlamaForCausalLM.from_config(<source config>) on the meta device"
+}

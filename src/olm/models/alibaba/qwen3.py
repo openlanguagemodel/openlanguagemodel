@@ -181,7 +181,7 @@ class Qwen3_235B_A22B(Qwen3Model):
             num_layers=94,
             num_heads=64,
             num_kv_heads=4,
-            max_seq_len=32768,
+            max_seq_len=40960,
             num_experts=128,
             top_k=8,
             head_dim=128,

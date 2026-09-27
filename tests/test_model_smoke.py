@@ -485,7 +485,9 @@ def test_phi4_uses_reference_rope_theta():
 def test_olmo_reference_vocab_size():
     with patch.object(olmo_module.OLMoModel, "__init__", return_value=None) as init:
         OLMo_7B()
-    assert init.call_args.kwargs["vocab_size"] == 50280
+    assert init.call_args.kwargs["vocab_size"] == 50304
+    assert init.call_args.kwargs["intermediate_size"] == 11008
+    assert init.call_args.kwargs["tie_weights"] is False
 
 
 def test_mistral_large3_uses_mla_with_dense_then_moe_layers():
@@ -854,13 +856,15 @@ def test_gemma3_reference_presets_are_untied():
         gemma3_module.Gemma3_27B()
 
     four_b, twenty_seven_b = [call.kwargs for call in init.call_args_list]
-    assert four_b["vocab_size"] == 262144
+    assert four_b["vocab_size"] == 262208
+    assert four_b["query_pre_attn_scalar"] == 256.0
     assert four_b["embed_dim"] == 2560
     assert four_b["num_layers"] == 34
     assert four_b["sliding_window_pattern"] == 6
     assert twenty_seven_b["embed_dim"] == 5376
     assert twenty_seven_b["num_layers"] == 62
     assert twenty_seven_b["num_kv_heads"] == 16
+    assert twenty_seven_b["query_pre_attn_scalar"] == 168.0
 
 
 def test_mistral_small3_1_24b_reference_preset():
@@ -876,6 +880,7 @@ def test_mistral_small3_1_24b_reference_preset():
     assert kwargs["num_layers"] == 40
     assert kwargs["num_heads"] == 32
     assert kwargs["num_kv_heads"] == 8
+    assert kwargs["head_dim"] == 128
     assert kwargs["rope_theta"] == 1000000000.0
 
 

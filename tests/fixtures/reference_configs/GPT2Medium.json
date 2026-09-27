@@ -1,0 +1,15 @@
+{
+  "preset": "GPT2Medium",
+  "reference": "https://huggingface.co/openai-community/gpt2-medium",
+  "source": "https://huggingface.co/openai-community/gpt2-medium/blob/6dcaa7a952f72f9298047fd5137cd6e4f05f41da/config.json",
+  "config": {
+    "vocab_size": 50257,
+    "n_embd": 1024,
+    "n_layer": 24,
+    "n_head": 16,
+    "n_positions": 1024,
+    "resid_pdrop": 0.1
+  },
+  "num_parameters": 354823168,
+  "num_parameters_source": "transformers 5.12.1 GPT2LMHeadModel.from_config(<source config>) on the meta device"
+}

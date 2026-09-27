@@ -22,6 +22,8 @@ class MistralSmall3_1_Block(Block):
         intermediate_size (int): FFN hidden dimension.
         num_heads (int): Number of attention heads.
         num_kv_heads (int): Number of KV heads.
+        head_dim (int | None): Dimension per attention head; ``None`` uses
+            ``embed_dim // num_heads``.
         max_seq_len (int): Max sequence length (for the RoPE cache).
         dropout (float): Dropout probability.
         rope_theta (float): RoPE base frequency.
@@ -34,6 +36,7 @@ class MistralSmall3_1_Block(Block):
         intermediate_size: int,
         num_heads: int,
         num_kv_heads: int,
+        head_dim: int | None,
         max_seq_len: int,
         dropout: float,
         rope_theta: float,
@@ -50,6 +53,7 @@ class MistralSmall3_1_Block(Block):
                                 num_heads,
                                 num_kv_heads,
                                 max_seq_len,
+                                head_dim=head_dim,
                                 dropout=dropout,
                                 rope_theta=rope_theta,
                                 use_bias=False,
@@ -84,11 +88,12 @@ class MistralSmall3_1_Model(Block):
     A plain dense (non-MoE) grouped-query-attention transformer -- unlike
     Mistral Large 3, Small 3.1 uses neither Multi-head Latent Attention nor
     a mixture of experts. Mistral Small 3.1 does not tie input/output
-    embeddings.
+    embeddings. Its attention heads are 128 wide, narrower than
+    ``embed_dim // num_heads`` (160), so the named preset passes ``head_dim``.
 
-    Notes:
-        - This models the language-model component only; the reference
-          checkpoint also includes a vision encoder, which is omitted here.
+    Implementation note:
+        This models the language-model component only; the reference
+        checkpoint also includes a vision encoder, which is omitted here.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits
@@ -102,6 +107,8 @@ class MistralSmall3_1_Model(Block):
         num_heads (int): Number of attention heads.
         num_kv_heads (int): Number of KV heads.
         max_seq_len (int): Maximum context length.
+        head_dim (int | None): Dimension per attention head; ``None`` uses
+            ``embed_dim // num_heads``.
         rope_theta (float): RoPE base frequency.
         dropout (float): Dropout probability.
         rms_norm_eps (float): Epsilon for RMSNorm layers.
@@ -117,6 +124,7 @@ class MistralSmall3_1_Model(Block):
         num_heads: int,
         num_kv_heads: int,
         max_seq_len: int,
+        head_dim: int | None = None,
         rope_theta: float = 1000000.0,
         dropout: float = 0.0,
         rms_norm_eps: float = 1e-5,
@@ -132,6 +140,7 @@ class MistralSmall3_1_Model(Block):
                         intermediate_size,
                         num_heads,
                         num_kv_heads,
+                        head_dim,
                         max_seq_len,
                         dropout,
                         rope_theta,
@@ -163,6 +172,7 @@ class MistralSmall3_1_24B(MistralSmall3_1_Model):
             num_heads=32,
             num_kv_heads=8,
             max_seq_len=131072,
+            head_dim=128,
             rope_theta=1000000000.0,
             rms_norm_eps=1e-5,
             tie_weights=False,

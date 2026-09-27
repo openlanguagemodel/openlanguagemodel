@@ -17,8 +17,30 @@ class Step3_5_FullAttnBlock(Block):
     Full-attention block for Step 3.5 Flash.
 
     GQA with 64 heads, 8 KV groups, per-head sigmoid gating, QK-Norm,
-    and partial RoPE (rotary_factor=0.5).  Uses a higher RoPE theta
-    (5M) with Llama3-style frequency scaling.
+    and partial RoPE (rotary_factor=0.5) at theta=5M.
+
+    The head gate reads the normalized block input and scales each head's
+    attention output *before* the output projection, as in the released
+    ``Step3p5Attention``. The attention module is therefore built without
+    its output projection, which the block owns as ``o_proj``.
+
+    Structure:
+        h = RMSNorm(x)
+        x = x + o_proj(sigmoid(gate(h)) * GQA(h))
+        x = x + FFN(RMSNorm(x))      # dense SwiGLU or MoE
+
+    Args:
+        embed_dim (int): Model dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length (for the RoPE cache).
+        rope_theta (float): RoPE base frequency.
+        partial_rotary_factor (float): Fraction of ``head_dim`` rotated by
+            RoPE.
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
+        ffn_module (nn.Module): Feed-forward sublayer (``SwiGLUFFN`` or
+            ``MoEFeedForward``).
     """
 
     def __init__(
@@ -29,44 +51,36 @@ class Step3_5_FullAttnBlock(Block):
         head_dim: int,
         max_seq_len: int,
         rope_theta: float,
+        partial_rotary_factor: float,
         rms_norm_eps: float,
         ffn_module: nn.Module,
     ):
         super().__init__([])
+        self.num_heads = num_heads
+        self.head_dim = head_dim
         self.attn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.self_attn = GroupedQueryAttention(
-            embed_dim, num_heads, num_kv_heads, max_seq_len,
+            embed_dim,
+            num_heads,
+            num_kv_heads,
+            max_seq_len,
             head_dim=head_dim,
             rope_theta=rope_theta,
             use_bias=False,
             use_qk_norm=True,
             rms_norm_eps=rms_norm_eps,
+            partial_rotary_factor=partial_rotary_factor,
         )
+        # The head gate sits between attention and its output projection.
+        self.o_proj = self.self_attn.out_proj
+        self.self_attn.out_proj = nn.Identity()
         self.head_gate = HeadGate(embed_dim, num_heads)
         self.ffn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.ffn = ffn_module
         self.last_router_logits = None
 
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        residual = x
-        h = self.attn_norm(x)
-        attn_out = self.self_attn(h, **{k: v for k, v in kwargs.items() if k == "mask"})
-        B, N, _ = attn_out.shape
-        num_heads = self.head_gate.gate_proj.shape[0]
-        head_dim = attn_out.shape[-1] // num_heads
-        attn_out_heads = attn_out.view(B, N, num_heads, head_dim)
-        attn_out_heads = self.head_gate(x, attn_out_heads)
-        attn_out = attn_out_heads.view(B, N, -1)
-        x = residual + attn_out
-
-        residual = x
-        h = self.ffn_norm(x)
-        if isinstance(self.ffn, MoEFeedForward):
-            h, router_logits = self.ffn(h)
-            self.last_router_logits = router_logits
-        else:
-            h = self.ffn(h)
-        return residual + h
+        return _step3_5_block_forward(self, x, **kwargs)
 
 
 class Step3_5_SlidingAttnBlock(Block):
@@ -75,6 +89,27 @@ class Step3_5_SlidingAttnBlock(Block):
 
     GQA with 96 heads, 8 KV groups, window_size=512, per-head sigmoid
     gating, QK-Norm, and full RoPE (rotary_factor=1.0) at theta=10K.
+    The head gate is applied before the output projection, as in
+    ``Step3_5_FullAttnBlock``.
+
+    Structure:
+        h = RMSNorm(x)
+        x = x + o_proj(sigmoid(gate(h)) * SWA(h))
+        x = x + FFN(RMSNorm(x))      # dense SwiGLU or MoE
+
+    Args:
+        embed_dim (int): Model dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length (for the RoPE cache).
+        window_size (int): Sliding attention window, in tokens.
+        rope_theta (float): RoPE base frequency.
+        partial_rotary_factor (float): Fraction of ``head_dim`` rotated by
+            RoPE.
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
+        ffn_module (nn.Module): Feed-forward sublayer (``SwiGLUFFN`` or
+            ``MoEFeedForward``).
     """
 
     def __init__(
@@ -86,59 +121,83 @@ class Step3_5_SlidingAttnBlock(Block):
         max_seq_len: int,
         window_size: int,
         rope_theta: float,
+        partial_rotary_factor: float,
         rms_norm_eps: float,
         ffn_module: nn.Module,
     ):
         super().__init__([])
+        self.num_heads = num_heads
+        self.head_dim = head_dim
         self.attn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.self_attn = SlidingWindowAttention(
-            embed_dim, num_heads, num_kv_heads, max_seq_len,
+            embed_dim,
+            num_heads,
+            num_kv_heads,
+            max_seq_len,
             window_size=window_size,
             head_dim=head_dim,
             rope_theta=rope_theta,
             use_qk_norm=True,
             rms_norm_eps=rms_norm_eps,
+            partial_rotary_factor=partial_rotary_factor,
         )
+        # The head gate sits between attention and its output projection.
+        self.o_proj = self.self_attn.out_proj
+        self.self_attn.out_proj = nn.Identity()
         self.head_gate = HeadGate(embed_dim, num_heads)
         self.ffn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.ffn = ffn_module
         self.last_router_logits = None
 
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
-        residual = x
-        h = self.attn_norm(x)
-        attn_out = self.self_attn(h, **{k: v for k, v in kwargs.items() if k == "mask"})
-        B, N, _ = attn_out.shape
-        num_heads = self.head_gate.gate_proj.shape[0]
-        head_dim = attn_out.shape[-1] // num_heads
-        attn_out_heads = attn_out.view(B, N, num_heads, head_dim)
-        attn_out_heads = self.head_gate(x, attn_out_heads)
-        attn_out = attn_out_heads.view(B, N, -1)
-        x = residual + attn_out
-
-        residual = x
-        h = self.ffn_norm(x)
-        if isinstance(self.ffn, MoEFeedForward):
-            h, router_logits = self.ffn(h)
-            self.last_router_logits = router_logits
-        else:
-            h = self.ffn(h)
-        return residual + h
+        return _step3_5_block_forward(self, x, **kwargs)
 
 
+def _step3_5_block_forward(block, x: torch.Tensor, **kwargs) -> torch.Tensor:
+    """Shared forward of the two Step 3.5 block types."""
+    h = block.attn_norm(x)
+    attn_out = block.self_attn(h, **{k: v for k, v in kwargs.items() if k == "mask"})
+    B, N, _ = attn_out.shape
+    # HeadGate reads the head axis from dim 1 when it matches num_heads, so
+    # use the [B, heads, N, head_dim] layout, which stays unambiguous when
+    # seq_len == num_heads.
+    attn_out = attn_out.view(B, N, block.num_heads, block.head_dim).transpose(1, 2)
+    attn_out = block.head_gate(h, attn_out).transpose(1, 2).reshape(B, N, -1)
+    x = x + block.o_proj(attn_out)
+
+    h = block.ffn_norm(x)
+    if isinstance(block.ffn, MoEFeedForward):
+        h, router_logits = block.ffn(h)
+        block.last_router_logits = router_logits
+    else:
+        h = block.ffn(h)
+    return x + h
+
+
+# Per-layer schedules from the released config.json. They have 48 entries:
+# 45 decoder layers plus the 3 multi-token-prediction layers stored after them.
 STEP3_5_LAYER_TYPES = [
-    "full", "sliding", "sliding", "sliding",
+    "full",
+    "sliding",
+    "sliding",
+    "sliding",
 ] * 12
 
 
 STEP3_5_MOE_LAYERS = set(range(3, 45))
 
 STEP3_5_ROPE_THETA = [
-    5000000.0, 10000.0, 10000.0, 10000.0,
+    5000000.0,
+    10000.0,
+    10000.0,
+    10000.0,
 ] * 12
 
 STEP3_5_PARTIAL_ROTARY = [
-    0.5, 1.0, 1.0, 1.0,
+    0.5,
+    1.0,
+    1.0,
+    1.0,
 ] * 12
 
 
@@ -146,22 +205,62 @@ class Step3_5_Flash_Model(Block):
     """
     Step 3.5 Flash -- throughput-oriented 196B sparse MoE.
 
-    48 layers in a 4:1 sliding-window / full-attention pattern.  Full
-    attention layers use 64 heads with partial RoPE (0.5) at theta=5M;
+    45 layers in a repeating full / sliding / sliding / sliding pattern.
+    Full attention layers use 64 heads with partial RoPE (0.5) at theta=5M;
     sliding-window layers use 96 heads with full RoPE at theta=10K.
     All layers have per-head sigmoid gating and QK-Norm.
 
-    42 of 48 layers (indices 3--44) use a 288-expert sigmoid-routed MoE
-    with top-8 selection, router bias, FP32 gate, weight normalization,
-    and 3x routed scaling.  Layers 0--2 and 45--47 use dense SwiGLU.
+    Layers 0--2 use a dense SwiGLU; the other 42 (indices 3--44) use a
+    288-expert sigmoid-routed MoE with top-8 selection, one shared expert,
+    router bias, FP32 gate, weight normalization, and 3x routed scaling.
     Three MTP heads for speculative decoding.
 
     Structure:
-        Embedding -> [FullAttn | SlidingAttn] x 48 -> RMSNorm -> OutputHead
+        Embedding -> [FullAttn | SlidingAttn] x 45 -> RMSNorm -> OutputHead
         + MultiTokenPredictionHead (3 heads)
+
+    Implementation note:
+        The released checkpoint applies Llama-3-style RoPE scaling (factor 2)
+        on the full-attention layers only and clamps the SwiGLU activations of
+        the last two MoE layers (``swiglu_limits``); neither is modeled.
+        The released router adds ``router_bias`` to the sigmoid scores only
+        when it chooses experts; here the bias sits on the gate logits
+        (``use_router_bias``), so it also shifts the routing weights.
+        Multi-token prediction uses the lightweight
+        ``MultiTokenPredictionHead``, whereas the released MTP modules
+        (stored as ``model.layers.45``--``47``) are full decoder layers, so
+        they are not part of the 45-layer stack.
 
     Forward:
         Token IDs ``[batch, seq_len]`` -> logits ``[batch, seq_len, vocab_size]``.
+
+    Args:
+        vocab_size (int): Vocabulary size.
+        embed_dim (int): Model dimension.
+        intermediate_size (int): FFN hidden dimension of the dense layers.
+        moe_intermediate_size (int): Hidden dimension of each routed expert
+            and of the shared expert.
+        num_layers (int): Number of decoder layers.
+        full_attn_heads (int): Query heads in full-attention layers.
+        sliding_attn_heads (int): Query heads in sliding-window layers.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length.
+        window_size (int): Sliding attention window, in tokens.
+        num_experts (int): Total number of routable experts.
+        num_experts_per_tok (int): Number of experts routed to per token.
+        num_mtp_heads (int): Number of multi-token-prediction heads.
+        routed_scaling_factor (float): Multiplier on the routed-expert output.
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
+        tie_weights (bool): Whether to tie the output head to the embedding.
+        layer_types (list[str] | None): ``"full"`` or ``"sliding"`` per layer.
+            Defaults to ``STEP3_5_LAYER_TYPES``.
+        moe_layers (set[int] | None): Indices of MoE layers. Defaults to
+            ``STEP3_5_MOE_LAYERS``.
+        rope_thetas (list[float] | None): RoPE base per layer. Defaults to
+            ``STEP3_5_ROPE_THETA``.
+        partial_rotary_factors (list[float] | None): Rotated fraction of each
+            head, per layer. Defaults to ``STEP3_5_PARTIAL_ROTARY``.
     """
 
     def __init__(
@@ -170,7 +269,7 @@ class Step3_5_Flash_Model(Block):
         embed_dim: int = 4096,
         intermediate_size: int = 11264,
         moe_intermediate_size: int = 1280,
-        num_layers: int = 48,
+        num_layers: int = 45,
         full_attn_heads: int = 64,
         sliding_attn_heads: int = 96,
         num_kv_heads: int = 8,
@@ -181,16 +280,20 @@ class Step3_5_Flash_Model(Block):
         num_experts_per_tok: int = 8,
         num_mtp_heads: int = 3,
         routed_scaling_factor: float = 3.0,
-        rms_norm_eps: float = 1e-6,
+        rms_norm_eps: float = 1e-5,
         tie_weights: bool = False,
         layer_types: List[str] = None,
         moe_layers: set = None,
         rope_thetas: List[float] = None,
+        partial_rotary_factors: List[float] = None,
     ):
         embedding = Embedding(vocab_size, embed_dim)
         layer_types = layer_types or STEP3_5_LAYER_TYPES[:num_layers]
         moe_layers = moe_layers if moe_layers is not None else STEP3_5_MOE_LAYERS
         rope_thetas = rope_thetas or STEP3_5_ROPE_THETA[:num_layers]
+        partial_rotary_factors = (
+            partial_rotary_factors or STEP3_5_PARTIAL_ROTARY[:num_layers]
+        )
 
         layers = nn.ModuleList()
         for i in range(num_layers):
@@ -212,27 +315,50 @@ class Step3_5_Flash_Model(Block):
                 ffn = SwiGLUFFN(embed_dim, hidden_dim=intermediate_size, bias=False)
 
             if layer_types[i] == "full":
-                layers.append(Step3_5_FullAttnBlock(
-                    embed_dim, full_attn_heads, num_kv_heads, head_dim,
-                    max_seq_len, rope_thetas[i], rms_norm_eps, ffn,
-                ))
+                layers.append(
+                    Step3_5_FullAttnBlock(
+                        embed_dim,
+                        full_attn_heads,
+                        num_kv_heads,
+                        head_dim,
+                        max_seq_len,
+                        rope_thetas[i],
+                        partial_rotary_factors[i],
+                        rms_norm_eps,
+                        ffn,
+                    )
+                )
             else:
-                layers.append(Step3_5_SlidingAttnBlock(
-                    embed_dim, sliding_attn_heads, num_kv_heads, head_dim,
-                    max_seq_len, window_size, rope_thetas[i], rms_norm_eps, ffn,
-                ))
+                layers.append(
+                    Step3_5_SlidingAttnBlock(
+                        embed_dim,
+                        sliding_attn_heads,
+                        num_kv_heads,
+                        head_dim,
+                        max_seq_len,
+                        window_size,
+                        rope_thetas[i],
+                        partial_rotary_factors[i],
+                        rms_norm_eps,
+                        ffn,
+                    )
+                )
 
         final_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         output_head = OutputHead(
-            embed_dim, vocab_size,
+            embed_dim,
+            vocab_size,
             tied_embedding=embedding if tie_weights else None,
-            tie_weights=tie_weights, use_norm=False,
+            tie_weights=tie_weights,
+            use_norm=False,
         )
 
         super().__init__([embedding, final_norm, output_head])
         self.transformer_blocks = layers
         self.mtp = MultiTokenPredictionHead(
-            embed_dim, vocab_size, num_heads=num_mtp_heads,
+            embed_dim,
+            vocab_size,
+            num_heads=num_mtp_heads,
             rms_norm_eps=rms_norm_eps,
         )
 
@@ -261,7 +387,29 @@ class Step3_5_Flash_Model(Block):
 
 
 class Step3_5_Flash_196B(Step3_5_Flash_Model):
-    """Step 3.5 Flash 196B with default config."""
+    """Step 3.5 Flash (196B total, ~11B active)."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            vocab_size=128896,
+            embed_dim=4096,
+            intermediate_size=11264,
+            moe_intermediate_size=1280,
+            num_layers=45,
+            full_attn_heads=64,
+            sliding_attn_heads=96,
+            num_kv_heads=8,
+            head_dim=128,
+            max_seq_len=262144,
+            window_size=512,
+            num_experts=288,
+            num_experts_per_tok=8,
+            num_mtp_heads=3,
+            routed_scaling_factor=3.0,
+            rms_norm_eps=1e-5,
+            tie_weights=False,
+            layer_types=STEP3_5_LAYER_TYPES[:45],
+            moe_layers=STEP3_5_MOE_LAYERS,
+            rope_thetas=STEP3_5_ROPE_THETA[:45],
+            partial_rotary_factors=STEP3_5_PARTIAL_ROTARY[:45],
+        )

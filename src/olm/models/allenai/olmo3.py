@@ -3,6 +3,7 @@ import torch
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat
 from olm.nn.attention import GroupedQueryAttention
+from olm.nn.attention.masks import attention_mask_to_bool
 from olm.nn.feedforward import SwiGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
@@ -34,6 +35,11 @@ class Olmo3Block(Block):
         rms_norm_eps (float): Epsilon for RMSNorm layers.
         sliding_window (int | None): Local attention window; ``None`` for a
             full-attention (global) layer.
+
+    Forward:
+        Accepts hidden states shaped ``[batch, seq_len, embed_dim]`` and an
+        optional boolean ``mask`` (True means attend). The mask is combined
+        with the causal mask and, on local layers, the sliding window.
     """
 
     def __init__(
@@ -71,9 +77,9 @@ class Olmo3Block(Block):
         )
         self.post_feedforward_layernorm = RMSNorm(embed_dim, eps=rms_norm_eps)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         residual = x
-        x = self.self_attn(x, self._sliding_window_mask(x))
+        x = self.self_attn(x, self._attention_mask(x, mask))
         x = self.post_attention_layernorm(x)
         x = residual + x
 
@@ -82,13 +88,17 @@ class Olmo3Block(Block):
         x = self.post_feedforward_layernorm(x)
         return residual + x
 
-    def _sliding_window_mask(self, x):
+    def _attention_mask(self, x, mask):
+        """Combine the caller's ``mask`` with this layer's sliding window."""
         if self.sliding_window is None:
-            return None
+            return mask
 
         seq_len = x.size(1)
         positions = torch.arange(seq_len, device=x.device)
-        return positions[None, :] > positions[:, None] - self.sliding_window
+        window = positions[None, :] > positions[:, None] - self.sliding_window
+        if mask is None:
+            return window
+        return attention_mask_to_bool(mask, device=x.device) & window
 
 
 class Olmo3Model(Block):
@@ -102,9 +112,16 @@ class Olmo3Model(Block):
     followed by one full-attention ("global") layer. OLMo 3 does not tie
     input/output embeddings; the named presets pass ``tie_weights=False``.
 
+    Implementation note:
+        The released checkpoints extend RoPE with YaRN (factor 8 over an
+        8,192-token original context); this implementation uses plain RoPE
+        with ``rope_theta``. OLMo also normalizes the whole query and key
+        projections, which is approximated here by per-head QK-norm.
+
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-        ``[batch, seq_len, vocab_size]``.
+        ``[batch, seq_len, vocab_size]``. An optional boolean ``mask`` (True
+        means attend) reaches every attention layer.
 
     Args:
         vocab_size (int): Vocabulary size.
@@ -193,6 +210,7 @@ class Olmo3_7B(Olmo3Model):
             rope_theta=500000.0,
             rms_norm_eps=1e-6,
             sliding_window=4096,
+            sliding_window_pattern=4,
             tie_weights=False,
         )
 
@@ -213,5 +231,6 @@ class Olmo3_32B(Olmo3Model):
             rope_theta=500000.0,
             rms_norm_eps=1e-6,
             sliding_window=4096,
+            sliding_window_pattern=4,
             tie_weights=False,
         )

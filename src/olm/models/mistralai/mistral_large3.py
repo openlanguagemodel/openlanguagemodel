@@ -82,9 +82,7 @@ class MistralLarge3Block(Block):
                 bias=False,
             )
         else:
-            ffn = SwiGLUFFN(
-                embed_dim, hidden_dim=dense_intermediate_size, bias=False
-            )
+            ffn = SwiGLUFFN(embed_dim, hidden_dim=dense_intermediate_size, bias=False)
 
         super().__init__(
             [
@@ -106,11 +104,15 @@ class MistralLarge3Model(Block):
     is Multi-head Latent Attention throughout. Mistral Large 3 does not tie
     input/output embeddings; the named preset passes ``tie_weights=False``.
 
-    Notes:
-        - This models the language-model component only; the reference checkpoint
-          also includes a vision encoder, which is omitted here.
-        - The published config does not specify the router gating function, so the
-          library default (softmax top-k routing) is used.
+    Implementation note:
+        This models the language-model component only; the reference
+        checkpoint also includes a vision encoder, which is omitted here. The
+        published config does not specify the router gating function, so the
+        library default (softmax top-k routing) is used. The released
+        ``params.json`` also extends RoPE with YaRN (factor 36 over an
+        8,192-token original context) and enables Llama-4-style
+        position-dependent attention scaling (``llama_4_scaling``); neither
+        is modeled, and attention uses plain RoPE at ``rope_theta``.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -212,7 +214,7 @@ class MistralLarge3(MistralLarge3Model):
             embed_dim=7168,
             num_layers=61,
             num_heads=128,
-            max_seq_len=262144,
+            max_seq_len=294912,
             kv_lora_rank=512,
             qk_nope_head_dim=128,
             qk_rope_head_dim=64,

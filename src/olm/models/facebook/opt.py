@@ -39,7 +39,7 @@ class OPTBlock(Block):
                 Residual(
                     Block(
                         [
-                            LayerNorm(embed_dim, eps=1e-6),
+                            LayerNorm(embed_dim, eps=1e-5),
                             FlashAttention(
                                 embed_dim,
                                 num_heads,
@@ -52,7 +52,7 @@ class OPTBlock(Block):
                 Residual(
                     Block(
                         [
-                            LayerNorm(embed_dim, eps=1e-6),
+                            LayerNorm(embed_dim, eps=1e-5),
                             ClassicFFN(
                                 embed_dim,
                                 hidden_dim=intermediate_size,
@@ -75,6 +75,11 @@ class OPTModel(Block):
     - Multi-Head Attention with Causal Masking
     - ReLU activation in Feed-Forward Networks
     - Tied output projection through ``OutputHead`` by default
+
+    Implementation note:
+        The released checkpoints' learned positional table has two extra
+        rows (positions are offset by 2); the table here has exactly 2,048
+        rows.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped

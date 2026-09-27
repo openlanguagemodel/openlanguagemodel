@@ -1,0 +1,28 @@
+{
+  "preset": "MistralLarge3",
+  "reference": "https://huggingface.co/mistralai/Mistral-Large-3-675B-Instruct-2512",
+  "source": "https://huggingface.co/mistralai/Mistral-Large-3-675B-Instruct-2512/blob/383ffea2c7d60dfd44ca960e8e691709d4fdb9cd/params.json",
+  "config": {
+    "vocab_size": 131072,
+    "dim": 7168,
+    "n_layers": 61,
+    "n_heads": 128,
+    "max_position_embeddings": 294912,
+    "kv_lora_rank": 512,
+    "qk_nope_head_dim": 128,
+    "qk_rope_head_dim": 64,
+    "v_head_dim": 128,
+    "q_lora_rank": 1536,
+    "hidden_dim": 16384,
+    "moe": {
+      "expert_hidden_dim": 4096,
+      "num_experts": 128,
+      "num_shared_experts": 1,
+      "num_experts_per_tok": 4,
+      "first_k_dense_replace": 3
+    },
+    "rope_theta": 10000.0,
+    "norm_eps": 1e-06,
+    "tied_embeddings": false
+  }
+}

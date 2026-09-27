@@ -1,0 +1,28 @@
+{
+  "preset": "Ling2_5_1T",
+  "reference": "https://huggingface.co/inclusionAI/Ling-2.5-1T",
+  "source": "https://huggingface.co/inclusionAI/Ling-2.5-1T/blob/9c9d569b9183743eadee7f5ff13c15526fd0c751/config.json",
+  "config": {
+    "vocab_size": 157184,
+    "hidden_size": 8192,
+    "intermediate_size": 18432,
+    "moe_intermediate_size": 2048,
+    "num_hidden_layers": 80,
+    "num_attention_heads": 64,
+    "head_dim": 128,
+    "kv_lora_rank": 512,
+    "qk_nope_head_dim": 128,
+    "qk_rope_head_dim": 64,
+    "v_head_dim": 128,
+    "q_lora_rank": 1536,
+    "max_position_embeddings": 131072,
+    "num_experts": 256,
+    "num_experts_per_tok": 8,
+    "layer_group_size": 8,
+    "first_k_dense_replace": 4,
+    "rope_theta": 6000000,
+    "rms_norm_eps": 1e-06,
+    "routed_scaling_factor": 2.5,
+    "tie_word_embeddings": false
+  }
+}

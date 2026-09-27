@@ -8,6 +8,7 @@ import torch.nn as nn
 from olm.nn.structure import Block
 from olm.nn.structure.combinators import Repeat
 from olm.nn.attention import GroupedQueryAttention
+from olm.nn.attention.masks import attention_mask_to_bool
 from olm.nn.feedforward import GeGLUFFN
 from olm.nn.norms import RMSNorm
 from olm.nn.embeddings import Embedding
@@ -45,6 +46,30 @@ class Gemma2Block(Block):
     Implements the "Sandwich" Normalization pattern:
     Norm -> Attn -> Norm -> Residual
     Norm -> MLP  -> Norm -> Residual
+
+    Structure:
+        x = x + post_attn_norm(Attn(input_norm(x)))
+        x = x + post_ffn_norm(GeGLU(pre_ffn_norm(x)))
+
+    Args:
+        embed_dim (int): Model dimension.
+        intermediate_size (int): FFN hidden dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads.
+        max_seq_len (int): Maximum context length (for the RoPE cache).
+        dropout (float): Dropout probability.
+        rope_theta (float): RoPE base frequency.
+        head_dim (int): Dimension per attention head.
+        sliding_window (int | None): Local attention window; ``None`` for a
+            global (full-attention) layer.
+        attn_logit_softcap (float | None): Tanh soft-cap on attention logits.
+        query_pre_attn_scalar (float | None): Attention logits are scaled by
+            ``query_pre_attn_scalar ** -0.5``; ``None`` uses ``head_dim``.
+
+    Forward:
+        Accepts hidden states shaped ``[batch, seq_len, embed_dim]`` and an
+        optional boolean ``mask`` (True means attend). The mask is combined
+        with the causal mask and, on local layers, the sliding window.
     """
 
     def __init__(
@@ -73,22 +98,28 @@ class Gemma2Block(Block):
             dropout=dropout,
             rope_theta=rope_theta,
             use_bias=False,
-            attention_scale=query_pre_attn_scalar**-0.5
-            if query_pre_attn_scalar is not None
-            else None,
+            attention_scale=(
+                query_pre_attn_scalar**-0.5
+                if query_pre_attn_scalar is not None
+                else None
+            ),
             attn_logit_softcap=attn_logit_softcap,
         )
         self.post_attention_layernorm = RMSNorm(embed_dim, eps=1e-6)
         self.pre_feedforward_layernorm = RMSNorm(embed_dim, eps=1e-6)
         self.mlp = GeGLUFFN(
-            embed_dim, hidden_dim=intermediate_size, dropout=dropout, bias=False
+            embed_dim,
+            hidden_dim=intermediate_size,
+            dropout=dropout,
+            bias=False,
+            approximate="tanh",
         )
         self.post_feedforward_layernorm = RMSNorm(embed_dim, eps=1e-6)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         residual = x
         x = self.input_layernorm(x)
-        x = self.self_attn(x, self._sliding_window_mask(x))
+        x = self.self_attn(x, self._attention_mask(x, mask))
         x = self.post_attention_layernorm(x)
         x = residual + x
 
@@ -98,13 +129,17 @@ class Gemma2Block(Block):
         x = self.post_feedforward_layernorm(x)
         return residual + x
 
-    def _sliding_window_mask(self, x):
+    def _attention_mask(self, x, mask):
+        """Combine the caller's ``mask`` with this layer's sliding window."""
         if self.sliding_window is None:
-            return None
+            return mask
 
         seq_len = x.size(1)
         positions = torch.arange(seq_len, device=x.device)
-        return positions[None, :] > positions[:, None] - self.sliding_window
+        window = positions[None, :] > positions[:, None] - self.sliding_window
+        if mask is None:
+            return window
+        return attention_mask_to_bool(mask, device=x.device) & window
 
 
 class Gemma2Model(Block):
@@ -115,9 +150,32 @@ class Gemma2Model(Block):
         Scaled token embedding -> [Gemma2Block] x N -> RMSNorm ->
         tied OutputHead -> optional final logit softcap.
 
+    Layers alternate local (sliding-window) and global attention, starting
+    with a local layer. The feed-forward uses the tanh approximation of GELU
+    (``gelu_pytorch_tanh``), as in the released checkpoints.
+
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
-        ``[batch, seq_len, vocab_size]``.
+        ``[batch, seq_len, vocab_size]``. An optional boolean ``mask`` (True
+        means attend) reaches every attention layer.
+
+    Args:
+        vocab_size (int): Vocabulary size.
+        embed_dim (int): Model dimension.
+        intermediate_size (int): FFN hidden dimension.
+        num_layers (int): Number of transformer blocks.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads.
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length.
+        rope_theta (float): RoPE base frequency.
+        dropout (float): Dropout probability.
+        sliding_window (int | None): Window of the local layers.
+        attn_logit_softcap (float | None): Tanh soft-cap on attention logits.
+        final_logit_softcap (float | None): Tanh soft-cap on output logits.
+        query_pre_attn_scalar (float | None): Attention logits are scaled by
+            ``query_pre_attn_scalar ** -0.5``; ``None`` uses ``head_dim``.
+        tie_weights (bool): Whether to tie the output head to the embedding.
     """
 
     def __init__(
@@ -188,6 +246,10 @@ class Gemma2_27B(Gemma2Model):
             head_dim=128,
             max_seq_len=8192,
             rope_theta=10000.0,
+            sliding_window=4096,
+            attn_logit_softcap=50.0,
+            final_logit_softcap=30.0,
+            query_pre_attn_scalar=144.0,
         )
 
 
@@ -205,6 +267,10 @@ class Gemma2_9B(Gemma2Model):
             head_dim=256,
             max_seq_len=8192,
             rope_theta=10000.0,
+            sliding_window=4096,
+            attn_logit_softcap=50.0,
+            final_logit_softcap=30.0,
+            query_pre_attn_scalar=256.0,
         )
 
 
@@ -222,4 +288,8 @@ class Gemma2_2B(Gemma2Model):
             head_dim=256,
             max_seq_len=8192,
             rope_theta=10000.0,
+            sliding_window=4096,
+            attn_logit_softcap=50.0,
+            final_logit_softcap=30.0,
+            query_pre_attn_scalar=256.0,
         )

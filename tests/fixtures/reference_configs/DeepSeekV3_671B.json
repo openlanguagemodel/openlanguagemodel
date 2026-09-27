@@ -1,0 +1,28 @@
+{
+  "preset": "DeepSeekV3_671B",
+  "reference": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
+  "source": "https://huggingface.co/deepseek-ai/DeepSeek-V3/blob/e815299b0bcbac849fa540c768ef21845365c9eb/config.json",
+  "config": {
+    "vocab_size": 129280,
+    "hidden_size": 7168,
+    "num_hidden_layers": 61,
+    "num_attention_heads": 128,
+    "max_position_embeddings": 163840,
+    "kv_lora_rank": 512,
+    "qk_nope_head_dim": 128,
+    "qk_rope_head_dim": 64,
+    "v_head_dim": 128,
+    "q_lora_rank": 1536,
+    "intermediate_size": 18432,
+    "moe_intermediate_size": 2048,
+    "n_routed_experts": 256,
+    "n_shared_experts": 1,
+    "num_experts_per_tok": 8,
+    "first_k_dense_replace": 3,
+    "routed_scaling_factor": 2.5,
+    "rope_theta": 10000,
+    "rms_norm_eps": 1e-06,
+    "tie_word_embeddings": false,
+    "num_nextn_predict_layers": 1
+  }
+}

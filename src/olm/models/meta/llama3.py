@@ -85,7 +85,10 @@ class Llama3Model(Block):
         behavior may differ from the released Meta checkpoints.
 
     Structure:
-        Embedding -> [Llama3Block] x N -> RMSNorm -> tied OutputHead.
+        Embedding -> [Llama3Block] x N -> RMSNorm -> OutputHead.
+
+    Llama 3.1 does not tie input/output embeddings, so the 3.1 presets pass
+    ``tie_weights=False``; the Llama 3.2 1B and 3B releases do tie them.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -149,6 +152,7 @@ class Llama3_1_405B(Llama3Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,
+            tie_weights=False,
         )
 
 
@@ -165,6 +169,7 @@ class Llama3_1_70B(Llama3Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,
+            tie_weights=False,
         )
 
 
@@ -181,6 +186,7 @@ class Llama3_1_8B(Llama3Model):
             num_kv_heads=8,
             max_seq_len=131072,
             rope_theta=500000.0,
+            tie_weights=False,
         )
 
 
