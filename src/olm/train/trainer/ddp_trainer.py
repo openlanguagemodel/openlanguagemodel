@@ -23,7 +23,53 @@ from olm.core.dist import (
 )
 
 
-class DDPTrainer(Trainer):
+class _DataParallelMixin:
+    """
+    Trainer hooks shared by ``DDPTrainer`` and ``FSDPTrainer``.
+
+    Under a process group every rank trains on its own share of the data. These
+    hooks give every epoch its own ``DistributedSampler`` shuffle, combine the
+    step metrics and the decision to stop over ranks, and collect every rank's
+    random state for checkpoints. Without a process group they do what the
+    plain ``Trainer`` does. List the mixin before ``Trainer`` in the bases.
+    """
+
+    def _prepare_dataloader_for_epoch(self, epoch: int) -> None:
+        """Set the epoch on a DistributedSampler so every epoch shuffles differently."""
+        if is_distributed() and hasattr(self.dataloader, "sampler"):
+            if isinstance(self.dataloader.sampler, DistributedSampler):
+                self.dataloader.sampler.set_epoch(epoch)
+
+    def _reduce_step_metrics(
+        self, avg_loss: float, tokens_per_sec: float
+    ) -> Tuple[float, float]:
+        """Average the loss and sum the throughput over ranks."""
+        if not is_distributed():
+            return avg_loss, tokens_per_sec
+
+        loss_tensor = torch.tensor([avg_loss], device=self.device)
+        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
+
+        throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
+        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
+        return loss_tensor.item(), throughput_tensor.item()
+
+    def _should_stop_training(self) -> bool:
+        """Stop every rank when any rank's callbacks asked to stop."""
+        should_stop = super()._should_stop_training()
+        if not is_distributed():
+            return should_stop
+
+        flag = torch.tensor([float(should_stop)], device=self.device)
+        all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
+        return bool(flag.item())
+
+    def _gather_rng_states(self) -> List[Dict[str, Any]]:
+        """Collect every rank's RNG states; every rank must call this."""
+        return all_gather_object(self._rng_state())
+
+
+class DDPTrainer(_DataParallelMixin, Trainer):
     """
     Trainer with PyTorch Distributed Data Parallel (DDP) support.
 
@@ -187,12 +233,6 @@ class DDPTrainer(Trainer):
             steps_per_epoch=steps_per_epoch,
         )
 
-    def _prepare_dataloader_for_epoch(self, epoch: int) -> None:
-        """Set the epoch on a DistributedSampler so every epoch shuffles differently."""
-        if is_distributed() and hasattr(self.dataloader, "sampler"):
-            if isinstance(self.dataloader.sampler, DistributedSampler):
-                self.dataloader.sampler.set_epoch(epoch)
-
     def _accumulation_context(
         self, sync_gradients: bool, num_batches: Optional[int]
     ) -> AbstractContextManager:
@@ -206,31 +246,3 @@ class DDPTrainer(Trainer):
         if is_distributed() and num_batches is not None and not sync_gradients:
             return self.model.no_sync()
         return nullcontext()
-
-    def _reduce_step_metrics(
-        self, avg_loss: float, tokens_per_sec: float
-    ) -> Tuple[float, float]:
-        """Average the loss and sum the throughput over ranks."""
-        if not is_distributed():
-            return avg_loss, tokens_per_sec
-
-        loss_tensor = torch.tensor([avg_loss], device=self.device)
-        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-
-        throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
-        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-        return loss_tensor.item(), throughput_tensor.item()
-
-    def _should_stop_training(self) -> bool:
-        """Stop every rank when any rank's callbacks asked to stop."""
-        should_stop = super()._should_stop_training()
-        if not is_distributed():
-            return should_stop
-
-        flag = torch.tensor([float(should_stop)], device=self.device)
-        all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
-        return bool(flag.item())
-
-    def _gather_rng_states(self) -> List[Dict[str, Any]]:
-        """Collect every rank's RNG states; every rank must call this."""
-        return all_gather_object(self._rng_state())

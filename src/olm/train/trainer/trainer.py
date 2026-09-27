@@ -17,7 +17,7 @@ from olm.core.dist import get_rank, get_world_size, is_main_process
 from olm.core.seed import get_rng_state, set_rng_state
 from olm.train.checkpointing import (
     CHECKPOINT_FORMAT_VERSION,
-    add_legacy_aliases,
+    _add_legacy_aliases,
     find_latest_checkpoint,
     read_checkpoint,
     unwrap_model,
@@ -848,7 +848,7 @@ class Trainer:
             "callbacks": callback_states,
             "losses": list(self.losses),
         }
-        return add_legacy_aliases(checkpoint)
+        return _add_legacy_aliases(checkpoint)
 
     def state_dict(self) -> Dict[str, Any]:
         """
@@ -926,12 +926,6 @@ class Trainer:
                 flush=True,
             )
 
-    def _load_model_state_dict(self, state: Dict[str, Any], strict: bool) -> None:
-        unwrap_model(self.model).load_state_dict(state, strict=strict)
-
-    def _load_optimizer_state_dict(self, state: Dict[str, Any]) -> None:
-        self.optimizer.load_state_dict(state)
-
     def load_state_dict(self, checkpoint: Dict[str, Any], strict: bool = True) -> None:
         """
         Restore the training state from a checkpoint dict.
@@ -944,7 +938,7 @@ class Trainer:
         trainer_state = checkpoint["trainer"]
         scheduler_state = checkpoint.get("scheduler")
 
-        self._load_model_state_dict(checkpoint["model"], strict)
+        unwrap_model(self.model).load_state_dict(checkpoint["model"], strict=strict)
 
         # Build the default scheduler before restoring the optimizer:
         # constructing a scheduler overwrites every parameter group's
@@ -953,7 +947,7 @@ class Trainer:
             self._restore_default_scheduler(checkpoint)
 
         if checkpoint.get("optimizer") is not None:
-            self._load_optimizer_state_dict(checkpoint["optimizer"])
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
         else:
             warnings.warn(
                 "The checkpoint holds no optimizer state, so the optimizer starts "

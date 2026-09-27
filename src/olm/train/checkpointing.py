@@ -6,8 +6,9 @@ continue a run exactly where it stopped: model and optimizer state, scheduler
 and AMP scaler state, the Trainer's step counters and data position, every
 random number generator, and callback state. ``Trainer.save_checkpoint`` and
 ``Trainer.load_checkpoint`` produce and consume it; this module holds the
-pieces that do not need a Trainer: reading (including the older formats),
-atomic writing, and finding the newest checkpoint in a directory.
+pieces that do not need a Trainer: reading (``read_checkpoint``, which also
+converts the older formats), atomic writing (``write_checkpoint``), and
+finding the newest checkpoint in a directory (``find_latest_checkpoint``).
 
 Format version 1 (the keys of the saved dict):
 
@@ -191,7 +192,7 @@ def read_checkpoint(
     return checkpoint
 
 
-def add_legacy_aliases(checkpoint: Dict[str, Any]) -> Dict[str, Any]:
+def _add_legacy_aliases(checkpoint: Dict[str, Any]) -> Dict[str, Any]:
     """
     Add the pre-version-1 key names as aliases of the version 1 entries.
 

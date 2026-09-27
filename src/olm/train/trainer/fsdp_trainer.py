@@ -3,7 +3,7 @@ Fully Sharded Data Parallel (FSDP) Trainer using PyTorch's native FSDP.
 """
 
 from pathlib import Path
-from typing import Optional, List, Type, Union, Any, Callable, Dict, Tuple
+from typing import Optional, List, Type, Union, Any, Callable, Dict
 import os
 import torch
 import torch.nn as nn
@@ -25,6 +25,7 @@ from torch.distributed.fsdp.wrap import (
 from torch.utils.data import DistributedSampler
 import functools
 
+from olm.train.trainer.ddp_trainer import _DataParallelMixin
 from olm.train.trainer.trainer import Trainer, TrainerCallback
 from olm.train.losses.base import LossBase
 from olm.train.losses.cross_entropy import CrossEntropyLoss
@@ -35,14 +36,12 @@ from olm.core.dist import (
     get_world_size,
     is_main_process,
     barrier,
-    all_reduce,
-    all_gather_object,
     print_rank_0,
 )
 from olm.train.checkpointing import write_checkpoint
 
 
-class FSDPTrainer(Trainer):
+class FSDPTrainer(_DataParallelMixin, Trainer):
     """
     Trainer with PyTorch Fully Sharded Data Parallel (FSDP) support.
 
@@ -281,42 +280,12 @@ class FSDPTrainer(Trainer):
             steps_per_epoch=steps_per_epoch,
         )
 
-    def _prepare_dataloader_for_epoch(self, epoch: int) -> None:
-        """Set the epoch on a DistributedSampler so every epoch shuffles differently."""
-        if is_distributed() and hasattr(self.dataloader, "sampler"):
-            if isinstance(self.dataloader.sampler, DistributedSampler):
-                self.dataloader.sampler.set_epoch(epoch)
-
     def _clip_gradients(self) -> None:
         """Clip with FSDP's own method, which computes the norm over all shards."""
         if isinstance(self.model, FSDP):
             self.model.clip_grad_norm_(self.grad_clip_norm)
         else:
             super()._clip_gradients()
-
-    def _reduce_step_metrics(
-        self, avg_loss: float, tokens_per_sec: float
-    ) -> Tuple[float, float]:
-        """Average the loss and sum the throughput over ranks."""
-        if not is_distributed():
-            return avg_loss, tokens_per_sec
-
-        loss_tensor = torch.tensor([avg_loss], device=self.device)
-        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-
-        throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
-        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-        return loss_tensor.item(), throughput_tensor.item()
-
-    def _should_stop_training(self) -> bool:
-        """Stop every rank when any rank's callbacks asked to stop."""
-        should_stop = super()._should_stop_training()
-        if not is_distributed():
-            return should_stop
-
-        flag = torch.tensor([float(should_stop)], device=self.device)
-        all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
-        return bool(flag.item())
 
     def state_dict(self) -> Dict[str, Any]:
         """
@@ -398,7 +367,7 @@ class FSDPTrainer(Trainer):
             state_dict = self.model.state_dict()
 
         is_full = state_dict_type == "FULL_STATE_DICT"
-        rng_states = all_gather_object(self._rng_state()) if is_full else None
+        rng_states = self._gather_rng_states() if is_full else None
         written = None
 
         if is_full and is_main_process():
