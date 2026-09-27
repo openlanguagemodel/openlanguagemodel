@@ -136,6 +136,26 @@ def all_gather(tensor: torch.Tensor) -> list[torch.Tensor]:
     return tensor_list
 
 
+def all_gather_object(obj: Any) -> list[Any]:
+    """
+    Gather a picklable Python object from every process.
+
+    Every rank must call this. Returns ``[obj]`` when not distributed.
+
+    Args:
+        obj: Object to send from this rank.
+
+    Returns:
+        One object per rank, indexed by rank.
+    """
+    if not is_distributed():
+        return [obj]
+
+    gathered = [None] * get_world_size()
+    dist.all_gather_object(gathered, obj)
+    return gathered
+
+
 def broadcast(tensor: torch.Tensor, src: int = 0) -> None:
     """Broadcast tensor from src rank to all others."""
     if is_distributed():

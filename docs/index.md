@@ -21,6 +21,9 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 | Publish a release | [`releasing.md`](releasing.md) |
 | Train from local `.txt` files | [`getting-started.md`](getting-started.md) |
 | Stream FineWeb-Edu | [`datasets-and-training.md`](datasets-and-training.md) |
+| Save checkpoints and resume an interrupted run | [`guides/checkpointing.md`](guides/checkpointing.md) |
+| Seed runs and check the first loss | [`guides/reproducibility.md`](guides/reproducibility.md) |
+| Look up a Trainer, callback or dataset default | [`reference/defaults.md`](reference/defaults.md) |
 | Let OLM pick CPU/GPU/single-node DDP/FSDP | [`datasets-and-training.md#6-automatic-trainer-selection-autotrainer`](datasets-and-training.md#6-automatic-trainer-selection-autotrainer) |
 | Build a custom architecture | [`architecture.md`](architecture.md) |
 | Run the guided Colabs | [`colab-notebooks.md`](colab-notebooks.md) |

@@ -132,6 +132,8 @@ Or save a sharded checkpoint — each rank writes its own shard — for faster, 
 trainer.save_checkpoint("checkpoints/model_sharded", state_dict_type="SHARDED_STATE_DICT")
 ```
 
+Neither file can resume an FSDP run yet: the full-state file holds the weights but no optimizer state, and the sharded files use FSDP's own layout. `DDPTrainer` runs resume exactly from `CheckpointCallback` checkpoints. See [Checkpointing & Resuming](../guides/checkpointing.md#distributed-training).
+
 ## Common pitfalls
 
 > [!WARNING]

@@ -87,7 +87,7 @@ trainer = Trainer(
 
 ### Scheduling, warmup, and decay
 
-By default the Trainer constructs a **warmup + cosine** schedule: the learning rate ramps up linearly, then decays along a cosine curve. Warmup defaults to roughly 10% of total steps. Override any of it, or supply your own scheduler via `scheduler=`, or disable the default with `use_warmup_cosine=False`.
+By default the Trainer constructs a **warmup + cosine** schedule: the learning rate ramps up linearly, then decays along a cosine curve. Its length is the number of optimizer steps `train()` will take (with `grad_accum_steps=8`, an epoch of 800 batches is 100 steps), and warmup defaults to roughly 10% of it. For a streaming dataset, pass `max_steps` to `train()` or `total_steps` to the Trainer. OLM's text datasets have no length, except `FineWebEduDataset`, which reports an estimate (10B tokens for `sample-10BT`, 1B for other subsets) that the Trainer uses as the length of an epoch. Without a length, the schedule assumes 10,000 steps per epoch and warns. Override any of it, or supply your own scheduler via `scheduler=`, or disable the default with `use_warmup_cosine=False`. The [Defaults Reference](../reference/defaults.md) lists the exact formulas.
 
 ```python
 trainer = Trainer(
@@ -172,6 +172,8 @@ trainer = Trainer(
 
 Built-in callbacks include [`CheckpointCallback`](../api/train.md#checkpointcallback), [`ValidationCallback`](../api/train.md#validationcallback), [`EarlyStoppingCallback`](../api/train.md#earlystoppingcallback), `MetricsLoggerCallback`, `ThroughputCallback`, and `LRMonitorCallback`.
 
+The order of the list does not matter for these: validation always runs before the callbacks that read its result, and checkpoints are saved last. `EarlyStoppingCallback`'s `patience` counts validations, so `patience=5` with `eval_every=500` stops after 2,500 steps without improvement. See [Keep the best model and stop early](checkpointing.md#keep-the-best-model-and-stop-early).
+
 To write your own, subclass [`TrainerCallback`](../api/train.md#trainercallback) and override the hooks you need:
 
 ```python
@@ -217,42 +219,18 @@ model = load_model("./checkpoints/model_only")
 
 ### Resuming trainer checkpoints
 
-`CheckpointCallback` writes training-state checkpoints: model weights, optimizer
-state, AMP scaler state, scheduler state, epoch, step, and logged losses. These
-`.pt` files are different from a `model.save()` directory, so load them with
-`torch.load` and restore each state explicitly:
+`CheckpointCallback` writes training checkpoints: model weights, optimizer and scheduler state, the AMP scaler, step counters, random state, the position in the data and callback state. These `.pt` files are different from a `model.save()` directory. To continue an interrupted run, pass one to the Trainer and call `train()` with the same arguments as before:
 
 ```python
-import torch
-
-checkpoint = torch.load("checkpoints/step_5000.pt", map_location=device)
-
-model.load_state_dict(checkpoint["model_state_dict"])
-optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-if "scheduler_state_dict" in checkpoint and trainer.scheduler is not None:
-    trainer.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-
-if "scaler_state_dict" in checkpoint:
-    trainer.scaler.load_state_dict(checkpoint["scaler_state_dict"])
-
-trainer.global_step = checkpoint.get("step", 0)
-trainer.current_epoch = checkpoint.get("epoch", 0)
-trainer.losses = checkpoint.get("losses", [])
+trainer = Trainer(
+    model, AdamW, loader, device="cuda", context_length=1024,
+    callbacks=[CheckpointCallback("checkpoints", save_every=1000)],
+    resume_from="latest",   # the newest checkpoints/step_<N>.pt, or a new run if there is none
+)
+trainer.train(epochs=1, max_steps=100_000)
 ```
 
-For streaming datasets, resume the data position too. OLM datasets accept
-`skip_batches`, which currently skips yielded training sequences before the
-`DataLoader` groups them into batches. A simple approximation is therefore:
-
-```python
-resume_step = checkpoint.get("step", 0)
-dataset = FineWebEduDataset(tok, context_length=1024, skip_batches=resume_step * batch_size)
-loader = DataLoader(dataset, batch_size=batch_size)
-```
-
-The full FineWeb-Edu example includes a complete resume script:
-[`examples/gpt2-fineweb-edu-10b/train.py`](https://github.com/openlanguagemodel/openlanguagemodel/blob/main/examples/gpt2-fineweb-edu-10b/train.py).
+The Trainer restores everything, including the default learning-rate schedule, and skips the batches the checkpoint had already used, so do not set `skip_batches` on the dataset as well. [Checkpointing & Resuming](checkpointing.md) explains what is restored, when a resumed run is exact, and how to load only the weights.
 
 ## Distributed training
 
@@ -332,6 +310,8 @@ Save an FSDP checkpoint by gathering the full model on rank 0:
 ```python
 trainer.save_checkpoint("./checkpoints/model.pt", state_dict_type="FULL_STATE_DICT")
 ```
+
+The file holds the full weights but no optimizer state, so `FSDPTrainer` cannot resume from it yet; see [FSDP limits](checkpointing.md#fsdp).
 
 ### AutoTrainer
 

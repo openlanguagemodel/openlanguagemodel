@@ -7,6 +7,7 @@ based on available hardware and model characteristics.
 """
 
 from typing import Type, Optional, List, Union, Any
+import os
 import torch
 import torch.nn as nn
 from torch.distributed.fsdp import ShardingStrategy
@@ -62,6 +63,7 @@ def AutoTrainer(
     fsdp_backward_prefetch: str = "BACKWARD_PRE",
     fsdp_limit_all_gathers: bool = True,
     fsdp_use_orig_params: bool = True,
+    resume_from: Optional[Union[str, os.PathLike]] = None,
 ) -> Union[Trainer, DDPTrainer, FSDPTrainer]:
     """
     Automatically select and configure the optimal trainer based on hardware.
@@ -117,6 +119,8 @@ def AutoTrainer(
         fsdp_backward_prefetch: FSDP backward prefetch strategy.
         fsdp_limit_all_gathers: FSDP parameter for memory efficiency.
         fsdp_use_orig_params: FSDP parameter for using original parameters.
+        resume_from: Checkpoint file or directory to resume from, or ``"latest"``;
+            passed to the selected trainer (see ``Trainer``).
 
     Returns:
         Configured trainer instance (Trainer, DDPTrainer, or FSDPTrainer).
@@ -247,6 +251,7 @@ def AutoTrainer(
             learning_rate=learning_rate,
             weight_decay=weight_decay,
             use_warmup_cosine=use_warmup_cosine,
+            resume_from=resume_from,
         )
 
     elif strategy == TrainerStrategy.MULTI_GPU_DDP:
@@ -277,6 +282,7 @@ def AutoTrainer(
             find_unused_parameters=ddp_find_unused_parameters,
             broadcast_buffers=ddp_broadcast_buffers,
             bucket_cap_mb=ddp_bucket_cap_mb,
+            resume_from=resume_from,
         )
 
     elif strategy in [
@@ -327,6 +333,7 @@ def AutoTrainer(
             mixed_precision_policy=mixed_precision,
             limit_all_gathers=fsdp_limit_all_gathers,
             use_orig_params=fsdp_use_orig_params,
+            resume_from=resume_from,
         )
 
     else:
