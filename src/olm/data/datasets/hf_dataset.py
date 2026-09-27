@@ -45,11 +45,11 @@ class HuggingFaceTextDataset(BaseTextDataset):
         shuffle_buffer_size: int = 10_000,
     ):
         super().__init__(
-            tokenizer=tokenizer, 
-            context_length=context_length, 
+            tokenizer=tokenizer,
+            context_length=context_length,
             skip_batches=skip_batches,
             shuffle=shuffle,
-            seed=seed
+            seed=seed,
         )
 
         self.dataset_name = dataset_name
@@ -70,7 +70,9 @@ class HuggingFaceTextDataset(BaseTextDataset):
         # Apply shuffling if requested
         if self.shuffle:
             # For streaming datasets, shuffle requires a buffer_size
-            self.dataset = self.dataset.shuffle(seed=self.seed, buffer_size=self.shuffle_buffer_size)
+            self.dataset = self.dataset.shuffle(
+                seed=self.seed, buffer_size=self.shuffle_buffer_size
+            )
 
     def _get_text_iterator(self) -> Iterator[str]:
         """Yields text from the Hugging Face dataset."""
@@ -123,7 +125,7 @@ class FineWebEduDataset(HuggingFaceTextDataset):
             streaming=streaming,
             skip_batches=skip_batches,
             shuffle=shuffle,
-            seed=seed
+            seed=seed,
         )
 
     def __len__(self):
