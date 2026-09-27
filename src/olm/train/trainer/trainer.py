@@ -898,8 +898,8 @@ class Trainer:
         self.load_state_dict(checkpoint, strict=strict)
         if is_main_process():
             print(
-                f"Resumed from {path} at step {self.global_step} "
-                f"(epoch {self.current_epoch + 1})",
+                f"Resumed from {path} after step {self.global_step}; training "
+                f"continues in epoch {self.current_epoch + 1}",
                 flush=True,
             )
 
