@@ -1,6 +1,7 @@
 export const SITE_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/models/", label: "Models" },
+  { href: "/benchmarks/", label: "Benchmarks" },
   { href: "/education/", label: "Educators" },
   { href: "/docs/getting-started/", label: "Documentation →" },
 ];
