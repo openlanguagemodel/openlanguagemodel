@@ -16,15 +16,18 @@ class LayerNorm(NormBase):
     Args:
         d_model (int): The dimension of the model to normalize.
         eps (float, optional): Small constant for numerical stability. Defaults to 1e-5.
-        elementwise_affine (bool, optional): Whether to learn an affine scale.
-        bias (bool, optional): Whether the affine transform includes a learned
-            bias. Ignored when ``elementwise_affine=False``.
+        elementwise_affine (bool, optional): Whether to learn a per-channel
+            scale (and shift). Defaults to True.
+        bias (bool, optional): Whether the affine transform includes the
+            learned shift ``beta``. Set to False for scale-only LayerNorm.
+            Ignored when ``elementwise_affine=False``. Defaults to True.
         device (torch.device, optional): Target device.
         dtype (torch.dtype, optional): Target data type.
 
     Attributes:
         gamma (nn.Parameter): Learnable scale parameter.
-        beta (nn.Parameter): Learnable shift parameter.
+        beta (nn.Parameter): Learnable shift parameter, or None when
+            ``bias=False``.
     """
 
     def __init__(
@@ -64,13 +67,11 @@ class LayerNorm(NormBase):
         # x: (batch_size, sequence_length, d_model)
         in_dtype = x.dtype
         x = x.to(torch.float32)
-        mean = x.mean(dim=-1, keepdim=True)  # (batch_size, sequence_length, 1)
-        variance = x.var(
-            dim=-1, keepdim=True, unbiased=False
-        )  # (batch_size, sequence_length, 1)
-        x_normalized = (x - mean) / torch.sqrt(
-            variance + self.eps
-        )  # (batch_size, sequence_length, d_model)
+        # mean, variance: (batch_size, sequence_length, 1)
+        mean = x.mean(dim=-1, keepdim=True)
+        variance = x.var(dim=-1, keepdim=True, unbiased=False)
+        # x_normalized: (batch_size, sequence_length, d_model)
+        x_normalized = (x - mean) / torch.sqrt(variance + self.eps)
 
         if self.elementwise_affine:
             result = x_normalized * self.gamma

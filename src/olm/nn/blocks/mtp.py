@@ -107,21 +107,40 @@ class MultiTokenPredictionHead(nn.Module):
 
 
 class SequentialMultiTokenPredictionHead(nn.Module):
-    """DeepSeek-style sequential Multi-Token Prediction modules.
+    """
+    Sequential Multi-Token Prediction (MTP) modules in the DeepSeek-V3 style.
 
-    Each prediction depth combines a normalized hidden state with the shifted
-    token embedding, projects the concatenation back to model width, runs one
-    architecture-supplied Transformer block, and scores tokens with the main
-    model's output matrix. The next depth consumes the preceding depth's hidden
-    state, preserving the causal prediction chain.
+    Unlike ``MultiTokenPredictionHead``, each depth runs a full Transformer
+    block supplied by the model and reuses the main model's output matrix, and
+    depth ``k`` consumes the hidden state of depth ``k - 1``, which keeps the
+    causal chain between the predictions.
+
+    Structure (depth ``k = 1 .. num_heads`` at position ``i``, each depth with
+    its own norms, projection and block):
+        - ``h = RMSNorm(h_{k-1}[i])`` and ``e = RMSNorm(embedding[i + k])``
+        - ``h_k[i] = block(Linear(concat(h, e)))``, with a bias-free
+          ``2 * embed_dim -> embed_dim`` projection
+        - ``logits_k[i] = h_k[i] @ output_weight.T`` predicts token ``i + k + 1``
 
     Args:
-        embed_dim: Model hidden dimension.
-        output_weight: Main language-model output matrix with shape
-            ``[vocab_size, embed_dim]``. The same parameter is reused here.
-        block_factory: Callable that creates one Transformer block per depth.
-        num_heads: Number of additional future-token depths.
-        rms_norm_eps: Epsilon for the two input norms at each depth.
+        embed_dim (int): Model hidden dimension.
+        output_weight (nn.Parameter): The main language-model output matrix,
+            ``[vocab_size, embed_dim]``. The same parameter is reused, not
+            copied.
+        block_factory (Callable[[], nn.Module]): Builds one Transformer block
+            per depth. Each block maps ``[batch, seq, embed_dim]`` to the same
+            shape.
+        num_heads (int, optional): Number of extra future-token depths.
+            Defaults to 1.
+        rms_norm_eps (float, optional): Epsilon of the two input RMSNorms at
+            each depth. Defaults to 1e-6.
+
+    Forward:
+        Takes the main model's final hidden states and the token embeddings,
+        both ``[batch, seq_len, embed_dim]``. Returns a list with one logits
+        tensor per depth; depth ``k`` has shape
+        ``[batch, seq_len - k, vocab_size]``. Depths with no positions left
+        are skipped.
     """
 
     def __init__(
@@ -157,7 +176,18 @@ class SequentialMultiTokenPredictionHead(nn.Module):
         hidden_states: torch.Tensor,
         token_embeddings: torch.Tensor,
     ) -> list[torch.Tensor]:
-        """Return one logit tensor for each available prediction depth."""
+        """
+        Run the prediction depths in order.
+
+        Args:
+            hidden_states (torch.Tensor): Hidden states from the main model
+                (``h_0``), ``[batch, seq_len, embed_dim]``.
+            token_embeddings (torch.Tensor): Input token embeddings, same shape.
+
+        Returns:
+            list[torch.Tensor]: Logits per depth,
+            ``[batch, seq_len - k, vocab_size]`` for depth ``k``.
+        """
         if hidden_states.shape != token_embeddings.shape:
             raise ValueError("hidden_states and token_embeddings must have equal shape")
 

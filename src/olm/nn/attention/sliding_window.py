@@ -23,21 +23,35 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
     3:1 ratio in Step 3.5 Flash, Gemma 3/4, OLMo 3, Tiny Aya, etc.
 
     Args:
-        embed_dim: Model hidden dimension.
-        num_heads: Number of query heads.
-        num_kv_heads: Number of key/value heads (GQA).
-        max_seq_len: Maximum sequence length.
-        window_size: Sliding window size (tokens). Defaults to 512.
-        head_dim: Per-head dimension; inferred from embed_dim / num_heads
-            if not provided.
-        v_head_dim: Per-head value dimension. Defaults to ``head_dim``.
-        value_scale: Multiplier applied to projected values before attention.
-        dropout: Attention dropout probability.
-        rope_theta: RoPE base frequency.
-        use_qk_norm: Apply RMSNorm to Q and K per head.
-        rms_norm_eps: Epsilon for QK-Norm.
-        use_bias: Bias on output projection.
-        qkv_bias: Bias on QKV projections.
+        embed_dim (int): Model hidden dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        max_seq_len (int): Maximum sequence length.
+        window_size (int, optional): Sliding window size (tokens). Defaults to 512.
+        head_dim (int, optional): Per-head query/key dimension. Defaults to
+            ``embed_dim // num_heads``.
+        dropout (float, optional): Attention dropout probability. Defaults to 0.0.
+        rope_theta (float, optional): RoPE base frequency. Defaults to 10000.0.
+        use_qk_norm (bool, optional): Apply RMSNorm to Q and K per head.
+            Defaults to False.
+        rms_norm_eps (float, optional): Epsilon for QK-Norm. Defaults to 1e-6.
+        use_bias (bool, optional): Bias on output projection. Defaults to False.
+        qkv_bias (bool, optional): Bias on QKV projections. Defaults to False.
+        use_rope (bool, optional): Whether to apply rotary embeddings.
+            Defaults to True.
+        partial_rotary_factor (float, optional): Fraction of ``head_dim`` that
+            receives RoPE. Defaults to 1.0.
+        use_attention_sink (bool, optional): Add one learnable sink logit per
+            head. Defaults to False.
+        v_head_dim (int, optional): Per-head value dimension. Defaults to
+            ``head_dim``.
+        value_scale (float, optional): Constant multiplier applied to the
+            projected values before attention. Defaults to None (no scaling).
+
+    Forward:
+        Takes ``x`` shaped ``[batch, seq_len, embed_dim]`` and an optional
+        ``mask`` (True or 1 means attend) that is combined with the causal
+        sliding-window mask. Returns ``[batch, seq_len, embed_dim]``.
     """
 
     def __init__(
@@ -48,8 +62,6 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         max_seq_len: int,
         window_size: int = 512,
         head_dim: Optional[int] = None,
-        v_head_dim: Optional[int] = None,
-        value_scale: Optional[float] = None,
         dropout: float = 0.0,
         rope_theta: float = 10000.0,
         use_qk_norm: bool = False,
@@ -59,6 +71,8 @@ class SlidingWindowAttention(AttentionwithRoPEBase):
         use_rope: bool = True,
         partial_rotary_factor: float = 1.0,
         use_attention_sink: bool = False,
+        v_head_dim: Optional[int] = None,
+        value_scale: Optional[float] = None,
     ):
         nn.Module.__init__(self)
         self.head_dim = head_dim or embed_dim // num_heads

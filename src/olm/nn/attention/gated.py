@@ -22,20 +22,34 @@ class GatedAttention(AttentionwithRoPEBase):
     ``sigmoid(w_gate^T x)`` before the output projection.
 
     Args:
-        embed_dim: Model hidden dimension.
-        num_heads: Number of query heads.
-        num_kv_heads: Number of key/value heads (GQA).
-        head_dim: Per-head dimension.
-        max_seq_len: Maximum sequence length.
-        rope_theta: RoPE base frequency.
-        partial_rotary_factor: Fraction of head_dim that gets RoPE.
-            1.0 = full RoPE, <1.0 = partial RoPE (e.g. 0.25 for Qwen3.5).
-        use_rope: Whether to apply rotary position embeddings.
-        window_size: Optional causal sliding-window size. ``None`` uses full
-            causal attention.
-        use_qk_norm: Apply RMSNorm to Q and K.
-        rms_norm_eps: Epsilon for QK-Norm.
-        dropout: Attention dropout probability.
+        embed_dim (int): Model hidden dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int, optional): Per-head dimension. Defaults to 128.
+        max_seq_len (int, optional): Maximum sequence length. Defaults to 262144.
+        rope_theta (float, optional): RoPE base frequency. Defaults to 10000000.0.
+        partial_rotary_factor (float, optional): Fraction of head_dim that gets
+            RoPE. 1.0 = full RoPE, <1.0 = partial RoPE (e.g. 0.25 for Qwen3.5).
+            Defaults to 1.0.
+        use_qk_norm (bool, optional): Apply RMSNorm to Q and K. Defaults to True.
+        rms_norm_eps (float, optional): Epsilon for QK-Norm. Defaults to 1e-6.
+        dropout (float, optional): Attention dropout probability. Defaults to 0.0.
+        use_rope (bool, optional): Whether to apply rotary position embeddings.
+            Set to False for NoPE global layers. Defaults to True.
+        window_size (int, optional): Causal sliding-window size in tokens: each
+            query sees itself and the ``window_size - 1`` preceding keys.
+            Defaults to None (full causal attention).
+        qkv_bias (bool, optional): Bias on the query/key/value projections.
+            Defaults to False.
+        use_bias (bool, optional): Bias on the output projection. Defaults to
+            False.
+
+    Forward:
+        Takes ``x`` shaped ``[batch, seq_len, embed_dim]`` and an optional
+        ``mask`` (True or 1 means attend) broadcastable to
+        ``[batch, heads, seq_len, seq_len]``. The mask is combined with the
+        causal (and, if set, sliding-window) mask. Returns
+        ``[batch, seq_len, embed_dim]``.
     """
 
     def __init__(
@@ -47,11 +61,11 @@ class GatedAttention(AttentionwithRoPEBase):
         max_seq_len: int = 262144,
         rope_theta: float = 10000000.0,
         partial_rotary_factor: float = 1.0,
-        use_rope: bool = True,
-        window_size: Optional[int] = None,
         use_qk_norm: bool = True,
         rms_norm_eps: float = 1e-6,
         dropout: float = 0.0,
+        use_rope: bool = True,
+        window_size: Optional[int] = None,
         qkv_bias: bool = False,
         use_bias: bool = False,
     ):
@@ -103,6 +117,13 @@ class GatedAttention(AttentionwithRoPEBase):
         v: torch.Tensor,
         mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
+        """
+        Causal SDPA over ``[batch, heads, seq, head_dim]`` tensors.
+
+        Without a window or user mask this is the ``is_causal=True`` fast path.
+        Otherwise an explicit boolean mask is built from the causal mask, the
+        sliding window and ``mask``.
+        """
         seq_len = q.shape[-2]
         attn_mask = None
         is_causal = True

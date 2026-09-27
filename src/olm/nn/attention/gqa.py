@@ -27,14 +27,39 @@ class GroupedQueryAttention(nn.Module):
         num_heads (int): Number of Query heads.
         num_kv_heads (int): Number of Key/Value heads. Must divide num_heads.
         max_seq_len (int): Maximum sequence length for RoPE.
-        head_dim (int, optional): Per-head query/key dimension.
-        v_head_dim (int, optional): Per-head value dimension. Defaults to
-            ``head_dim``.
-        value_scale (float, optional): Multiplier applied to projected values
-            before attention.
+        head_dim (int, optional): Per-head query/key dimension. Defaults to
+            ``embed_dim // num_heads``.
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         rope_theta (float, optional): Base frequency for RoPE. Defaults to 10000.0.
-        use_bias (bool, optional): Whether to use bias in linear projections. Defaults to False.
+        use_bias (bool, optional): Whether the output projection has a bias.
+            Defaults to False.
+        qkv_bias (bool, optional): Whether the query/key/value projections have
+            a bias (Qwen 2 style). Defaults to False.
+        use_qk_norm (bool, optional): Apply per-head RMSNorm to queries and keys
+            before RoPE. Defaults to False.
+        rms_norm_eps (float, optional): Epsilon for the QK-norm layers.
+            Defaults to 1e-6.
+        attention_scale (float, optional): Softmax scale. Defaults to
+            ``head_dim ** -0.5``.
+        attn_logit_softcap (float, optional): If set, attention logits are
+            soft-capped with ``cap * tanh(logits / cap)`` (Gemma 2). Defaults
+            to None.
+        use_rope (bool, optional): Whether to apply rotary embeddings. Set to
+            False for NoPE layers. Defaults to True.
+        partial_rotary_factor (float, optional): Fraction of ``head_dim`` that
+            receives RoPE. Defaults to 1.0.
+        use_attention_sink (bool, optional): Add one learnable sink logit per
+            head that absorbs attention mass. Defaults to False.
+        v_head_dim (int, optional): Per-head value dimension, for architectures
+            whose values are narrower or wider than their queries and keys.
+            Defaults to ``head_dim``.
+        value_scale (float, optional): Constant multiplier applied to the
+            projected values before attention. Defaults to None (no scaling).
+
+    Forward:
+        Takes ``x`` shaped ``[batch, seq_len, embed_dim]`` and an optional
+        boolean/binary/additive ``mask`` (True or 1 means attend), which is
+        combined with the causal mask. Returns ``[batch, seq_len, embed_dim]``.
     """
 
     def __init__(
@@ -44,8 +69,6 @@ class GroupedQueryAttention(nn.Module):
         num_kv_heads: int,
         max_seq_len: int,
         head_dim: Optional[int] = None,
-        v_head_dim: Optional[int] = None,
-        value_scale: Optional[float] = None,
         dropout: float = 0.0,
         rope_theta: float = 10000.0,
         use_bias: bool = False,
@@ -57,6 +80,8 @@ class GroupedQueryAttention(nn.Module):
         use_rope: bool = True,
         partial_rotary_factor: float = 1.0,
         use_attention_sink: bool = False,
+        v_head_dim: Optional[int] = None,
+        value_scale: Optional[float] = None,
     ):
         super().__init__()
 
@@ -163,7 +188,8 @@ class GroupedQueryAttention(nn.Module):
 
         # Project projections
         # q: [B, N, num_heads * head_dim]
-        # k, v: [B, N, num_kv_heads * head_dim]
+        # k: [B, N, num_kv_heads * head_dim]
+        # v: [B, N, num_kv_heads * v_head_dim]
         q = self.q_proj(x)
         k = self.k_proj(x)
         v = self.v_proj(x)

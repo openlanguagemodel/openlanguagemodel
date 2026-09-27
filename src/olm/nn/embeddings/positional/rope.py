@@ -291,7 +291,16 @@ class ScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             self.register_buffer("scale", scale, persistent=False)
 
     def _compute_yarn_inv_freq(self) -> torch.Tensor:
-        """Compute inverse frequencies for YaRN scaling."""
+        """
+        Compute inverse frequencies for YaRN scaling (arXiv:2309.00071).
+
+        High-frequency dimensions, which complete more than ``yarn_beta``
+        (``beta_fast``) rotations over ``original_max_seq_len``, keep their
+        original frequency. Low-frequency dimensions, with fewer than
+        ``yarn_beta_slow`` rotations, are interpolated by ``scaling_factor``.
+        Dimensions in between blend the two with a linear ramp. This matches
+        the Hugging Face ``transformers`` YaRN frequencies.
+        """
         dim = self.head_dim
         indices = torch.arange(0, dim, 2, dtype=torch.float32)
         position_frequencies = self.base ** (indices / dim)
@@ -517,7 +526,16 @@ class PartialScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
             self.register_buffer("scale", scale, persistent=False)
 
     def _compute_yarn_inv_freq(self) -> torch.Tensor:
-        """Compute inverse frequencies for YaRN scaling."""
+        """
+        Compute inverse frequencies for YaRN scaling (arXiv:2309.00071).
+
+        High-frequency dimensions, which complete more than ``yarn_beta``
+        (``beta_fast``) rotations over ``original_max_seq_len``, keep their
+        original frequency. Low-frequency dimensions, with fewer than
+        ``yarn_beta_slow`` rotations, are interpolated by ``scaling_factor``.
+        Dimensions in between blend the two with a linear ramp. This matches
+        the Hugging Face ``transformers`` YaRN frequencies.
+        """
         dim_indices = torch.arange(0, self.rotary_dim, 2, dtype=torch.float32)
         inv_freq_base = 1.0 / (self.base ** (dim_indices / self.rotary_dim))
         wavelengths = 2 * torch.pi / inv_freq_base
