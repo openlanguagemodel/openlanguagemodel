@@ -485,7 +485,9 @@ def test_phi4_uses_reference_rope_theta():
 def test_olmo_reference_vocab_size():
     with patch.object(olmo_module.OLMoModel, "__init__", return_value=None) as init:
         OLMo_7B()
-    assert init.call_args.kwargs["vocab_size"] == 50280
+    assert init.call_args.kwargs["vocab_size"] == 50304
+    assert init.call_args.kwargs["intermediate_size"] == 11008
+    assert init.call_args.kwargs["tie_weights"] is False
 
 
 def test_mistral_large3_uses_mla_with_dense_then_moe_layers():

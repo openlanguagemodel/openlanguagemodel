@@ -75,7 +75,10 @@ class Phi4Model(Block):
     Base class for Phi 4 models.
 
     Structure:
-        Embedding -> [Phi4Block] x N -> RMSNorm -> tied OutputHead.
+        Embedding -> [Phi4Block] x N -> RMSNorm -> OutputHead.
+
+    Phi-4 does not tie input/output embeddings; the named preset passes
+    ``tie_weights=False``.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -140,4 +143,5 @@ class Phi4_14B(Phi4Model):
             num_kv_heads=10,
             max_seq_len=16384,
             rope_theta=250000.0,
+            tie_weights=False,
         )

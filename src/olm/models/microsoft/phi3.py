@@ -85,7 +85,10 @@ class Phi3Model(Block):
     Base class for Phi 3 models.
 
     Structure:
-        Embedding -> [Phi3Block] x N -> RMSNorm -> tied OutputHead.
+        Embedding -> [Phi3Block] x N -> RMSNorm -> OutputHead.
+
+    Phi-3.5-mini does not tie input/output embeddings (its preset passes
+    ``tie_weights=False``); Phi-3-small does.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -159,6 +162,7 @@ class Phi3_5_Mini(Phi3Model):
             max_seq_len=131072,
             rope_theta=10000.0,
             activation="swiglu",
+            tie_weights=False,
         )
 
 
@@ -168,7 +172,11 @@ class Phi3_Small(Phi3Model):
 
     Distinguished by GeGLU activations and the public checkpoint dimensions.
     LongRoPE and Phi-3 Small's block-sparse/dense attention schedule are not
-    represented by this lightweight preset.
+    represented by this lightweight preset. Nor are the other details of the
+    released ``modeling_phi3_small.py``: biased LayerNorms and linear layers
+    (the preset uses the shared RMSNorm, bias-free Phi 3 block), the clipped
+    ``gegelu`` activation, and the muP embedding, attention and logit
+    multipliers.
     """
 
     def __init__(self):

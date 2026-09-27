@@ -82,7 +82,10 @@ class Llama2Model(Block):
     Base class for Llama 2 models.
 
     Structure:
-        Embedding -> [Llama2Block] x N -> RMSNorm -> tied OutputHead.
+        Embedding -> [Llama2Block] x N -> RMSNorm -> OutputHead.
+
+    The Llama 2 releases do not tie input/output embeddings; the named
+    presets pass ``tie_weights=False``.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
@@ -143,6 +146,7 @@ class Llama2_7B(Llama2Model):
             num_kv_heads=32,
             max_seq_len=4096,
             rope_theta=10000.0,
+            tie_weights=False,
         )
 
 
@@ -159,6 +163,7 @@ class Llama2_13B(Llama2Model):
             num_kv_heads=40,
             max_seq_len=4096,
             rope_theta=10000.0,
+            tie_weights=False,
         )
 
 
@@ -175,4 +180,5 @@ class Llama2_70B(Llama2Model):
             num_kv_heads=8,
             max_seq_len=4096,
             rope_theta=10000.0,
+            tie_weights=False,
         )
