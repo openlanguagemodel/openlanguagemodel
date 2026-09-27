@@ -61,7 +61,7 @@ How to read the columns:
 
 - **Best batch** is the batch size with the highest median tokens/s among the batches that fit for both seeds. A batch that fit one seed and ran out of memory on the other is never chosen.
 - **Tokens/s** is computed from each seed's median step time over the measured steps; the table shows the median of the two seeds.
-- **MFU** (model FLOP utilization) is achieved training FLOPs divided by the GPU's dense BF16 peak. Training FLOPs per token are `6N + 12 · layers · width · context`, where `N` counts unique parameters. *Spec* uses NVIDIA's published dense peak at the reference boost clock. *Board clock* rescales that peak to the maximum SM clock the rented board reported, which is higher than the reference clock on the RTX 4090 and RTX 5090 in this catalog. Sparse "up to" figures are never used.
+- **MFU** (model FLOP utilization) is achieved training FLOPs divided by the GPU's dense BF16 peak (its dense FP16 peak for a GPU run with `--amp-dtype fp16`). Training FLOPs per token are `6N + 12 · layers · width · context`, where `N` counts unique parameters. *Spec* uses NVIDIA's published dense peak at the reference boost clock. *Board clock* rescales that peak to the maximum SM clock the rented board reported, which is higher than the reference clock on the RTX 4090 and RTX 5090 in this catalog. Sparse "up to" figures are never used.
 - **Peak VRAM** is `torch.cuda.max_memory_allocated()` for the whole step, in GB (10⁹ bytes). The allocator reserves more than this.
 - **$ per 1B tokens** is `10⁹ / tokens_per_second / 3,600 × USD per GPU-hour`, using the dated RunPod on-demand rate for each cloud tier. It is compute only: storage, setup, idle time and taxes are excluded, and prices change.
 
@@ -108,7 +108,7 @@ benchmarks/throughput/run_publication_suite.sh \
 
 MFU needs the GPU's dense peak and the clock it is specified at. Both are registered for the GPUs in the catalog and for the RTX A6000, RTX 6000 Ada, H200, B200, B300 and T4. For any other GPU, add its dense BF16 peak, reference boost clock and NVIDIA source to `KNOWN_DENSE_BF16_TFLOPS` in `benchmark_training_mfu.py` and `GPU_REFERENCES` in `annotate_clock_adjusted_mfu.py` before running. Setting `MODELS=150m,250m` limits the 2,048-token sweep and the main context sweep to a subset of models.
 
-When the suite finishes, `$out/results/` holds the raw JSON for every stage and two CSV exports in the catalog's column layout. The [methodology README](../benchmarks/throughput/README.md#contribute-a-gpu) explains each file.
+When the suite finishes, `$out/results/` holds the raw JSON for every stage and two CSV exports in the catalog's column layout. The [methodology README](../benchmarks/throughput/README.md#run-it) explains each file.
 
 ## Contribute a GPU
 
@@ -139,7 +139,7 @@ AMP_DTYPE=fp16 benchmarks/throughput/run_publication_suite.sh \
 
 The runner skips stages that already completed, so after a disconnect you can run the same cell again. It refuses to overwrite a stage that stopped halfway: move that stage's JSON out of `results/` first.
 
-Then merge the rows, regenerate the website data and this page, and open a pull request:
+Then, in a clone of the repository (the Colab one, or a local clone with the results downloaded from Drive), merge the rows and regenerate the website data and this page:
 
 ```bash
 python benchmarks/throughput/merge_into_catalog.py \
@@ -149,4 +149,4 @@ python benchmarks/throughput/build_site_data.py
 python benchmarks/throughput/render_docs_tables.py
 ```
 
-Attach the suite's `results/`, `logs/`, `telemetry/` and `manifests/` directories to the pull request as a zip so reviewers can audit the raw measurements. The same steps work for any GPU; only T4-class cards (compute capability below 8.0) need `AMP_DTYPE=fp16`.
+Open a pull request with those changes and attach the suite's `results/`, `logs/`, `telemetry/` and `manifests/` directories as a zip so reviewers can audit the raw measurements. The same steps work for any GPU; only T4-class cards (compute capability below 8.0) need `AMP_DTYPE=fp16`.
