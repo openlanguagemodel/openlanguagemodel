@@ -125,9 +125,8 @@ class HFTokenizer(TokenizerBase):
         Decode one sequence of token ids back into a string.
 
         Args:
-            tokens: A 1-D tensor, a tensor whose extra dimensions have size 1
-                (for example a ``[1, num_tokens]`` batch of one), a ``list[int]``,
-                or a single id.
+            tokens: A 1-D tensor, a batch of one such as ``[1, num_tokens]``, a
+                ``list[int]``, or a single id.
             skip_special_tokens (bool): Whether to drop special tokens such as
                 EOS from the text. Detect EOS by comparing ids with
                 ``eos_token_id``, not by looking for it in the decoded text.
@@ -136,16 +135,20 @@ class HFTokenizer(TokenizerBase):
             str: The decoded text.
 
         Raises:
-            ValueError: If ``tokens`` is a tensor holding more than one sequence.
+            ValueError: If ``tokens`` is a tensor holding more than one sequence,
+                such as a ``[batch, num_tokens]`` batch or a ``[batch, 1]``
+                column of sampled ids.
         """
         if isinstance(tokens, torch.Tensor):
-            tokens = tokens.squeeze()
-            if tokens.dim() > 1:
+            # Only leading dimensions of size 1 may be dropped: ``[B, 1]`` holds
+            # B sequences of one token, not one sequence of B tokens.
+            if tokens.dim() > 1 and tokens.numel() != tokens.shape[-1]:
                 raise ValueError(
                     "decode() takes one sequence of token ids, got a tensor of "
-                    f"shape {tuple(tokens.shape)}. Decode each row separately."
+                    f"shape {tuple(tokens.shape)}. Decode each row separately, "
+                    "for example [tok.decode(row) for row in batch]."
                 )
-            tokens = tokens.tolist()
+            tokens = tokens.reshape(-1).tolist()
         if isinstance(tokens, int):
             tokens = [tokens]
 

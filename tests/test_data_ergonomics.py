@@ -166,6 +166,9 @@ def test_decode_accepts_tensors_lists_and_single_ids(tok):
     assert tok.decode(ids.tolist()) == "1 2 3"
     assert tok.decode(ids[:1]) == "1"
     assert tok.decode(2) == "1"
+    # One sampled id, as ``[1, 1]`` from batched sampling or as a 0-d tensor.
+    assert tok.decode(ids[:1].view(1, 1)) == "1"
+    assert tok.decode(ids[0]) == "1"
 
 
 def test_decode_skips_special_tokens_unless_asked(tok):
@@ -180,6 +183,9 @@ def test_decode_rejects_a_batch(tok):
 
     with pytest.raises(ValueError, match="one sequence"):
         tok.decode(batch)
+    # A ``[batch, 1]`` column holds one token per sequence, not one sequence.
+    with pytest.raises(ValueError, match="one sequence"):
+        tok.decode(batch[:, :1])
 
 
 def test_save_and_load_round_trip(tok, tmp_path):
