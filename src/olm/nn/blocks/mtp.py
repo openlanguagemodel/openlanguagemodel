@@ -120,7 +120,10 @@ class SequentialMultiTokenPredictionHead(nn.Module):
         - ``h = RMSNorm(h_{k-1}[i])`` and ``e = RMSNorm(embedding[i + k])``
         - ``h_k[i] = block(Linear(concat(h, e)))``, with a bias-free
           ``2 * embed_dim -> embed_dim`` projection
-        - ``logits_k[i] = h_k[i] @ output_weight.T`` predicts token ``i + k + 1``
+        - ``logits_k[i] = RMSNorm(h_k[i]) @ output_weight.T`` predicts token
+          ``i + k + 1``. The output norm plays the role of the main model's
+          final norm (``shared_head.norm`` in DeepSeek-V3 checkpoints); the
+          next depth reads the un-normalized ``h_k``.
 
     Args:
         embed_dim (int): Model hidden dimension.
@@ -129,11 +132,12 @@ class SequentialMultiTokenPredictionHead(nn.Module):
             copied.
         block_factory (Callable[[], nn.Module]): Builds one Transformer block
             per depth. Each block maps ``[batch, seq, embed_dim]`` to the same
-            shape.
+            shape. The head applies its own output RMSNorm, so the block
+            should not end in a final norm.
         num_heads (int, optional): Number of extra future-token depths.
             Defaults to 1.
-        rms_norm_eps (float, optional): Epsilon of the two input RMSNorms at
-            each depth. Defaults to 1e-6.
+        rms_norm_eps (float, optional): Epsilon of the three RMSNorms at each
+            depth (hidden input, embedding input and output). Defaults to 1e-6.
 
     Forward:
         Takes the main model's final hidden states and the token embeddings,
@@ -170,6 +174,9 @@ class SequentialMultiTokenPredictionHead(nn.Module):
             [Linear(2 * embed_dim, embed_dim, bias=False) for _ in range(num_heads)]
         )
         self.blocks = nn.ModuleList([block_factory() for _ in range(num_heads)])
+        self.output_norms = nn.ModuleList(
+            [RMSNorm(embed_dim, eps=rms_norm_eps) for _ in range(num_heads)]
+        )
 
     def forward(
         self,
@@ -207,6 +214,7 @@ class SequentialMultiTokenPredictionHead(nn.Module):
             )
             combined = torch.cat([hidden, embedding], dim=-1)
             previous_hidden = self.blocks[depth](self.projections[depth](combined))
-            predictions.append(F.linear(previous_hidden, self.output_weight))
+            output = self.output_norms[depth](previous_hidden)
+            predictions.append(F.linear(output, self.output_weight))
 
         return predictions

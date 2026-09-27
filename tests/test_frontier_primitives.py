@@ -481,5 +481,44 @@ def test_sequential_mtp_depth_uses_shifted_embeddings():
         [mtp.hidden_norms[0](hidden[:, :4]), mtp.embedding_norms[0](embeddings[:, 1:])],
         dim=-1,
     )
-    expected = mtp.projections[0](combined) @ mtp.output_weight.T
+    expected = mtp.output_norms[0](mtp.projections[0](combined)) @ mtp.output_weight.T
     assert torch.allclose(logits, expected, atol=1e-6)
+
+
+def test_sequential_mtp_next_depth_reads_unnormalized_hidden():
+    torch.manual_seed(0)
+    mtp = SequentialMultiTokenPredictionHead(
+        embed_dim=4,
+        output_weight=nn.Parameter(torch.randn(10, 4)),
+        block_factory=nn.Identity,
+        num_heads=2,
+    )
+    # A non-uniform output scale, so reading the normalized state would differ.
+    with torch.no_grad():
+        for norm in mtp.output_norms:
+            norm.weight.copy_(torch.arange(1.0, 5.0))
+    hidden = torch.randn(1, 5, 4)
+    embeddings = torch.randn(1, 5, 4)
+
+    _, second = mtp(hidden, embeddings)
+
+    first_hidden = mtp.projections[0](
+        torch.cat(
+            [
+                mtp.hidden_norms[0](hidden[:, :4]),
+                mtp.embedding_norms[0](embeddings[:, 1:]),
+            ],
+            dim=-1,
+        )
+    )
+    second_hidden = mtp.projections[1](
+        torch.cat(
+            [
+                mtp.hidden_norms[1](first_hidden[:, :3]),
+                mtp.embedding_norms[1](embeddings[:, 2:]),
+            ],
+            dim=-1,
+        )
+    )
+    expected = mtp.output_norms[1](second_hidden) @ mtp.output_weight.T
+    assert torch.allclose(second, expected, atol=1e-5)
