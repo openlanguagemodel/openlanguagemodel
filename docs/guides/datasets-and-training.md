@@ -4,6 +4,34 @@ This guide covers OLM's training stack end to end: where data comes from, how it
 
 OLM is built to train on corpora larger than memory. Datasets **stream** text — reading and tokenizing it on demand — so the working set never has to fit in RAM.
 
+## Tokenizers
+
+[`HFTokenizer`](../api/data.md#hftokenizer) wraps any Hugging Face fast tokenizer, loaded from the Hub or from a local directory. The datasets below call its `encode`, and read `eos_token_id` when `append_eos=True`. Your own code will mostly use `encode`, `decode`, `vocab_size` and `eos_token_id`.
+
+```python
+from olm.data.tokenization import HFTokenizer
+
+tok = HFTokenizer("gpt2")
+
+ids = tok.encode("Hello!")
+print(ids)                                        # tensor([15496,     0])
+print(ids.shape)                                  # torch.Size([2])
+print(tok.encode("Hello!", return_tensors=None))  # [15496, 0]
+print(tok.decode(ids))                            # Hello!
+print(tok.vocab_size, tok.eos_token_id)           # 50257 50256
+```
+
+- **`encode(text)` returns a 1-D `torch.long` tensor** of shape `[num_tokens]`, with no batch dimension. Call `.unsqueeze(0)` before passing it to a model. Pass `return_tensors=None` to get a plain `list[int]` instead. Long text is never truncated. The first time a tokenizer encodes a text longer than its `model_max_length` (1024 for GPT-2), `transformers` logs `Token indices sequence length is longer than the specified maximum sequence length`. The datasets cut tokens into `context_length` windows, so the warning is expected and harmless there.
+- `add_special_tokens=True` (the default) lets the tokenizer add its own special tokens, such as a leading BOS token on tokenizers that use one. GPT-2's adds none. The datasets always pass `False`.
+- `decode(ids)` takes one sequence: a 1-D tensor, a `[1, num_tokens]` tensor, a list, or a single id. It raises `ValueError` on a tensor holding several sequences, so decode a batch row by row. It drops special tokens such as EOS unless you pass `skip_special_tokens=False`, so stop generation by comparing ids with `tok.eos_token_id`, not by searching the decoded text.
+- `vocab_size` is `len(tok.tokenizer)`. It counts added special tokens, so it is the right size for the embedding and output layers.
+- `tok.tokenizer` is the wrapped `transformers` tokenizer, for everything else, such as batch encoding or chat templates.
+
+> [!NOTE]
+> `HFTokenizer` builds its tensors with `torch.tensor` instead of asking `transformers` for `return_tensors="pt"`. A recent `transformers` switches its PyTorch support off when the installed torch is older than it supports, and `return_tensors="pt"` then fails even though torch is installed. `HFTokenizer.encode` keeps working in that case.
+
+`import olm` does not import `transformers` or `datasets`. They are imported when you first create an `HFTokenizer` or a Hugging Face dataset, and if one is missing or broken you get an `ImportError` that says which package to install or repair.
+
 ## Datasets
 
 Datasets are streaming `IterableDataset`s. Each tokenizes text, buffers the tokens, and yields fixed-length `(input_ids, labels)` pairs ready for next-token prediction, with multi-worker sharding handled automatically. There are three built-in sources:
@@ -39,6 +67,18 @@ dataset = FineWebEduDataset(tok, subset="sample-10BT", context_length=2048)
 
 > [!TIP]
 > Set `shuffle=True` to randomize ordering. For local files OLM shuffles the file order; for streaming datasets it shuffles a rolling buffer (`shuffle_buffer_size`, default 10,000). With multiple workers or GPUs, each worker is assigned a disjoint slice of the stream, so no example is seen twice.
+>
+> A streaming Hugging Face dataset is split across `DataLoader` workers by shard, and workers beyond `dataset.dataset.n_shards` get no data. Without shuffling, that is usually the number of files. With `shuffle=True`, `datasets` 5.0 mixes up to 10 groups of files into its shuffle buffer and reports about a tenth as many shards, and just one for fewer than 20 files. Check `n_shards` before choosing `num_workers`.
+
+### Document boundaries
+
+A dataset concatenates the tokens of consecutive texts and cuts the stream into samples of `context_length + 1` tokens, so one sample can hold the end of one document and the start of the next. By default nothing marks where one text ends. Pass `append_eos=True` to add the tokenizer's EOS token after every text, so the model learns where documents end and generation can stop on `tok.eos_token_id`:
+
+```python
+dataset = FineWebEduDataset(tok, context_length=1024, append_eos=True)
+```
+
+For `LocalTextDataset` every non-empty line is one text, so set `append_eos=True` only when each line is a separate document. Keep the setting fixed for the whole run: changing it moves every sample boundary, so `skip_batches` no longer lands where a resumed run left off.
 
 ## The DataLoader
 
@@ -50,7 +90,7 @@ from olm.data.datasets import DataLoader
 loader = DataLoader(dataset, batch_size=32, num_workers=4)
 ```
 
-It sets `pin_memory=True` (faster host-to-GPU copies) and `persistent_workers=True` when `num_workers > 0` (no per-epoch worker restart). Pass `distributed=True` to install a `DistributedSampler` for multi-GPU runs.
+It sets `pin_memory=True` (faster host-to-GPU copies) and `persistent_workers=True` when `num_workers > 0` (no per-epoch worker restart). Pass `distributed=True` to install a `DistributedSampler` for multi-GPU runs on a map-style dataset. OLM's text datasets are iterable and split themselves across ranks, so they don't need it.
 
 ## The Trainer
 

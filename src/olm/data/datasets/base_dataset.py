@@ -1,6 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
-from typing import Iterator, Tuple, Any
+from typing import Iterator, List, Tuple, Any
 from torch.utils.data import IterableDataset, get_worker_info
 from itertools import islice
 
@@ -13,19 +13,34 @@ class BaseTextDataset(IterableDataset, ABC):
     construction, worker sharding, and distributed-rank sharding. Subclasses
     only need to implement ``_get_text_iterator`` and yield raw text strings.
 
+    Tokens from consecutive texts go into one buffer, so a sample can span the
+    end of one text and the start of the next. Each sample takes
+    ``context_length + 1`` fresh tokens from the buffer, and tokens left over
+    when the source runs out are dropped. With ``append_eos=True`` an EOS token
+    is added after every text, so the model can see where one text ends and
+    the next begins.
+
     Iteration:
         Yields ``(input_ids, labels)`` tuples. Both tensors have shape
         ``[context_length]`` and dtype ``torch.long``. ``labels`` is the
         one-token-shifted target sequence for causal language modeling.
 
     Args:
-        tokenizer: Tokenizer with an ``encode`` method.
+        tokenizer: Tokenizer with an ``encode`` method that returns a 1-D
+            tensor or a list of token ids.
         context_length (int): Number of input tokens per sample.
         skip_batches (int): Number of yielded samples to skip, useful for
-            coarse resume behavior.
+            coarse resume behavior. The count applies to each worker and rank
+            shard separately.
         shuffle (bool): Whether the concrete dataset should shuffle its source
             stream when supported.
         seed (int): Shuffle seed.
+        append_eos (bool): Whether to add ``tokenizer.eos_token_id`` after each
+            text. Defaults to ``False``, which puts no separator between texts.
+
+    Raises:
+        ValueError: If ``append_eos=True`` and the tokenizer has no
+            ``eos_token_id``.
     """
 
     def __init__(
@@ -35,6 +50,7 @@ class BaseTextDataset(IterableDataset, ABC):
         skip_batches: int = 0,
         shuffle: bool = False,
         seed: int = 42,
+        append_eos: bool = False,
     ):
         super().__init__()
         self.tokenizer = tokenizer
@@ -42,6 +58,13 @@ class BaseTextDataset(IterableDataset, ABC):
         self.skip_batches = skip_batches
         self.shuffle = shuffle
         self.seed = seed
+        self.append_eos = append_eos
+
+        if append_eos and getattr(tokenizer, "eos_token_id", None) is None:
+            raise ValueError(
+                "append_eos=True needs a tokenizer with an eos_token_id, but "
+                f"{type(tokenizer).__name__} has none."
+            )
 
     @abstractmethod
     def _get_text_iterator(self) -> Iterator[str]:
@@ -53,6 +76,29 @@ class BaseTextDataset(IterableDataset, ABC):
             ``BaseTextDataset`` concatenates tokens into a rolling buffer.
         """
         pass
+
+    def _source_splits_across_workers(self) -> bool:
+        """
+        Whether the text source already gives each DataLoader worker its own data.
+
+        When this returns ``True``, ``__iter__`` shards only across distributed
+        ranks and leaves the worker split to the source. Override it for sources
+        that split themselves, or every worker would keep only part of its share.
+        """
+        return False
+
+    def _encode(self, text: str) -> List[int]:
+        """Tokenize one text chunk, asking for no special tokens, as a list of ids."""
+        try:
+            tokens = self.tokenizer.encode(text, add_special_tokens=False)
+        except TypeError:
+            # Older/simple tokenizers may not expose add_special_tokens.
+            tokens = self.tokenizer.encode(text)
+
+        # Extending a list with a tensor would store one 0-d tensor per token.
+        if isinstance(tokens, torch.Tensor):
+            tokens = tokens.tolist()
+        return tokens
 
     def __iter__(self) -> Iterator[Tuple[torch.Tensor, torch.Tensor]]:
         """
@@ -67,6 +113,7 @@ class BaseTextDataset(IterableDataset, ABC):
         worker_info = get_worker_info()
         batches_yielded = 0
         token_buffer = []
+        sample_length = self.context_length + 1
 
         # Get the text source
         text_iter = self._get_text_iterator()
@@ -79,7 +126,7 @@ class BaseTextDataset(IterableDataset, ABC):
 
         # Handle distributed-rank and multi-worker sharding together so iterable
         # datasets do not replay the same text on every rank.
-        if worker_info is not None:
+        if worker_info is not None and not self._source_splits_across_workers():
             worker_id = worker_info.id
             num_workers = worker_info.num_workers
         else:
@@ -92,21 +139,18 @@ class BaseTextDataset(IterableDataset, ABC):
             text_iter = islice(text_iter, shard_id, None, num_shards)
 
         for text in text_iter:
-            try:
-                tokens = self.tokenizer.encode(text, add_special_tokens=False)
-            except TypeError:
-                # Older/simple tokenizers may not expose add_special_tokens.
-                tokens = self.tokenizer.encode(text)
+            token_buffer.extend(self._encode(text))
+            if self.append_eos:
+                token_buffer.append(self.tokenizer.eos_token_id)
 
-            token_buffer.extend(tokens)
-
-            # Yield complete sequences
-            while len(token_buffer) >= self.context_length + 1:
-                # Extract sequence
-                sequence = token_buffer[: self.context_length + 1]
-
+            # Yield complete sequences. ``start`` walks through the buffer, and
+            # the used tokens are removed once per text, so a long text costs
+            # linear rather than quadratic time.
+            start = 0
+            while len(token_buffer) - start >= sample_length:
                 # Non-overlapping sliding window
-                token_buffer = token_buffer[self.context_length + 1 :]
+                sequence = token_buffer[start : start + sample_length]
+                start += sample_length
 
                 # Skip batches if needed (e.g. resumption)
                 if batches_yielded < self.skip_batches:
@@ -118,3 +162,5 @@ class BaseTextDataset(IterableDataset, ABC):
 
                 batches_yielded += 1
                 yield input_ids, labels
+
+            del token_buffer[:start]
