@@ -33,12 +33,16 @@ class HFTokenizer(TokenizerBase):
 
     Attributes:
         tokenizer: The wrapped ``transformers`` tokenizer.
-        vocab_size (int): The wrapped tokenizer's ``vocab_size``.
+        vocab_size (int): Number of token ids the tokenizer can produce,
+            including added special tokens (``len(tokenizer)``). Size embedding
+            and output layers with this value.
     """
 
     def __init__(self, model_path: str):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-        self.vocab_size = self.tokenizer.vocab_size
+        # ``tokenizer.vocab_size`` leaves out added tokens, whose ids come after
+        # the base vocabulary, so an embedding sized with it can be too small.
+        self.vocab_size = len(self.tokenizer)
 
     @property
     def eos_token_id(self) -> Optional[int]:
@@ -142,5 +146,5 @@ class HFTokenizer(TokenizerBase):
         """Load a tokenizer written by ``HFTokenizer.save``."""
         obj = cls.__new__(cls)
         obj.tokenizer = AutoTokenizer.from_pretrained(path, use_fast=True)
-        obj.vocab_size = obj.tokenizer.vocab_size
+        obj.vocab_size = len(obj.tokenizer)
         return obj
