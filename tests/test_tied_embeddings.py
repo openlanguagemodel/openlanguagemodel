@@ -1,9 +1,13 @@
+import math
+
 import pytest
 import torch
 import torch.nn.functional as F
 
+from olm.models.meta import Llama3Model
+from olm.models.openai import GPT2Model
 from olm.nn.blocks import LM, OutputHead
-from olm.nn.embeddings import Embedding
+from olm.nn.embeddings import AbsolutePositionalEmbedding, Embedding
 from olm.nn.structure import load_block
 
 
@@ -93,3 +97,30 @@ def test_output_head_validates_tied_embedding_shape():
 
     with pytest.raises(ValueError, match="vocabulary size"):
         OutputHead(embed_dim=16, vocab_size=64, tied_embedding=embedding)
+
+
+def test_embedding_default_init_std():
+    torch.manual_seed(0)
+    assert Embedding(4096, 64).embedding.weight.std().item() == pytest.approx(0.02, rel=0.05)
+    assert Embedding(4096, 64, init_std=0.1).embedding.weight.std().item() == pytest.approx(0.1, rel=0.05)
+    assert AbsolutePositionalEmbedding(1024, 64).pos_embedding.weight.std().item() == pytest.approx(
+        0.02, rel=0.05
+    )
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda V: GPT2Model(V, 64, 2, 4, 32, dropout=0.0),
+        lambda V: Llama3Model(V, 64, 128, 2, 4, 2, 32),
+    ],
+    ids=["gpt2", "llama3"],
+)
+def test_tied_model_initial_loss_is_near_ln_vocab(build):
+    torch.manual_seed(0)
+    V = 256
+    model = build(V).eval()
+    x, y = torch.randint(0, V, (4, 32)), torch.randint(0, V, (4, 32))
+    with torch.no_grad():
+        loss = F.cross_entropy(model(x).reshape(-1, V), y.reshape(-1))
+    assert abs(loss.item() - math.log(V)) < 0.25

@@ -17,18 +17,28 @@ class AbsolutePositionalEmbedding(PositionalEmbeddingBase):
     the transformer blocks.
     """
 
-    def __init__(self, max_seq_len: int, embed_dim: int, dropout: float = 0.0):
+    def __init__(
+        self,
+        max_seq_len: int,
+        embed_dim: int,
+        dropout: float = 0.0,
+        init_std: float = 0.02,
+    ):
         """
         Args:
             max_seq_len: maximum sequence length to support
             embed_dim: dimension of the positional embeddings
             dropout: dropout probability applied to positional embeddings
+            init_std: standard deviation of the normal initializer (0.02, as in
+                Hugging Face GPT-2 and nanoGPT; OpenAI's original release used
+                0.01 for positions)
         """
         super().__init__()
         self.max_seq_len = max_seq_len
         self.embed_dim = embed_dim
 
         self.pos_embedding = nn.Embedding(max_seq_len, embed_dim)
+        nn.init.normal_(self.pos_embedding.weight, mean=0.0, std=init_std)
         self.dropout = nn.Dropout(dropout) if dropout > 0.0 else nn.Identity()
 
     def forward(
