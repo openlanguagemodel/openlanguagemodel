@@ -262,8 +262,8 @@ def annotate(record: dict[str, Any]) -> dict[str, Any]:
         environment["board_configured_reference_clock_mhz"] = reference_clock
     annotated["mfu_reporting"] = {
         "raw_field": "model_flops_utilization_pct",
-        "raw_field_denominator": (f"Official nominal dense {amp_dtype.upper()} peak."),
-        "configured_clock_field": ("configured_clock_model_flops_utilization_pct"),
+        "raw_field_denominator": f"Official nominal dense {amp_dtype.upper()} peak.",
+        "configured_clock_field": "configured_clock_model_flops_utilization_pct",
         "configured_clock_denominator_tflops": configured_peak,
         "configured_clock_formula": (
             "nominal_peak * configured_max_sm_clock / reference_clock"
