@@ -2,7 +2,9 @@
 Distributed Data Parallel (DDP) Trainer using PyTorch's native DDP.
 """
 
-from typing import Optional, List, Type, Union, Any
+from contextlib import AbstractContextManager, nullcontext
+from typing import Optional, List, Type, Union, Any, Dict, Tuple
+import os
 import torch
 import torch.nn as nn
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -20,6 +22,7 @@ from olm.core.dist import (
     is_main_process,
     barrier,
     all_reduce,
+    all_gather_object,
     print_rank_0,
 )
 
@@ -32,7 +35,8 @@ class DDPTrainer(Trainer):
     - Distributed sampler setup
     - Gradient synchronization (with no_sync for gradient accumulation)
     - Metrics aggregation across ranks
-    - Checkpoint saving on rank 0
+    - Checkpoint saving on rank 0 (every rank must call ``save_checkpoint``;
+      the file holds every rank's RNG state)
 
     Args:
         model: Model to train.
@@ -58,6 +62,8 @@ class DDPTrainer(Trainer):
         bucket_cap_mb: DDP bucket size in MB for gradient communication.
         gradient_as_bucket_view: Use gradient views to reduce memory (recommended).
         static_graph: Set to True if model graph doesn't change (optimization).
+        resume_from: Checkpoint file or directory to resume from, or ``"latest"``
+            (see ``Trainer``). Every rank loads the same file.
 
     Example:
         >>> # Launch with: torchrun --nproc_per_node=4 train.py
@@ -102,6 +108,7 @@ class DDPTrainer(Trainer):
         bucket_cap_mb: int = 25,
         gradient_as_bucket_view: bool = True,
         static_graph: bool = False,
+        resume_from: Optional[Union[str, os.PathLike]] = None,
     ):
         # Store DDP config before calling super().__init__
         self.ddp_backend = ddp_backend
@@ -131,6 +138,7 @@ class DDPTrainer(Trainer):
             learning_rate=learning_rate,
             weight_decay=weight_decay,
             use_warmup_cosine=use_warmup_cosine,
+            resume_from=resume_from,
         )
 
         # Wrap model with DDP if distributed
@@ -176,264 +184,57 @@ class DDPTrainer(Trainer):
                     "Data may not be properly distributed across ranks."
                 )
 
-        self.model.train()
-        self.optimizer.zero_grad(set_to_none=True)
+        return super().train(
+            epochs,
+            log_interval=log_interval,
+            max_steps=max_steps,
+            steps_per_epoch=steps_per_epoch,
+        )
 
-        # Initialize scheduler (from base class)
-        if self.scheduler is None and self.use_warmup_cosine:
-            self._initialize_scheduler(epochs, max_steps, steps_per_epoch)
+    def _prepare_dataloader_for_epoch(self, epoch: int) -> None:
+        """Set the epoch on a DistributedSampler so every epoch shuffles differently."""
+        if is_distributed() and hasattr(self.dataloader, "sampler"):
+            if isinstance(self.dataloader.sampler, DistributedSampler):
+                self.dataloader.sampler.set_epoch(epoch)
 
-        losses = []
+    def _accumulation_context(
+        self, sync_gradients: bool, num_batches: Optional[int]
+    ) -> AbstractContextManager:
+        """
+        Skip the gradient all-reduce on all but the last micro-batch of a step.
 
-        def finish_accumulation(actual_count: int) -> bool:
-            nonlocal accumulated_loss, accumulated_tokens, accumulation_count, epoch_step
+        Only used when the dataloader has a length: for iterable datasets the
+        last micro-batch of an epoch is not known in advance, so every
+        micro-batch synchronizes.
+        """
+        if is_distributed() and num_batches is not None and not sync_gradients:
+            return self.model.no_sync()
+        return nullcontext()
 
-            self._call_callbacks("on_step_begin", self, self.global_step)
+    def _reduce_step_metrics(
+        self, avg_loss: float, tokens_per_sec: float
+    ) -> Tuple[float, float]:
+        """Average the loss and sum the throughput over ranks."""
+        if not is_distributed():
+            return avg_loss, tokens_per_sec
 
-            needs_unscale = (
-                self.grad_clip_norm is not None or actual_count != accumulation_target
-            )
-            if needs_unscale:
-                self.scaler.unscale_(self.optimizer)
+        loss_tensor = torch.tensor([avg_loss], device=self.device)
+        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
 
-            if actual_count != accumulation_target:
-                grad_scale = accumulation_target / actual_count
-                for group in self.optimizer.param_groups:
-                    for param in group["params"]:
-                        if param.grad is not None:
-                            param.grad.mul_(grad_scale)
+        throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
+        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
+        return loss_tensor.item(), throughput_tensor.item()
 
-            if self.grad_clip_norm is not None:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.grad_clip_norm
-                )
-
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-            self.optimizer.zero_grad(set_to_none=True)
-
-            if self.scheduler is not None:
-                self.scheduler.step()
-
-            avg_loss = accumulated_loss / actual_count
-            self.global_step += 1
-
-            current_lr = self.optimizer.param_groups[0]["lr"]
-            perplexity = math.exp(min(avg_loss, 20))
-
-            step_time = (
-                time.time() - self.step_start_time if self.step_start_time else 0.0
-            )
-            tokens_per_sec = accumulated_tokens / step_time if step_time > 0 else 0.0
-
-            if is_distributed():
-                loss_tensor = torch.tensor([avg_loss], device=self.device)
-                all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-                avg_loss = loss_tensor.item()
-                perplexity = math.exp(min(avg_loss, 20))
-
-                throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
-                all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-                tokens_per_sec = throughput_tensor.item()
-
-            self.training_state.update(
-                {
-                    "current_loss": avg_loss,
-                    "perplexity": perplexity,
-                    "tokens_per_sec": tokens_per_sec,
-                    "learning_rate": current_lr,
-                    "total_tokens": self.total_tokens_processed,
-                }
-            )
-
-            if is_main_process():
-                losses.append(avg_loss)
-                self.losses.append(avg_loss)
-
-            if self.global_step % log_interval == 0 and is_main_process():
-                print(
-                    f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
-                    f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
-                    flush=True,
-                )
-
-            self._call_callbacks("on_step_end", self, self.global_step, avg_loss)
-            should_stop = self._should_stop_training()
-
-            accumulated_loss = 0.0
-            accumulated_tokens = 0
-            accumulation_count = 0
-            epoch_step += 1
-
+    def _should_stop_training(self) -> bool:
+        """Stop every rank when any rank's callbacks asked to stop."""
+        should_stop = super()._should_stop_training()
+        if not is_distributed():
             return should_stop
 
-        # Call callbacks
-        self._call_callbacks("on_train_begin", self)
+        flag = torch.tensor([float(should_stop)], device=self.device)
+        all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
+        return bool(flag.item())
 
-        import time
-        import math
-
-        self.training_start_time = time.time()
-
-        # Print header only on rank 0
-        if is_main_process():
-            print(
-                f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10} | {'Perplexity':^11} | "
-                f"{'Tokens/s':^10} | {'LR':^10}",
-                flush=True,
-            )
-            print("-" * 80, flush=True)
-
-        for epoch in range(epochs):
-            self.current_epoch = epoch
-
-            # Set epoch for DistributedSampler
-            if is_distributed() and hasattr(self.dataloader, "sampler"):
-                if isinstance(self.dataloader.sampler, DistributedSampler):
-                    self.dataloader.sampler.set_epoch(epoch)
-
-            self._call_callbacks("on_epoch_begin", self, epoch)
-
-            accumulated_loss = 0.0
-            accumulated_tokens = 0
-            accumulation_count = 0
-            accumulation_target = self.grad_accum_steps
-            epoch_step = 0
-            try:
-                num_batches = len(self.dataloader)
-            except TypeError:
-                num_batches = None
-
-            for step, (x, y) in enumerate(self.dataloader):
-                self._call_callbacks("on_batch_begin", self, step)
-
-                # Start timing
-                if accumulation_count == 0:
-                    self.step_start_time = time.time()
-                    if num_batches is None:
-                        accumulation_target = self.grad_accum_steps
-                    else:
-                        accumulation_target = min(
-                            self.grad_accum_steps, num_batches - step
-                        )
-
-                x = x.to(self.device, non_blocking=True)
-                y = y.to(self.device, non_blocking=True)
-
-                # Track tokens
-                batch_tokens = x.numel()
-                self.total_tokens_processed += batch_tokens
-                accumulated_tokens += batch_tokens
-
-                # Use no_sync context for gradient accumulation
-                # This prevents DDP from synchronizing gradients until the last micro-batch
-                context = (
-                    self.model.no_sync()
-                    if (
-                        is_distributed()
-                        and num_batches is not None
-                        and accumulation_count + 1 < accumulation_target
-                    )
-                    else torch.enable_grad()
-                )
-
-                with context:
-                    with torch.amp.autocast(self.device_type, enabled=self.use_amp):
-                        model_output = self.model(x)
-                        loss, _ = self._compute_model_loss(model_output, y)
-                        loss_val = loss.item()
-                        loss = loss / accumulation_target
-
-                    self.scaler.scale(loss).backward()
-
-                accumulated_loss += loss_val
-                accumulation_count += 1
-                self.training_state["current_loss"] = loss_val
-                self.training_state["accumulated_loss"] = accumulated_loss
-
-                self._call_callbacks("on_batch_end", self, step, loss_val)
-
-                # Optimizer step after gradient accumulation
-                if accumulation_count == accumulation_target:
-                    if finish_accumulation(accumulation_count):
-                        self._call_callbacks("on_epoch_end", self, epoch)
-                        self._call_callbacks("on_train_end", self)
-                        if is_main_process():
-                            self.losses = losses
-                            self._print_training_summary()
-                        return losses
-
-                    # Check stopping conditions
-                    if max_steps and self.global_step >= max_steps:
-                        self._call_callbacks("on_epoch_end", self, epoch)
-                        self._call_callbacks("on_train_end", self)
-                        if is_main_process():
-                            self.losses = losses
-                            self._print_training_summary()
-                        return losses
-
-                    if steps_per_epoch and epoch_step >= steps_per_epoch:
-                        break
-
-            if accumulation_count > 0:
-                if finish_accumulation(accumulation_count):
-                    self._call_callbacks("on_epoch_end", self, epoch)
-                    self._call_callbacks("on_train_end", self)
-                    if is_main_process():
-                        self.losses = losses
-                        self._print_training_summary()
-                    return losses
-
-                if max_steps and self.global_step >= max_steps:
-                    self._call_callbacks("on_epoch_end", self, epoch)
-                    self._call_callbacks("on_train_end", self)
-                    if is_main_process():
-                        self.losses = losses
-                        self._print_training_summary()
-                    return losses
-
-            self._call_callbacks("on_epoch_end", self, epoch)
-
-        self._call_callbacks("on_train_end", self)
-        if is_main_process():
-            self._print_training_summary()
-
-        self.losses = losses
-        return losses
-
-    def _initialize_scheduler(self, epochs, max_steps, steps_per_epoch):
-        """Initialize default warmup+cosine scheduler."""
-        from olm.train.schedulers.warmup import WarmupCosineScheduler
-
-        # Calculate total steps
-        if self.total_steps is None:
-            if max_steps is not None:
-                self.total_steps = max_steps
-            elif steps_per_epoch is not None:
-                self.total_steps = epochs * steps_per_epoch
-            else:
-                try:
-                    dataset_size = len(self.dataloader)
-                    self.total_steps = epochs * dataset_size
-                except TypeError:
-                    self.total_steps = epochs * 10000
-
-        # Calculate warmup steps
-        if self.warmup_steps is None:
-            self.warmup_steps = min(
-                max(int(0.1 * self.total_steps), 1),
-                5000,
-                self.total_steps,
-            )
-
-        self.scheduler = WarmupCosineScheduler(
-            self.optimizer,
-            warmup_steps=self.warmup_steps,
-            total_steps=self.total_steps,
-            min_lr=self.min_lr,
-        )
-
-        print_rank_0(
-            f"Initialized WarmupCosineScheduler: warmup_steps={self.warmup_steps}, "
-            f"total_steps={self.total_steps}, min_lr={self.min_lr}"
-        )
+    def _gather_rng_states(self) -> List[Dict[str, Any]]:
+        """Collect every rank's RNG states; every rank must call this."""
+        return all_gather_object(self._rng_state())

@@ -383,24 +383,12 @@ class WandBCallback(TrainerCallback):
                 },
             )
 
-            # Save checkpoint to temporary file
+            # Save checkpoint to temporary file, in the same format as
+            # CheckpointCallback (see olm.train.checkpointing), so the
+            # artifact can resume a run with Trainer(resume_from=...).
             with tempfile.TemporaryDirectory() as tmpdir:
                 checkpoint_path = os.path.join(tmpdir, "checkpoint.pt")
-                torch.save(
-                    {
-                        "model_state_dict": trainer.model.state_dict(),
-                        "optimizer_state_dict": trainer.optimizer.state_dict(),
-                        "scheduler_state_dict": (
-                            trainer.scheduler.state_dict()
-                            if trainer.scheduler
-                            else None
-                        ),
-                        "epoch": epoch,
-                        "step": trainer.global_step,
-                        "loss": trainer.losses[-1] if trainer.losses else None,
-                    },
-                    checkpoint_path,
-                )
+                torch.save(trainer.state_dict(), checkpoint_path)
 
                 # Add file to artifact
                 artifact.add_file(checkpoint_path)

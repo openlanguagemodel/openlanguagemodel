@@ -3,7 +3,8 @@ Fully Sharded Data Parallel (FSDP) Trainer using PyTorch's native FSDP.
 """
 
 from pathlib import Path
-from typing import Optional, List, Type, Union, Any, Callable
+from typing import Optional, List, Type, Union, Any, Callable, Dict, Tuple
+import os
 import torch
 import torch.nn as nn
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
@@ -35,8 +36,10 @@ from olm.core.dist import (
     is_main_process,
     barrier,
     all_reduce,
+    all_gather_object,
     print_rank_0,
 )
+from olm.train.checkpointing import write_checkpoint
 
 
 class FSDPTrainer(Trainer):
@@ -80,6 +83,9 @@ class FSDPTrainer(Trainer):
         mixed_precision_policy: Mixed precision configuration (BF16, FP16, or None).
         limit_all_gathers: Limit all-gather operations for memory efficiency.
         use_orig_params: Use original parameters instead of flattened (better for optimizers).
+        resume_from: Only ``None`` is supported for a sharded model; a checkpoint
+            raises ``NotImplementedError`` (see ``load_state_dict``). ``"latest"``
+            or a directory with no checkpoint in it starts a new run.
 
     Example:
         >>> # Launch with: torchrun --nproc_per_node=8 train.py
@@ -131,6 +137,7 @@ class FSDPTrainer(Trainer):
         mixed_precision_policy: Optional[str] = None,
         limit_all_gathers: bool = True,
         use_orig_params: bool = True,
+        resume_from: Optional[Union[str, os.PathLike]] = None,
     ):
         self.sharding_strategy_name = sharding_strategy
         self.auto_wrap_policy_type = auto_wrap_policy
@@ -170,6 +177,7 @@ class FSDPTrainer(Trainer):
             learning_rate=learning_rate,
             weight_decay=weight_decay,
             use_warmup_cosine=use_warmup_cosine,
+            resume_from=resume_from,
         )
 
     def _wrap_model_fsdp(self, model: nn.Module, device: str) -> FSDP:
@@ -266,262 +274,97 @@ class FSDPTrainer(Trainer):
                     "Data may not be properly distributed across ranks."
                 )
 
-        self.model.train()
-        self.optimizer.zero_grad(set_to_none=True)
-
-        # Initialize scheduler
-        if self.scheduler is None and self.use_warmup_cosine:
-            self._initialize_scheduler(epochs, max_steps, steps_per_epoch)
-
-        losses = []
-
-        def finish_accumulation(actual_count: int) -> bool:
-            nonlocal accumulated_loss, accumulated_tokens, accumulation_count, epoch_step
-
-            self._call_callbacks("on_step_begin", self, self.global_step)
-
-            needs_unscale = (
-                self.grad_clip_norm is not None or actual_count != accumulation_target
-            )
-            if needs_unscale:
-                self.scaler.unscale_(self.optimizer)
-
-            if actual_count != accumulation_target:
-                grad_scale = accumulation_target / actual_count
-                for group in self.optimizer.param_groups:
-                    for param in group["params"]:
-                        if param.grad is not None:
-                            param.grad.mul_(grad_scale)
-
-            if self.grad_clip_norm is not None:
-                self.model.clip_grad_norm_(self.grad_clip_norm)
-
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-            self.optimizer.zero_grad(set_to_none=True)
-
-            if self.scheduler is not None:
-                self.scheduler.step()
-
-            avg_loss = accumulated_loss / actual_count
-            self.global_step += 1
-
-            current_lr = self.optimizer.param_groups[0]["lr"]
-            perplexity = math.exp(min(avg_loss, 20))
-
-            step_time = (
-                time.time() - self.step_start_time if self.step_start_time else 0.0
-            )
-            tokens_per_sec = accumulated_tokens / step_time if step_time > 0 else 0.0
-
-            if is_distributed():
-                loss_tensor = torch.tensor([avg_loss], device=self.device)
-                all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
-                avg_loss = loss_tensor.item()
-                perplexity = math.exp(min(avg_loss, 20))
-
-                throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
-                all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
-                tokens_per_sec = throughput_tensor.item()
-
-            self.training_state.update(
-                {
-                    "current_loss": avg_loss,
-                    "perplexity": perplexity,
-                    "tokens_per_sec": tokens_per_sec,
-                    "learning_rate": current_lr,
-                    "total_tokens": self.total_tokens_processed,
-                }
-            )
-
-            if is_main_process():
-                losses.append(avg_loss)
-                self.losses.append(avg_loss)
-
-            if self.global_step % log_interval == 0 and is_main_process():
-                print(
-                    f"{epoch+1:^6} | {self.global_step:^8} | {avg_loss:^10.4f} | "
-                    f"{perplexity:^11.2f} | {tokens_per_sec:^10.0f} | {current_lr:^10.2e}",
-                    flush=True,
-                )
-
-            self._call_callbacks("on_step_end", self, self.global_step, avg_loss)
-            should_stop = self._should_stop_training()
-
-            accumulated_loss = 0.0
-            accumulated_tokens = 0
-            accumulation_count = 0
-            epoch_step += 1
-
-            return should_stop
-
-        # Call callbacks
-        self._call_callbacks("on_train_begin", self)
-
-        import time
-        import math
-
-        self.training_start_time = time.time()
-
-        # Print header only on rank 0
-        if is_main_process():
-            print(
-                f"{'Epoch':^6} | {'Step':^8} | {'Loss':^10} | {'Perplexity':^11} | "
-                f"{'Tokens/s':^10} | {'LR':^10}",
-                flush=True,
-            )
-            print("-" * 80, flush=True)
-
-        for epoch in range(epochs):
-            self.current_epoch = epoch
-
-            # Set epoch for DistributedSampler
-            if is_distributed() and hasattr(self.dataloader, "sampler"):
-                if isinstance(self.dataloader.sampler, DistributedSampler):
-                    self.dataloader.sampler.set_epoch(epoch)
-
-            self._call_callbacks("on_epoch_begin", self, epoch)
-
-            accumulated_loss = 0.0
-            accumulated_tokens = 0
-            accumulation_count = 0
-            accumulation_target = self.grad_accum_steps
-            epoch_step = 0
-            try:
-                num_batches = len(self.dataloader)
-            except TypeError:
-                num_batches = None
-
-            for step, (x, y) in enumerate(self.dataloader):
-                self._call_callbacks("on_batch_begin", self, step)
-
-                # Start timing
-                if accumulation_count == 0:
-                    self.step_start_time = time.time()
-                    if num_batches is None:
-                        accumulation_target = self.grad_accum_steps
-                    else:
-                        accumulation_target = min(
-                            self.grad_accum_steps, num_batches - step
-                        )
-
-                x = x.to(self.device, non_blocking=True)
-                y = y.to(self.device, non_blocking=True)
-
-                # Track tokens
-                batch_tokens = x.numel()
-                self.total_tokens_processed += batch_tokens
-                accumulated_tokens += batch_tokens
-
-                # FSDP automatically handles gradient synchronization
-                # For gradient accumulation, we still accumulate normally
-                with torch.amp.autocast(self.device_type, enabled=self.use_amp):
-                    model_output = self.model(x)
-                    loss, _ = self._compute_model_loss(model_output, y)
-                    loss_val = loss.item()
-                    loss = loss / accumulation_target
-
-                self.scaler.scale(loss).backward()
-
-                accumulated_loss += loss_val
-                accumulation_count += 1
-                self.training_state["current_loss"] = loss_val
-                self.training_state["accumulated_loss"] = accumulated_loss
-
-                self._call_callbacks("on_batch_end", self, step, loss_val)
-
-                # Optimizer step after gradient accumulation
-                if accumulation_count == accumulation_target:
-                    if finish_accumulation(accumulation_count):
-                        self._call_callbacks("on_epoch_end", self, epoch)
-                        self._call_callbacks("on_train_end", self)
-                        if is_main_process():
-                            self.losses = losses
-                            self._print_training_summary()
-                        return losses
-
-                    # Check stopping conditions
-                    if max_steps and self.global_step >= max_steps:
-                        self._call_callbacks("on_epoch_end", self, epoch)
-                        self._call_callbacks("on_train_end", self)
-                        if is_main_process():
-                            self.losses = losses
-                            self._print_training_summary()
-                        return losses
-
-                    if steps_per_epoch and epoch_step >= steps_per_epoch:
-                        break
-
-            if accumulation_count > 0:
-                if finish_accumulation(accumulation_count):
-                    self._call_callbacks("on_epoch_end", self, epoch)
-                    self._call_callbacks("on_train_end", self)
-                    if is_main_process():
-                        self.losses = losses
-                        self._print_training_summary()
-                    return losses
-
-                if max_steps and self.global_step >= max_steps:
-                    self._call_callbacks("on_epoch_end", self, epoch)
-                    self._call_callbacks("on_train_end", self)
-                    if is_main_process():
-                        self.losses = losses
-                        self._print_training_summary()
-                    return losses
-
-            self._call_callbacks("on_epoch_end", self, epoch)
-
-        self._call_callbacks("on_train_end", self)
-        if is_main_process():
-            self._print_training_summary()
-
-        self.losses = losses
-        return losses
-
-    def _initialize_scheduler(self, epochs, max_steps, steps_per_epoch):
-        """Initialize default warmup+cosine scheduler."""
-        from olm.train.schedulers.warmup import WarmupCosineScheduler
-
-        # Calculate total steps
-        if self.total_steps is None:
-            if max_steps is not None:
-                self.total_steps = max_steps
-            elif steps_per_epoch is not None:
-                self.total_steps = epochs * steps_per_epoch
-            else:
-                try:
-                    dataset_size = len(self.dataloader)
-                    self.total_steps = epochs * dataset_size
-                except TypeError:
-                    self.total_steps = epochs * 10000
-
-        # Calculate warmup steps
-        if self.warmup_steps is None:
-            self.warmup_steps = min(
-                max(int(0.1 * self.total_steps), 1),
-                5000,
-                self.total_steps,
-            )
-
-        self.scheduler = WarmupCosineScheduler(
-            self.optimizer,
-            warmup_steps=self.warmup_steps,
-            total_steps=self.total_steps,
-            min_lr=self.min_lr,
+        return super().train(
+            epochs,
+            log_interval=log_interval,
+            max_steps=max_steps,
+            steps_per_epoch=steps_per_epoch,
         )
 
-        print_rank_0(
-            f"Initialized WarmupCosineScheduler: warmup_steps={self.warmup_steps}, "
-            f"total_steps={self.total_steps}, min_lr={self.min_lr}"
+    def _prepare_dataloader_for_epoch(self, epoch: int) -> None:
+        """Set the epoch on a DistributedSampler so every epoch shuffles differently."""
+        if is_distributed() and hasattr(self.dataloader, "sampler"):
+            if isinstance(self.dataloader.sampler, DistributedSampler):
+                self.dataloader.sampler.set_epoch(epoch)
+
+    def _clip_gradients(self) -> None:
+        """Clip with FSDP's own method, which computes the norm over all shards."""
+        if isinstance(self.model, FSDP):
+            self.model.clip_grad_norm_(self.grad_clip_norm)
+        else:
+            super()._clip_gradients()
+
+    def _reduce_step_metrics(
+        self, avg_loss: float, tokens_per_sec: float
+    ) -> Tuple[float, float]:
+        """Average the loss and sum the throughput over ranks."""
+        if not is_distributed():
+            return avg_loss, tokens_per_sec
+
+        loss_tensor = torch.tensor([avg_loss], device=self.device)
+        all_reduce(loss_tensor, op=torch.distributed.ReduceOp.AVG)
+
+        throughput_tensor = torch.tensor([tokens_per_sec], device=self.device)
+        all_reduce(throughput_tensor, op=torch.distributed.ReduceOp.SUM)
+        return loss_tensor.item(), throughput_tensor.item()
+
+    def _should_stop_training(self) -> bool:
+        """Stop every rank when any rank's callbacks asked to stop."""
+        should_stop = super()._should_stop_training()
+        if not is_distributed():
+            return should_stop
+
+        flag = torch.tensor([float(should_stop)], device=self.device)
+        all_reduce(flag, op=torch.distributed.ReduceOp.MAX)
+        return bool(flag.item())
+
+    def state_dict(self) -> Dict[str, Any]:
+        """
+        Not available for a sharded model; use :meth:`save_checkpoint`.
+
+        Gathering FSDP parameters is a collective operation that every rank
+        must join, which a single-process call cannot guarantee.
+        """
+        if not isinstance(self.model, FSDP):
+            return super().state_dict()
+        raise NotImplementedError(
+            "FSDPTrainer.state_dict() is not available for a sharded model. Call "
+            "save_checkpoint(path) on every rank instead."
+        )
+
+    def load_state_dict(self, checkpoint: Dict[str, Any], strict: bool = True) -> None:
+        """
+        Resuming a sharded run is not supported yet.
+
+        To start a new FSDP run from saved weights, load them into the model
+        before creating the trainer::
+
+            model.load_state_dict(read_checkpoint(path)["model"])
+            trainer = FSDPTrainer(model, ...)
+        """
+        if not isinstance(self.model, FSDP):
+            return super().load_state_dict(checkpoint, strict=strict)
+        raise NotImplementedError(
+            "FSDPTrainer cannot resume a sharded run yet: its checkpoints hold the "
+            "full model weights but no optimizer state. To start a new run from "
+            "those weights, call model.load_state_dict(read_checkpoint(path)"
+            '["model"]) before creating the FSDPTrainer. See '
+            "docs/guides/checkpointing.md."
         )
 
     def save_checkpoint(
         self,
         path: str,
         state_dict_type: str = "FULL_STATE_DICT",
-    ) -> None:
+    ) -> Optional[Path]:
         """
         Save FSDP checkpoint.
+
+        All ranks must call this. With ``"FULL_STATE_DICT"`` the full model is
+        gathered on rank 0, which writes a format version 1 checkpoint (see
+        ``olm.train.checkpointing``) without optimizer state: the sharded
+        optimizer state is not gathered yet, so these files are for weights,
+        evaluation and inspection, not for resuming.
 
         Args:
             path: Path to save checkpoint.
@@ -529,7 +372,13 @@ class FSDPTrainer(Trainer):
                 - "FULL_STATE_DICT": Gather full model on rank 0 (recommended)
                 - "LOCAL_STATE_DICT": Save local shards on each rank
                 - "SHARDED_STATE_DICT": Save sharded checkpoint
+
+        Returns:
+            The written path on processes that wrote a file, else ``None``.
         """
+        if not isinstance(self.model, FSDP):
+            return super().save_checkpoint(path)
+
         state_dict_type_enum = getattr(StateDictType, state_dict_type)
         if state_dict_type == "FULL_STATE_DICT":
             state_dict_config = FullStateDictConfig(
@@ -548,27 +397,28 @@ class FSDPTrainer(Trainer):
         with FSDP.state_dict_type(self.model, state_dict_type_enum, state_dict_config):
             state_dict = self.model.state_dict()
 
-            is_full = state_dict_type == "FULL_STATE_DICT"
-            should_write = is_main_process() if is_full else True
+        is_full = state_dict_type == "FULL_STATE_DICT"
+        rng_states = all_gather_object(self._rng_state()) if is_full else None
+        written = None
 
-            if should_write:
-                checkpoint_path = Path(path)
-                if not is_full:
-                    checkpoint_path = checkpoint_path.with_name(
-                        f"{checkpoint_path.stem}.rank{get_rank()}{checkpoint_path.suffix}"
-                    )
-
-                checkpoint = {
-                    "model": state_dict,
-                    "optimizer": self.optimizer.state_dict(),
-                    "scheduler": (
-                        self.scheduler.state_dict() if self.scheduler else None
-                    ),
-                    "global_step": self.global_step,
-                    "epoch": self.current_epoch,
-                }
-                torch.save(checkpoint, checkpoint_path)
-                print(f"Checkpoint saved to {checkpoint_path}")
+        if is_full and is_main_process():
+            checkpoint = self._build_checkpoint(state_dict, None, rng_states)
+            written = write_checkpoint(checkpoint, path)
+        elif not is_full:
+            checkpoint_path = Path(path)
+            checkpoint_path = checkpoint_path.with_name(
+                f"{checkpoint_path.stem}.rank{get_rank()}{checkpoint_path.suffix}"
+            )
+            checkpoint = {
+                "model": state_dict,
+                "optimizer": self.optimizer.state_dict(),
+                "scheduler": (self.scheduler.state_dict() if self.scheduler else None),
+                "global_step": self.global_step,
+                "epoch": self.current_epoch,
+            }
+            torch.save(checkpoint, checkpoint_path)
+            written = checkpoint_path
 
         if is_distributed():
             barrier()
+        return written
