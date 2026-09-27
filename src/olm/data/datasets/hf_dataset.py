@@ -55,7 +55,8 @@ class HuggingFaceTextDataset(BaseTextDataset):
         skip_batches (int): Number of samples to skip before yielding.
         shuffle (bool): Whether to shuffle the dataset stream.
         seed (int): Shuffle seed.
-        shuffle_buffer_size (int): Streaming shuffle buffer size.
+        shuffle_buffer_size (int): Streaming shuffle buffer size. Not used when
+            ``streaming=False``, where the whole split is shuffled.
 
     Raises:
         ImportError: If the ``datasets`` package cannot be imported.
@@ -100,11 +101,14 @@ class HuggingFaceTextDataset(BaseTextDataset):
         )
 
         # Apply shuffling if requested
-        if self.shuffle:
+        if self.shuffle and self.streaming:
             # For streaming datasets, shuffle requires a buffer_size
             self.dataset = self.dataset.shuffle(
                 seed=self.seed, buffer_size=self.shuffle_buffer_size
             )
+        elif self.shuffle:
+            # An in-memory ``datasets.Dataset`` shuffles its whole index instead
+            self.dataset = self.dataset.shuffle(seed=self.seed)
 
     def _source_splits_across_workers(self) -> bool:
         """Whether ``datasets`` splits this dataset across DataLoader workers."""
@@ -131,7 +135,7 @@ class FineWebEduDataset(HuggingFaceTextDataset):
 
     Args:
         tokenizer: Tokenizer with an ``encode`` method.
-        split: Dataset split ('train' or 'validation')
+        split: Dataset split, such as ``"train"``.
         context_length: Sequence length for training (default: 1024)
         subset: Dataset subset to use (default: 'sample-10BT')
         streaming: Whether to use streaming mode (default: True)
