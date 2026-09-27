@@ -10,7 +10,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from olm.models import MistralSmall3_1_Model
+from olm.models import Gemma2Model, Gemma3Model, MistralSmall3_1_Model, Olmo3Model
 from olm.nn.activations import GeGLU
 from olm.nn.feedforward import GeGLUFFN
 
@@ -68,3 +68,77 @@ def test_mistral_small3_1_head_dim_defaults_to_embed_dim_over_heads():
     attn = model.blocks[1].stack[0].blocks[0].block.blocks[1]
 
     assert attn.head_dim == 8
+
+
+def _key_blocking_mask(seq_len):
+    """Boolean mask that hides key 0 from every query except query 0."""
+    mask = torch.ones(1, 1, seq_len, seq_len, dtype=torch.bool)
+    mask[..., 1:, 0] = False
+    return mask
+
+
+def _tiny_gemma2():
+    return Gemma2Model(128, 32, 64, 2, 4, 2, 8, 16, sliding_window=4)
+
+
+def _tiny_gemma3():
+    return Gemma3Model(128, 32, 64, 6, 4, 2, 8, max_seq_len=16, sliding_window=4)
+
+
+def _tiny_olmo3():
+    return Olmo3Model(128, 32, 64, 4, 4, 2, 8, max_seq_len=16, sliding_window=4)
+
+
+@pytest.mark.parametrize(
+    "build",
+    [_tiny_gemma2, _tiny_gemma3, _tiny_olmo3],
+    ids=["gemma2", "gemma3", "olmo3"],
+)
+def test_models_with_custom_blocks_forward_the_attention_mask(build):
+    torch.manual_seed(0)
+    model = build().eval()
+    tokens = torch.randint(0, 128, (1, 8))
+    all_true = torch.ones(1, 1, 8, 8, dtype=torch.bool)
+
+    with torch.no_grad():
+        plain = model(tokens)
+        with_all_true = model(tokens, mask=all_true)
+        with_blocking = model(tokens, mask=_key_blocking_mask(8))
+
+    # An all-True mask is a no-op on top of the causal (and window) mask...
+    torch.testing.assert_close(with_all_true, plain)
+    # ...while hiding key 0 changes every later position, and only those.
+    torch.testing.assert_close(with_blocking[:, 0], plain[:, 0])
+    assert not torch.allclose(with_blocking[:, 1:], plain[:, 1:])
+
+
+def test_gemma_feed_forwards_use_tanh_gelu():
+    gemma2_block = _tiny_gemma2().blocks[1].stack[0]
+    gemma3_block = _tiny_gemma3().transformer_blocks[0]
+
+    assert gemma2_block.mlp.act.approximate == "tanh"
+    assert gemma3_block.mlp.act.approximate == "tanh"
+
+
+def test_gemma3_query_pre_attn_scalar_sets_local_and_global_scale():
+    model = Gemma3Model(
+        128,
+        32,
+        64,
+        6,
+        4,
+        2,
+        8,
+        max_seq_len=16,
+        sliding_window=4,
+        query_pre_attn_scalar=168.0,
+    )
+    local_attn = model.transformer_blocks[0].self_attn
+    global_attn = model.transformer_blocks[5].self_attn
+
+    assert local_attn.scale == pytest.approx(168.0**-0.5)
+    assert global_attn.scale == pytest.approx(168.0**-0.5)
+    # Without it, both fall back to head_dim ** -0.5.
+    default = _tiny_gemma3()
+    assert default.transformer_blocks[0].self_attn.scale == pytest.approx(8**-0.5)
+    assert default.transformer_blocks[5].self_attn.scale == pytest.approx(8**-0.5)
