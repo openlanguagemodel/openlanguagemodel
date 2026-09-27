@@ -413,6 +413,15 @@ def test_smebu_momentum_is_not_in_state_dict():
         )
 
 
+def test_fp32_gate_router_runs_on_meta_device():
+    with torch.device("meta"):
+        router = MoERouter(embed_dim=8, num_experts=4, top_k=2, fp32_gate=True)
+        indices, _, logits = router(torch.randn(2, 3, 8))
+
+    assert indices.shape == (2, 3, 2)
+    assert logits.dtype == torch.float32
+
+
 # --- LayerNorm ---
 
 

@@ -1,3 +1,4 @@
+import contextlib
 from dataclasses import dataclass
 from typing import Optional, Literal
 import torch
@@ -5,6 +6,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from olm.nn.torch_nn_wrappers import Linear
+
+
+def _autocast_disabled(device_type: str):
+    """Disable autocast on ``device_type``; meta tensors have no autocast."""
+    if device_type == "meta":
+        return contextlib.nullcontext()
+    return torch.autocast(device_type=device_type, enabled=False)
 
 
 @dataclass
@@ -137,7 +145,7 @@ class MoERouter(nn.Module):
         """
         if self.fp32_gate:
             bias = self.gate.bias
-            with torch.autocast(device_type=x.device.type, enabled=False):
+            with _autocast_disabled(x.device.type):
                 logits = F.linear(
                     x.float(),
                     self.gate.weight.float(),
