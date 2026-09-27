@@ -21,9 +21,9 @@ print(tok.decode(ids))                            # Hello!
 print(tok.vocab_size, tok.eos_token_id)           # 50257 50256
 ```
 
-- **`encode(text)` returns a 1-D `torch.long` tensor** of shape `[num_tokens]`, with no batch dimension. Call `.unsqueeze(0)` before passing it to a model. Pass `return_tensors=None` to get a plain `list[int]` instead. Long text is never truncated.
+- **`encode(text)` returns a 1-D `torch.long` tensor** of shape `[num_tokens]`, with no batch dimension. Call `.unsqueeze(0)` before passing it to a model. Pass `return_tensors=None` to get a plain `list[int]` instead. Long text is never truncated. The first time a tokenizer encodes a text longer than its `model_max_length` (1024 for GPT-2), `transformers` logs `Token indices sequence length is longer than the specified maximum sequence length`. The datasets cut tokens into `context_length` windows, so the warning is expected and harmless there.
 - `add_special_tokens=True` (the default) lets the tokenizer add its own special tokens, such as a leading BOS token on tokenizers that use one. GPT-2's adds none. The datasets always pass `False`.
-- `decode(ids)` takes a 1-D tensor, a `[1, num_tokens]` tensor, a list, or a single id. It drops special tokens such as EOS unless you pass `skip_special_tokens=False`, so stop generation by comparing ids with `tok.eos_token_id`, not by searching the decoded text.
+- `decode(ids)` takes one sequence: a 1-D tensor, a `[1, num_tokens]` tensor, a list, or a single id. It raises `ValueError` on a tensor holding several sequences, so decode a batch row by row. It drops special tokens such as EOS unless you pass `skip_special_tokens=False`, so stop generation by comparing ids with `tok.eos_token_id`, not by searching the decoded text.
 - `vocab_size` is `len(tok.tokenizer)`. It counts added special tokens, so it is the right size for the embedding and output layers.
 - `tok.tokenizer` is the wrapped `transformers` tokenizer, for everything else, such as batch encoding or chat templates.
 
@@ -66,7 +66,9 @@ dataset = FineWebEduDataset(tok, subset="sample-10BT", context_length=2048)
 ```
 
 > [!TIP]
-> Set `shuffle=True` to randomize ordering. For local files OLM shuffles the file order; for streaming datasets it shuffles a rolling buffer (`shuffle_buffer_size`, default 10,000). With multiple workers or GPUs, each worker is assigned a disjoint slice of the stream, so no example is seen twice. A streaming Hugging Face dataset is split across `DataLoader` workers by source file, so workers beyond its number of shards (`dataset.dataset.n_shards`, usually its number of files) get no data.
+> Set `shuffle=True` to randomize ordering. For local files OLM shuffles the file order; for streaming datasets it shuffles a rolling buffer (`shuffle_buffer_size`, default 10,000). With multiple workers or GPUs, each worker is assigned a disjoint slice of the stream, so no example is seen twice.
+>
+> A streaming Hugging Face dataset is split across `DataLoader` workers by shard, and workers beyond `dataset.dataset.n_shards` get no data. Without shuffling, that is usually the number of files. With `shuffle=True`, `datasets` 5.0 mixes up to 10 groups of files into its shuffle buffer and reports about a tenth as many shards, and just one for fewer than 20 files. Check `n_shards` before choosing `num_workers`.
 
 ### Document boundaries
 

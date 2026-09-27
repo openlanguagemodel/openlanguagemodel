@@ -39,7 +39,9 @@ class HuggingFaceTextDataset(BaseTextDataset):
         its own subset of the source files, so this class leaves the worker
         split to ``datasets`` and only splits across distributed ranks itself.
         Workers beyond the number of source shards (``self.dataset.n_shards``)
-        get no files and yield nothing.
+        get no files and yield nothing. A shuffled stream reports fewer shards
+        than it has files, because ``datasets`` mixes groups of files into its
+        shuffle buffer.
 
     Iteration:
         Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
