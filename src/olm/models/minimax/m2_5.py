@@ -14,8 +14,9 @@ class MiniMaxM2_5_Block(Block):
     """
     Transformer block for MiniMax M2.5.
 
-    GQA with per-layer QK-Norm, partial RoPE (rotary_dim=64 of 128),
-    and a 256-expert MoE with sigmoid top-8 routing plus router bias.
+    GQA with per-head QK-Norm, partial RoPE (rotary_dim=64 of 128),
+    and a 256-expert MoE with sigmoid top-8 routing plus router bias
+    (see ``MiniMaxM2_5_Model`` for how both differ from the release).
 
     Structure:
         x = x + GQA(RMSNorm(x))
@@ -97,13 +98,21 @@ class MiniMaxM2_5_Model(Block):
     """
     MiniMax M2.5 -- 230B sparse MoE with 10B active parameters.
 
-    All 62 layers use full GQA with per-layer QK-Norm.  Partial RoPE
+    All 62 layers use full GQA with QK-Norm.  Partial RoPE
     (rotary_dim=64 of head_dim=128) with theta=5M.  Three MTP heads
     for speculative decoding support.
 
     Structure:
         Embedding -> [MiniMaxM2_5_Block] x 62 -> RMSNorm -> OutputHead
         + MultiTokenPredictionHead (3 heads)
+
+    Implementation note:
+        The released attention normalizes the whole query and key
+        projections (``qk_norm_type: "per_layer"``), which is approximated
+        here by per-head QK-norm. The released router adds a per-expert
+        correction bias (``e_score_correction_bias``) to the sigmoid scores
+        only when it chooses experts; here the bias sits on the gate logits
+        (``use_router_bias``), so it also shifts the routing weights.
 
     Forward:
         Token IDs ``[batch, seq_len]`` -> logits ``[batch, seq_len, vocab_size]``.

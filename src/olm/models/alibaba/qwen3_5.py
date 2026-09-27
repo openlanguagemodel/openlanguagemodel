@@ -144,6 +144,11 @@ class Qwen3_5_Model(Block):
         Embedding -> [DeltaNet | GatedAttn] x 60 -> RMSNorm -> OutputHead
         + MultiTokenPredictionHead (1 head)
 
+    Implementation note:
+        The released MoE block scales the shared expert's output by a
+        sigmoid gate (``shared_expert_gate``, a ``hidden_size -> 1``
+        linear); here the shared expert is added ungated.
+
     Forward:
         Token IDs ``[batch, seq_len]`` -> logits ``[batch, seq_len, vocab_size]``.
     """

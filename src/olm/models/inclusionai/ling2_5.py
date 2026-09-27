@@ -213,6 +213,9 @@ class Ling2_5_Model(Block):
         the gated output, none of which is modeled here. The released
         router also limits each token to the best 4 of 8 expert groups
         (``topk_group``/``n_group``); this router picks from all experts.
+        Its ``expert_bias`` matches the released one, but its gate also has
+        a learnable logit bias (``use_router_bias``) that the released gate
+        does not.
 
     Structure:
         Embedding -> [Lightning x 7, MLA] x 10 -> RMSNorm -> OutputHead

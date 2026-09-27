@@ -120,6 +120,11 @@ class Qwen3NextModel(Block):
     Qwen3-Next does not tie input/output embeddings; the named preset passes
     ``tie_weights=False``.
 
+    Implementation note:
+        The released MoE block scales the shared expert's output by a
+        sigmoid gate (``shared_expert_gate``, a ``hidden_size -> 1``
+        linear); here the shared expert is added ungated.
+
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
         ``[batch, seq_len, vocab_size]``.

@@ -122,6 +122,12 @@ class Sarvam30B_Model(Block):
     remaining 18 use 128-expert sigmoid-routed MoE with top-6, one
     shared expert, router bias, and 2.5x routed scaling.
 
+    Implementation note:
+        The released router adds a per-expert bias (``expert_bias``) to the
+        sigmoid scores only when it chooses experts; here the bias sits on
+        the gate logits (``use_router_bias``), so it also shifts the
+        routing weights.
+
     Structure:
         Embedding -> [DenseBlock, MoEBlock x 18] -> RMSNorm -> OutputHead
 
@@ -325,7 +331,11 @@ class Sarvam105B_Model(Block):
     Implementation note:
         The released config extends RoPE to 131K context with DeepSeek-style
         YaRN (factor 40 over a 4,096-token original context); this
-        implementation uses plain RoPE at ``rope_theta``.
+        implementation uses plain RoPE at ``rope_theta``. The released
+        router adds a per-expert correction bias
+        (``e_score_correction_bias``) to the sigmoid scores only when it
+        chooses experts; here the bias sits on the gate logits
+        (``use_router_bias``), so it also shifts the routing weights.
 
     Structure:
         Embedding -> [DenseBlock, MoEBlock x 31] -> RMSNorm -> OutputHead

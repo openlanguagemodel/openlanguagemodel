@@ -127,15 +127,22 @@ class MiniMaxM2Model(Block):
     Structure:
         Embedding -> [MiniMaxM2Block] x N -> RMSNorm -> OutputHead.
 
+    MiniMax-M2 does **not** tie input/output embeddings; the named
+    ``MiniMaxM2`` preset passes ``tie_weights=False``.
+
+    Implementation note:
+        The released attention normalizes the whole query and key
+        projections (``qk_norm_type: "per_layer"``), which is approximated
+        here by per-head QK-norm. The released router also adds a
+        per-expert correction bias (``e_score_correction_bias``) to the
+        sigmoid scores when it chooses experts; this router chooses on the
+        scores alone. The released config declares three
+        Multi-Token-Prediction modules (``num_mtp_modules``); they are
+        omitted here.
+
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits shaped
         ``[batch, seq_len, vocab_size]``.
-
-    Notes:
-        - MiniMax-M2 does **not** tie input/output embeddings; the named
-          ``MiniMaxM2`` preset passes ``tie_weights=False``.
-        - The Multi-Token-Prediction head present in the reference checkpoint is
-          a training/inference feature and is intentionally omitted here.
 
     Args:
         vocab_size (int): Vocabulary size.

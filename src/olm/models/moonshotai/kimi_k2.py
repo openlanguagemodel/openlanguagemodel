@@ -141,7 +141,10 @@ class KimiK2Model(Block):
         checkpoints extend RoPE with YaRN (factor 32 over a 4,096-token
         original context); it is approximated with plain RoPE at
         ``rope_theta``, the same simplification used for the other MLA
-        models in this repo.
+        models in this repo. The router's ``expert_bias`` plays the role of
+        the released ``e_score_correction_bias``, but its gate also has a
+        learnable logit bias (``use_router_bias``) that the released gate
+        does not.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits

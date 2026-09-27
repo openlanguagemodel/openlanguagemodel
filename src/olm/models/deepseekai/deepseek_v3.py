@@ -143,7 +143,10 @@ class DeepSeekV3Model(Block):
         simplification used for the other MLA models in this repo (e.g.
         Mistral Large 3). The released router restricts each token to the
         best ``topk_group=4`` of ``n_group=8`` expert groups before its
-        top-8 choice; this router picks the top 8 of all experts.
+        top-8 choice; this router picks the top 8 of all experts. Its
+        ``expert_bias`` plays the role of the released
+        ``e_score_correction_bias``, but its gate also has a learnable
+        logit bias (``use_router_bias``) that the released gate does not.
         Multi-Token Prediction is exposed as an optional auxiliary head via
         ``forward_with_mtp`` (training-time only); the default ``forward``
         does not use it. That head is the library's lightweight

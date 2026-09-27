@@ -223,6 +223,9 @@ class Step3_5_Flash_Model(Block):
         The released checkpoint applies Llama-3-style RoPE scaling (factor 2)
         on the full-attention layers only and clamps the SwiGLU activations of
         the last two MoE layers (``swiglu_limits``); neither is modeled.
+        The released router adds ``router_bias`` to the sigmoid scores only
+        when it chooses experts; here the bias sits on the gate logits
+        (``use_router_bias``), so it also shifts the routing weights.
         Multi-token prediction uses the lightweight
         ``MultiTokenPredictionHead``, whereas the released MTP modules
         (stored as ``model.layers.45``--``47``) are full decoder layers, so
