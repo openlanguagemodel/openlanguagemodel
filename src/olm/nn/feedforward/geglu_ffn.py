@@ -18,6 +18,10 @@ class GeGLUFFN(FeedForwardBase):
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         bias (bool, optional): Whether to usage bias in linear layers. Defaults to True.
         ff_multiplier (float, optional): Expansion factor if hidden_dim is None. Defaults to 4.0.
+        approximate (str, optional): GELU approximation used by the gate:
+            ``"none"`` (exact erf GELU) or ``"tanh"`` (Hugging Face's
+            ``gelu_pytorch_tanh``, used by Gemma 2 and Gemma 3). Defaults to
+            ``"none"``.
     """
 
     def __init__(
@@ -26,7 +30,8 @@ class GeGLUFFN(FeedForwardBase):
         hidden_dim: int = None,
         dropout: float = 0.0,
         bias: bool = True,
-        ff_multiplier: float = 4.0, 
+        ff_multiplier: float = 4.0,
+        approximate: str = "none",
     ):
         super().__init__(embed_dim)
 
@@ -36,18 +41,14 @@ class GeGLUFFN(FeedForwardBase):
         self.hidden_dim = hidden_dim
 
         self.up_proj = Linear(
-            embed_dim,
-            2 * hidden_dim,
-            bias=bias
-        ) # torch.nn.Linear can also be used
+            embed_dim, 2 * hidden_dim, bias=bias
+        )  # torch.nn.Linear can also be used
 
-        self.act = GeGLU()
+        self.act = GeGLU(approximate=approximate)
 
         self.down_proj = Linear(
-            hidden_dim,
-            embed_dim,
-            bias=bias
-        ) # torch.nn.Linear can also be used
+            hidden_dim, embed_dim, bias=bias
+        )  # torch.nn.Linear can also be used
 
         self.dropout = nn.Dropout(dropout)
 
