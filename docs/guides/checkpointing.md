@@ -109,7 +109,10 @@ A resumed run is the same run, step for step, when:
 
 - the data, batch size, `grad_accum_steps`, number of GPUs and `num_workers` are unchanged (the Trainer warns when gradient accumulation or the number of processes differs);
 - the dataset yields the same order when its random state is the same. Shuffled map-style datasets, iterable datasets that read in a fixed order, and OLM's text datasets with a fixed `seed` all do;
-- the checkpoint was saved at the end of an optimizer step, which is where `CheckpointCallback` saves.
+- the checkpoint was saved at the end of an optimizer step, which is where `CheckpointCallback` saves;
+- no callback draws random numbers in `on_epoch_begin` or `on_epoch_end` (the built-in callbacks draw none). A checkpoint from the last step of an epoch restores the random state of that step, so such draws would not be repeated.
+
+Validation does not affect exactness: `ValidationCallback` restores every random generator after each validation, whatever its `DataLoader` settings.
 
 On CPU that gives bit-identical losses and weights. On GPUs, some kernels are not deterministic, so a resumed run matches the uninterrupted one only as closely as two uninterrupted runs match each other; see [Reproducibility](reproducibility.md).
 

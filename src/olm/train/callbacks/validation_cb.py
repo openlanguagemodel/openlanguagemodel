@@ -6,6 +6,7 @@ import torch
 from typing import Any, Dict, Optional
 
 from olm.core.dist import all_reduce, is_distributed, is_main_process
+from olm.core.seed import get_rng_state, set_rng_state
 from olm.train.output import as_lm_output
 from olm.train.trainer import TrainerCallback
 
@@ -24,6 +25,12 @@ class ValidationCallback(TrainerCallback):
     step it ran at) and ``is_best`` in ``trainer.training_state``. It runs
     before other callbacks (``order = -10``), so they see the new value in the
     same step.
+
+    Validation leaves the training run's random generators as it found them,
+    so adding it, or changing ``eval_every``, does not change the training
+    trajectory, and a resumed run stays exact. Under DDP and FSDP pass the
+    callback on every rank: the loss is averaged with a collective that every
+    rank must join.
 
     Args:
         val_dataloader: Validation dataloader.
@@ -51,7 +58,16 @@ class ValidationCallback(TrainerCallback):
     def on_step_end(self, trainer, step: int, loss: float) -> None:
         """Run validation after each optimization step if needed."""
         if step % self.eval_every == 0:
-            val_loss = self._validate(trainer)
+            # Creating a DataLoader iterator draws a seed from the global torch
+            # generator, and a loader with persistent workers draws it only for
+            # its first iterator in a process. Validating on a copy of the
+            # random state keeps those draws out of the training run's stream,
+            # which a resumed process would otherwise shift differently.
+            rng_state = get_rng_state()
+            try:
+                val_loss = self._validate(trainer)
+            finally:
+                set_rng_state(rng_state)
             self.val_losses.append((step, val_loss))
 
             is_best = val_loss < self.best_val_loss

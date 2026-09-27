@@ -105,7 +105,7 @@ def _loader(samples=18, num_workers=0, iterable=False, batch_size=2, **kwargs):
     )
 
 
-def _resumable_run(checkpoint_dir, resume_from=None, **loader_kwargs):
+def _resumable_run(checkpoint_dir, resume_from=None, callbacks=(), **loader_kwargs):
     """Three epochs of 9 batches with dropout, shuffling and grad accumulation."""
     seed_everything(0)
     trainer = Trainer(
@@ -119,7 +119,8 @@ def _resumable_run(checkpoint_dir, resume_from=None, **loader_kwargs):
         learning_rate=1e-2,
         total_steps=15,
         callbacks=[
-            CheckpointCallback(str(checkpoint_dir), save_every=1, keep_last_n=20)
+            CheckpointCallback(str(checkpoint_dir), save_every=1, keep_last_n=20),
+            *callbacks,
         ],
         resume_from=resume_from,
     )
@@ -164,6 +165,35 @@ def test_resumed_run_reproduces_uninterrupted_run(tmp_path, loader_kwargs):
             resumed.model.parameters(), reference.model.parameters()
         ):
             assert torch.equal(resumed_param, reference_param)
+
+
+def test_validation_leaves_the_training_random_state_alone(tmp_path):
+    # A validation loader with persistent workers draws a worker seed from the
+    # global generator only for its first iterator in a process. Unless
+    # validation restores the random state, a resumed process draws once more
+    # than the uninterrupted one, which shifts dropout and shuffling.
+    def run(name, resume_from=None):
+        val_input_ids, val_labels = _pairs(4, seed=9)
+        validation = ValidationCallback(
+            DataLoader(
+                TensorDataset(val_input_ids, val_labels),
+                batch_size=2,
+                num_workers=2,
+                pin_memory=False,
+            ),
+            eval_every=2,
+        )
+        return _resumable_run(
+            tmp_path / name, resume_from=resume_from, callbacks=[validation]
+        )
+
+    reference = run("full")
+    for step in (3, 7):
+        resumed = run(f"resumed_{step}", tmp_path / "full" / f"step_{step}.pt")
+        assert resumed.losses == reference.losses
+
+    # Validating does not change the training run at all.
+    assert _resumable_run(tmp_path / "unvalidated").losses == reference.losses
 
 
 def test_resume_restores_the_lazily_created_default_scheduler(tmp_path):

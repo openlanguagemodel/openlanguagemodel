@@ -64,6 +64,8 @@ loader = DataLoader(
 
 `seed_worker` is optional. It is the recipe from PyTorch's reproducibility notes: it reseeds each worker's Python and NumPy generators from the worker's torch seed, so all three follow from one number. OLM's `DataLoader` passes both arguments through to PyTorch's, and checkpoints save and restore the loader's generator.
 
+The validation loader draws from the global generator too, but `ValidationCallback` restores every generator's state after each validation, so validating, or changing `eval_every`, does not change the training run's random numbers.
+
 ## Deterministic mode
 
 Seeding fixes the random numbers; it does not make every GPU kernel produce the same bits every time. Some CUDA kernels accumulate floating-point sums in whatever order threads finish, so two runs from the same seed can drift apart by rounding errors that grow over training. `deterministic=True` asks PyTorch for deterministic kernels:
