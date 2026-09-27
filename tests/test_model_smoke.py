@@ -878,6 +878,7 @@ def test_mistral_small3_1_24b_reference_preset():
     assert kwargs["num_layers"] == 40
     assert kwargs["num_heads"] == 32
     assert kwargs["num_kv_heads"] == 8
+    assert kwargs["head_dim"] == 128
     assert kwargs["rope_theta"] == 1000000000.0
 
 
