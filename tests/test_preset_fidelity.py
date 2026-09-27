@@ -14,6 +14,7 @@ import olm.models.minimax as minimax_package
 from olm.models import (
     Gemma2Model,
     Gemma3Model,
+    Ling2_5_Model,
     MiniMaxM2_5_Model,
     MistralSmall3_1_Model,
     Olmo3Model,
@@ -24,6 +25,7 @@ from olm.nn.embeddings.positional.rope import (
     RotaryPositionalEmbedding,
 )
 from olm.nn.activations import GeGLU
+from olm.nn.attention import LightningAttention, MultiHeadLatentAttention
 from olm.nn.feedforward import GeGLUFFN
 
 
@@ -261,3 +263,38 @@ def test_step3_5_tiny_model_runs_with_mtp():
     # Layers 0-2 are dense; the MoE layers record their router logits.
     assert model.transformer_blocks[2].last_router_logits is None
     assert model.transformer_blocks[3].last_router_logits is not None
+
+
+def test_ling2_5_places_mla_last_in_each_group_and_on_the_tail():
+    model = Ling2_5_Model(
+        vocab_size=128,
+        embed_dim=32,
+        intermediate_size=64,
+        moe_intermediate_size=16,
+        num_layers=6,
+        num_heads=4,
+        head_dim=8,
+        kv_lora_rank=8,
+        q_lora_rank=8,
+        qk_nope_head_dim=4,
+        qk_rope_head_dim=4,
+        v_head_dim=8,
+        max_seq_len=16,
+        num_experts=4,
+        num_experts_per_tok=2,
+        layer_group_size=4,
+        first_k_dense=1,
+    )
+    attn_types = [type(block.self_attn) for block in model.transformer_blocks]
+
+    # BailingMoeV2_5DecoderLayer: MLA iff (i + 1) % group == 0, or i is past
+    # the last full group. The released 80-layer model has MLA at 7, 15, ... 79.
+    assert attn_types == [
+        LightningAttention,
+        LightningAttention,
+        LightningAttention,
+        MultiHeadLatentAttention,
+        MultiHeadLatentAttention,
+        MultiHeadLatentAttention,
+    ]
+    assert model(torch.randint(0, 128, (1, 8))).shape == (1, 8, 128)

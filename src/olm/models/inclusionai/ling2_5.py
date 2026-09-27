@@ -195,17 +195,27 @@ class Ling2_5_Model(Block):
     """
     Ling 2.5 1T -- trillion-parameter hybrid with Lightning Attention + MLA.
 
-    80 layers arranged in groups of 8: each group has 1 MLA layer + 7
-    Lightning Attention layers (7:1 ratio).  The first 4 layers use
-    dense SwiGLU FFN; all others use 256-expert sigmoid-routed MoE
-    (noaux_tc, top-8, routed_scaling=2.5).
+    80 layers arranged in groups of 8: each group has 7 Lightning
+    Attention layers followed by 1 MLA layer (7:1 ratio), so layers 7,
+    15, ..., 79 are MLA; layers past the last full group are MLA too, as
+    in the reference implementation.  The first 4 layers use dense
+    SwiGLU FFN; all others use 256-expert sigmoid-routed MoE (noaux_tc,
+    top-8, routed_scaling=2.5).
 
     MLA uses KV compression (rank=512) and Q compression (rank=1536)
     with 64 heads, split head dim (128 nope + 64 rope).  Lightning
     Attention uses O(N) linear attention with 64 heads.
 
+    Implementation note:
+        The Lightning layers use the library's ``LightningAttention``. The
+        released layers also apply a per-head decay (Lightning Attention-2
+        slopes), partial RoPE on half of each head, and a group-RMSNorm on
+        the gated output, none of which is modeled here. The released
+        router also limits each token to the best 4 of 8 expert groups
+        (``topk_group``/``n_group``); this router picks from all experts.
+
     Structure:
-        Embedding -> [MLA | Lightning] x 80 -> RMSNorm -> OutputHead
+        Embedding -> [Lightning x 7, MLA] x 10 -> RMSNorm -> OutputHead
 
     Forward:
         Token IDs ``[batch, seq_len]`` -> logits ``[batch, seq_len, vocab_size]``.
@@ -238,9 +248,11 @@ class Ling2_5_Model(Block):
         embedding = Embedding(vocab_size, embed_dim)
 
         layers = nn.ModuleList()
+        last_full_group_end = num_layers // layer_group_size * layer_group_size
         for i in range(num_layers):
-            is_mla_layer = (i % layer_group_size == 0)
-            is_dense = (i < first_k_dense)
+            # The last layer of every group of ``layer_group_size`` is MLA.
+            is_mla_layer = (i + 1) % layer_group_size == 0 or i >= last_full_group_end
+            is_dense = i < first_k_dense
 
             if is_mla_layer:
                 if is_dense:
@@ -290,7 +302,29 @@ class Ling2_5_Model(Block):
 
 
 class Ling2_5_1T(Ling2_5_Model):
-    """Ling 2.5 1T with default config (63B active of 1T total)."""
+    """Ling 2.5 1T (1T total, 63B active)."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            vocab_size=157184,
+            embed_dim=8192,
+            intermediate_size=18432,
+            moe_intermediate_size=2048,
+            num_layers=80,
+            num_heads=64,
+            head_dim=128,
+            kv_lora_rank=512,
+            q_lora_rank=1536,
+            qk_nope_head_dim=128,
+            qk_rope_head_dim=64,
+            v_head_dim=128,
+            max_seq_len=131072,
+            num_experts=256,
+            num_experts_per_tok=8,
+            layer_group_size=8,
+            first_k_dense=4,
+            rope_theta=6000000.0,
+            rms_norm_eps=1e-6,
+            routed_scaling_factor=2.5,
+            tie_weights=False,
+        )
