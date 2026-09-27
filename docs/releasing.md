@@ -4,20 +4,29 @@ This checklist is for maintainers preparing a public GitHub and PyPI release.
 
 ## Before Publishing
 
-Confirm the version is aligned:
+Confirm the version is aligned. `olm.__version__` is the single source of truth —
+`pyproject.toml` declares `dynamic = ["version"]` and reads that attribute — so this
+checks the built distribution metadata against the package rather than scraping
+`pyproject.toml` for a literal it no longer contains:
 
 ```bash
+rm -rf dist build
+python -m build --sdist --wheel .
+
 python - <<'PY'
-import pathlib, re
+import pathlib, re, tarfile
 
-pyproject = pathlib.Path("pyproject.toml").read_text()
 init = pathlib.Path("src/olm/__init__.py").read_text()
-
-project_version = re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
 package_version = re.search(r'__version__ = "([^"]+)"', init).group(1)
 
-assert project_version == package_version
-print(project_version)
+sdist = sorted(pathlib.Path("dist").glob("*.tar.gz"))[-1]
+with tarfile.open(sdist) as tf:
+    name = next(n for n in tf.getnames() if n.endswith("PKG-INFO"))
+    meta = tf.extractfile(name).read().decode()
+built_version = re.search(r"^Version: (.+)$", meta, re.M).group(1).strip()
+
+assert built_version == package_version, (built_version, package_version)
+print(package_version)
 PY
 ```
 

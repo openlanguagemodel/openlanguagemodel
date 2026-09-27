@@ -33,12 +33,17 @@ pip install -e ".[docs]"
 
 OLM v2.2 requires:
 
-- `torch>=2.1.0`
+- `torch>=2.3.0`
 - `transformers>=4.57.1`
-- `datasets>=2.0.0`
-- `numpy>=1.20.0`
-- `tqdm>=4.60.0`
+- `datasets>=2.16.0`
+- `numpy>=1.21.2`
+- `tqdm>=4.62.1`
 - `pyyaml>=6.0`
+
+CI installs the lowest versions a resolver picks for these floors (the
+`minimum-versions` job); transitive requirements can still lift a package such
+as numpy slightly above its floor. `pyproject.toml` is the authoritative copy;
+if the two ever disagree, trust it over this page.
 
 ## Verify The Install
 

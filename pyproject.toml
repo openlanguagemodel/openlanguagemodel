@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openlanguagemodel"
-version = "2.2.1"
 description = "OpenLanguageModel (OLM): a modular PyTorch LLM library for building, training, teaching, and researching transformer language models."
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -28,6 +27,8 @@ keywords = [
     "fineweb-edu",
     "education",
 ]
+dynamic = ["version"]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -40,12 +41,19 @@ classifiers = [
 ]
 
 dependencies = [
-    "torch>=2.1.0",
-    "numpy>=1.20.0",
-    "tqdm>=4.60.0",
+    # torch.amp.GradScaler (used in olm.train.trainer) was added in torch 2.3.0.
+    "torch>=2.3.0",
+    # numpy 1.20.x ships no cp310 wheels; 1.21.2 is the first release that
+    # supports this project's minimum Python (3.10).
+    "numpy>=1.21.2",
+    "tqdm>=4.62.1",
     "pyyaml>=6.0",
     "transformers>=4.57.1",
-    "datasets>=2.0.0",
+    # datasets < 2.16 imports `HfFolder` from huggingface_hub, which hub 1.0
+    # removed, and those releases declare no upper bound on hub -- so a resolver
+    # picks a modern hub and the import dies. (< 2.15 additionally uses the
+    # removed pyarrow.PyExtensionType.)
+    "datasets>=2.16.0",
 ]
 
 [project.optional-dependencies]
@@ -77,6 +85,9 @@ Issues = "https://github.com/openlanguagemodel/openlanguagemodel/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+version = {attr = "olm.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

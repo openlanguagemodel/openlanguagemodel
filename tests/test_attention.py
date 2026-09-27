@@ -300,7 +300,13 @@ def test_sparse_attention_explicit_flex_backend_raises_clear_error_on_cpu(
     attn = attn_factory(backend="flex")
     x = torch.randn(1, 8, 16)
 
-    with pytest.raises(RuntimeError, match="only supported on CUDA"):
+    # The wording depends on the torch version: when FlexAttention is available
+    # (torch >= 2.5) the CPU backward limitation is reported, and when it is not
+    # the unavailability is reported instead. Either is the clear, actionable
+    # error this test exists to pin down.
+    with pytest.raises(
+        RuntimeError, match=r"only supported on CUDA|requires PyTorch >= 2\.5"
+    ):
         attn(x)
 
 
