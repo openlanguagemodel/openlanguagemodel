@@ -25,6 +25,7 @@ import torch
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from olm.core import seed_everything
 from olm.models.openai import GPT2
 from olm.data.datasets.fineweb_edu import FineWebEduDataset
 from olm.train.optim import AdamW
@@ -54,21 +55,6 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
     Path("checkpoints").mkdir(exist_ok=True)
     Path("results").mkdir(exist_ok=True)
 
-    # Calculate skip_batches if resuming
-    skip_batches = 0
-    resume_step = 0
-    if resume_path:
-        # Load checkpoint to get the step number
-        checkpoint = torch.load(resume_path, map_location="cpu")
-        resume_step = checkpoint.get("step", 0)
-        # Each step processes batch_size samples (gradient accumulation is internal to training loop)
-        train_config = config["training"]
-        skip_batches = resume_step * train_config["batch_size"]
-        del checkpoint  # Free memory
-        print(
-            f"Will skip {skip_batches} batches (dataset samples) to resume from step {resume_step}"
-        )
-
     # Model
     print("Initializing GPT-2 model...")
     model = GPT2().to(device)
@@ -86,7 +72,6 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         subset=data_config["subset"],
         streaming=True,
         cache_dir=data_config.get("cache_dir"),
-        skip_batches=skip_batches,
     )
 
     # Note: FineWeb Edu sample-10BT only has 'train' split (no validation split)
@@ -178,8 +163,6 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         ThroughputCallback(
             log_every=config["logging"]["log_every"],
             context_length=data_config["context_length"],
-            batch_size=train_config["batch_size"]
-            * train_config["gradient_accumulation_steps"],
         ),
     ]
 
@@ -188,6 +171,9 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
     if config.get("grad_clip", {}).get("enabled", False):
         grad_clip_norm = config["grad_clip"]["max_norm"]
 
+    # With resume_from, the Trainer restores the model, optimizer, scheduler,
+    # AMP scaler, step counters and random state, and its next train() call
+    # skips the batches the checkpoint had already used.
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
@@ -199,45 +185,8 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
         callbacks=callbacks,
         scheduler=scheduler,
         grad_clip_norm=grad_clip_norm,
+        resume_from=resume_path,
     )
-
-    # Resume from checkpoint if provided
-    if resume_path:
-        print(f"Loading checkpoint from {resume_path}")
-        checkpoint = torch.load(resume_path, map_location=device)
-        model.load_state_dict(checkpoint["model_state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-        # Load scheduler state and sync to resumed step
-        if "scheduler_state_dict" in checkpoint:
-            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-            print(f"Loaded scheduler state from checkpoint")
-        else:
-            # If no scheduler state saved, manually sync schedulers
-            print(f"No scheduler state in checkpoint, syncing manually...")
-            resumed_step = checkpoint.get("step", 0)
-            scheduler.current_step = resumed_step
-            # Fast-forward individual schedulers to correct position
-            for _ in range(resumed_step):
-                if _ < sched_config["warmup_steps"]:
-                    warmup_scheduler.step()
-                else:
-                    cosine_scheduler.step()
-            print(f"Synced schedulers to step {resumed_step}")
-
-        trainer.global_step = checkpoint.get("step", 0)
-
-        # Restore losses if available
-        if "losses" in checkpoint:
-            trainer.losses = checkpoint["losses"]
-            print(f"Restored {len(trainer.losses)} loss values from checkpoint")
-
-        print(f"Resumed from step {trainer.global_step}")
-
-        # Clear checkpoint from memory and free GPU memory
-        del checkpoint
-        torch.cuda.empty_cache()
-        print("Cleared CUDA cache after loading checkpoint")
 
     return trainer, config
 
@@ -256,8 +205,8 @@ def main():
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    # Set random seed
-    torch.manual_seed(config.get("seed", 42))
+    # Seed Python, NumPy and torch before the model is built
+    seed_everything(config.get("seed", 42))
 
     # Setup training
     print("=" * 80, flush=True)
