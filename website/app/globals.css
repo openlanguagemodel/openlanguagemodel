@@ -1385,7 +1385,7 @@ code.inline {
     width: 9px;
     height: 9px;
     border-radius: 50%;
-    background: #8f8f89;
+    background: #777771;
     margin-left: 0.6rem;
 }
 
@@ -1429,7 +1429,7 @@ code.inline {
 .bench-chart .point .hit { fill: transparent; }
 
 .bench-chart .point .dot {
-    fill: #8f8f89;
+    fill: #777771;
     stroke: var(--bg-color);
     stroke-width: 2;
     transition: stroke 0.2s;

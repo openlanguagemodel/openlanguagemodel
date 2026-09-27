@@ -16,6 +16,7 @@ import {
   formatUsd,
   gpuLabel,
   modelLabel,
+  noResultReason,
   providerById,
   selectedBatch,
   usdPerBillionTokens,
@@ -25,11 +26,14 @@ const HEADLINE_MODELS = ["150m", "500m"];
 const HEADLINE_CONTEXT = 2048;
 const BENCHMARK_TREE = `${SITE.repo}/tree/main/benchmarks/throughput`;
 const CATALOG_URL = `${SITE.repo}/blob/main/benchmarks/throughput/data/benchmark_catalog.csv`;
+const GPU_NAMES = DATA.gpus.map((gpu) => gpu.name);
 
 export const metadata: Metadata = pageMetadata({
   title: "GPU Benchmarks",
   description:
-    "Measured OLM training throughput, MFU, peak memory and cost per billion tokens on RTX 4090, RTX 5090, A100, RTX PRO 6000 and H100, with an interactive cost and time explorer.",
+    "Measured OLM training throughput, MFU, peak memory and cost per billion tokens on " +
+    `${GPU_NAMES.slice(0, -1).join(", ")} and ${GPU_NAMES[GPU_NAMES.length - 1]}, ` +
+    "with an interactive cost and time explorer.",
   path: "/benchmarks/",
 });
 
@@ -40,6 +44,9 @@ export default function BenchmarksPage() {
   const widest = scaling.rows[scaling.rows.length - 1];
   const maxScalingTps = Math.max(...scaling.rows.map((row) => row.gpus * scaling.rows[0].tps));
   const workload = scaling.workload;
+  // Every GPU count has the same number of runs; say so only if that holds.
+  const runCounts = new Set(scaling.rows.map((row) => row.replicates));
+  const runs = runCounts.size === 1 ? scaling.rows[0].replicates : null;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -69,8 +76,9 @@ export default function BenchmarksPage() {
           <h1>GPU Throughput and Cost</h1>
           <p className="bench-lede">
             How fast OLM trains on one rented GPU, what a billion training tokens
-            costs, and how training scales across GPUs. Every number on this page
-            is measured and generated from the catalog in the repository.
+            costs, and how training scales across GPUs. Every measurement on this
+            page is generated from the data in the repository; costs combine those
+            measurements with dated price quotes.
           </p>
           <div className="hero-model-note bench-stats">
             <div className="hero-metric">
@@ -172,7 +180,7 @@ export default function BenchmarksPage() {
                                   </>
                                 ) : (
                                   <td colSpan={6} className="bench-status">
-                                    Did not fit in memory.
+                                    {noResultReason(gpu.id, model, HEADLINE_CONTEXT)}
                                   </td>
                                 )}
                               </tr>
@@ -219,13 +227,13 @@ export default function BenchmarksPage() {
                   NVLink node of {String(workload.gpu_model).replace("NVIDIA ", "")} GPUs,
                   one {Number(workload.sequence_length).toLocaleString("en-US")}-token
                   sequence per GPU per step, {String(workload.precision).toUpperCase()}{" "}
-                  autocast, {Number(workload.measured_steps)} measured steps, three
-                  runs per GPU count.
+                  autocast, {Number(workload.measured_steps)} measured steps
+                  {runs !== null && <>, {runs} runs per GPU count</>}.
                 </p>
                 <figure className="bench-bars">
                   <figcaption>
-                    Tokens/s, mean of three runs. The outline marks perfect linear
-                    scaling from one GPU.
+                    Tokens/s, mean of {runs !== null ? `${runs} runs` : "all runs"}. The
+                    outline marks perfect linear scaling from one GPU.
                   </figcaption>
                   {scaling.rows.map((row) => {
                     const ideal = row.gpus * scaling.rows[0].tps;
@@ -307,7 +315,8 @@ export default function BenchmarksPage() {
                     <strong>The step</strong>
                     <span>
                       A complete training step of a dense, tied-embedding
-                      Llama-3-style OLM model: forward pass under BF16 autocast,
+                      Llama-3-style OLM model: forward pass under BF16 autocast
+                      (FP16 with loss scaling on GPUs without BF16 Tensor Cores),
                       shifted-token cross-entropy, backward pass and a fused
                       AdamW update, with FP32 weights, gradients and optimizer
                       state. No activation checkpointing, no torch.compile,
