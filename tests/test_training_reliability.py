@@ -517,6 +517,11 @@ def test_early_stopping_stops_after_patience_validations():
     assert early_stopping.best_step == 4
     assert early_stopping.stopped_step == 10
 
+    # best_loss, the attribute's name before `monitor`, still reads and writes it.
+    assert early_stopping.best_loss == 0.9
+    early_stopping.best_loss = 0.5
+    assert early_stopping.best_value == 0.5
+
 
 def test_early_stopping_min_delta_and_max_mode():
     class State:
@@ -600,6 +605,19 @@ def test_best_checkpoint_holds_the_weights_of_the_validated_step(tmp_path):
     assert checkpoints.best_step == best_step
     assert checkpoints.best_value == best_loss
     assert best["callbacks"]["CheckpointCallback"]["best_value"] == best_loss
+
+
+def test_best_checkpoint_ignores_non_finite_validation_values(tmp_path):
+    checkpoints = CheckpointCallback(str(tmp_path), save_every=100)
+    trainer = _early_stopping_trainer(
+        [ScriptedValidation([float("nan"), 3.0, 4.0], eval_every=1), checkpoints]
+    )
+    trainer.train(epochs=1, max_steps=3, log_interval=1000)
+
+    # A NaN compares False with everything, so accepting it as the first best
+    # value would pin best_model.pt to step 1 for the rest of the run.
+    assert (checkpoints.best_step, checkpoints.best_value) == (2, 3.0)
+    assert read_checkpoint(tmp_path / "best_model.pt")["trainer"]["global_step"] == 2
 
 
 def test_validation_callback_accepts_lm_output_models():

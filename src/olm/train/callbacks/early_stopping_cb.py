@@ -5,6 +5,7 @@ Early stopping callback to prevent overfitting.
 import warnings
 from typing import Any, Dict, Optional
 
+from olm.core.dist import is_main_process
 from olm.train.trainer import TrainerCallback
 
 
@@ -51,8 +52,12 @@ class EarlyStoppingCallback(TrainerCallback):
 
     @property
     def best_loss(self) -> float:
-        """The best monitored value so far (the name predates ``monitor``)."""
+        """Alias of ``best_value`` (the name predates ``monitor``)."""
         return self.best_value
+
+    @best_loss.setter
+    def best_loss(self, value: float) -> None:
+        self.best_value = value
 
     def _improved(self, value: float) -> bool:
         if self.mode == "min":
@@ -92,12 +97,13 @@ class EarlyStoppingCallback(TrainerCallback):
         self.wait += 1
         if self.wait >= self.patience:
             self.stopped_step = step
-            print(
-                f"[Early Stopping] Stopping at step {step}: {self.monitor} has not "
-                f"improved on {self.best_value:.4f} (step {self.best_step}) for "
-                f"{self.wait} validations",
-                flush=True,
-            )
+            if is_main_process():
+                print(
+                    f"[Early Stopping] Stopping at step {step}: {self.monitor} has "
+                    f"not improved on {self.best_value:.4f} (step {self.best_step}) "
+                    f"for {self.wait} validations",
+                    flush=True,
+                )
             # Signal to stop training (trainer needs to handle this)
             trainer.training_state["should_stop"] = True
 

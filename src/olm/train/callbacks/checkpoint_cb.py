@@ -2,6 +2,7 @@
 Checkpoint callback for saving model checkpoints during training.
 """
 
+import math
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -19,13 +20,15 @@ class CheckpointCallback(TrainerCallback):
     ``trainer.save_checkpoint`` (format version 1, see
     ``olm.train.checkpointing``), so any of them can resume a run with
     ``Trainer(..., resume_from=path)``. Files are written atomically. Under DDP
-    every rank takes part in each save and rank 0 writes the file.
+    every rank takes part in each save and rank 0 writes the file, so pass the
+    callback on every rank, not only on rank 0.
 
     Files in ``checkpoint_dir``:
         ``step_<N>.pt`` every ``save_every`` optimizer steps and when training
         ends; only the newest ``keep_last_n`` are kept.
-        ``best_model.pt`` whenever a validation improves the monitored metric.
-        It is never deleted.
+        ``best_model.pt`` whenever a validation improves the monitored metric;
+        NaN and infinite values never count as an improvement. It is never
+        deleted.
 
     The callback runs after the other callbacks of a step (``order = 10``), so
     a checkpoint holds this step's validation result and early-stopping state.
@@ -117,7 +120,9 @@ class CheckpointCallback(TrainerCallback):
         self._last_val_step = val_step
 
         value = state.get(self.monitor)
-        if value is None:
+        # A NaN or infinite value is never the best: every later comparison
+        # with NaN is False, so it would stay "best" for the rest of the run.
+        if value is None or not math.isfinite(value):
             return False
         if self.best_value is None or (
             value < self.best_value if self.mode == "min" else value > self.best_value
