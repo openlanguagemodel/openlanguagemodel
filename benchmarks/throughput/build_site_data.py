@@ -50,14 +50,16 @@ def relative(path: Path) -> str:
 
 
 def compact_batch(item: dict[str, Any]) -> dict[str, Any]:
+    # Values the page prints next to the docs tables stay unrounded: rounding
+    # here and again for display can change the last digit shown.
     return {
         "batch": item["batch"],
         "seeds": item["seeds"],
-        "tps": rounded(item["tokens_per_second"], 1),
+        "tps": item["tokens_per_second"],
         "stepMs": rounded(item["step_ms"], 2),
-        "mfu": rounded(item["mfu_pct"], 3),
-        "mfuBoard": rounded(item["configured_mfu_pct"], 3),
-        "vramGb": rounded(item["allocated_gb"], 3),
+        "mfu": item["mfu_pct"],
+        "mfuBoard": item["configured_mfu_pct"],
+        "vramGb": item["allocated_gb"],
         "vramPct": rounded(item["allocated_pct"], 2),
         "reservedGb": rounded(item["reserved_gb"], 3),
     }
@@ -203,10 +205,10 @@ def build_payload() -> dict[str, Any]:
                 {
                     "gpus": row["gpu_count"],
                     "replicates": len(row["replicate_tokens_per_second"]),
-                    "tps": rounded(row["mean_tokens_per_second"], 1),
-                    "tpsStd": rounded(row["std_tokens_per_second"], 1),
-                    "efficiency": rounded(row["scaling_efficiency"], 4),
-                    "peakGb": rounded(max(row["peak_allocated_gb_per_gpu"]), 3),
+                    "tps": row["mean_tokens_per_second"],
+                    "tpsStd": row["std_tokens_per_second"],
+                    "efficiency": row["scaling_efficiency"],
+                    "peakGb": max(row["peak_allocated_gb_per_gpu"]),
                 }
                 for row in scaling["rows"]
             ],

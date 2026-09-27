@@ -51,6 +51,35 @@ def test_site_data_matches_the_catalog():
     assert len(text.encode()) < build_site_data.SIZE_BUDGET_BYTES
 
 
+def test_site_data_displays_the_same_digits_as_the_docs():
+    # The page formats the stored (rounded) values; the docs tables format the
+    # raw ones. Both must print the same digits.
+    payload = build_site_data.build_payload()
+    cells = catalog.summarize_catalog(catalog.load_catalog())
+    shown = {
+        "tps": ("tokens_per_second", "{:.0f}"),
+        "mfu": ("mfu_pct", "{:.1f}"),
+        "mfuBoard": ("configured_mfu_pct", "{:.1f}"),
+        "vramGb": ("allocated_gb", "{:.1f}"),
+    }
+
+    for cell in payload["cells"]:
+        raw = cells[(cell["gpu"], cell["model"], cell["context"])]["batches"]
+        for stored, original in zip(cell["batches"], raw):
+            for key, (field, spec) in shown.items():
+                assert spec.format(stored[key]) == spec.format(original[field])
+
+    scaling = json.loads(catalog.SCALING_PATH.read_text())["rows"]
+    for stored, original in zip(payload["scaling"]["rows"], scaling):
+        mean = original["mean_tokens_per_second"]
+        assert f"{stored['tps']:.0f}" == f"{mean:.0f}"
+        assert f"{stored['tps'] / stored['gpus']:.0f}" == f"{mean / stored['gpus']:.0f}"
+        assert f"{stored['tpsStd']:.0f}" == f"{original['std_tokens_per_second']:.0f}"
+        assert f"{100 * stored['efficiency']:.1f}" == (
+            f"{100 * original['scaling_efficiency']:.1f}"
+        )
+
+
 def test_docs_tables_match_the_catalog():
     current = render_docs_tables.DOCS_PATH.read_text()
     rendered = render_docs_tables.render_page(
