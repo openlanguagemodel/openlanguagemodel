@@ -136,10 +136,12 @@ class KimiK2Model(Block):
     ``tie_weights=False``) and does not use Multi-Token Prediction (unlike
     its DeepSeek-V3 architectural relative).
 
-    Notes:
-        - This models the language-model component only.
-        - Long-context RoPE scaling is approximated with plain RoPE, the
-          same simplification used for the other MLA models in this repo.
+    Implementation note:
+        This models the language-model component only. The released
+        checkpoints extend RoPE with YaRN (factor 32 over a 4,096-token
+        original context); it is approximated with plain RoPE at
+        ``rope_theta``, the same simplification used for the other MLA
+        models in this repo.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits
@@ -263,7 +265,7 @@ class KimiK2_1T(KimiK2Model):
             top_k=8,
             first_k_dense_replace=1,
             routed_scaling_factor=2.827,
-            rope_theta=10000.0,
+            rope_theta=50000.0,
             rms_norm_eps=1e-6,
             tie_weights=False,
         )

@@ -36,9 +36,9 @@ class Llama4Block(Block):
         max_seq_len (int): Maximum context length (for the RoPE cache).
         chunk_size (int): Local attention chunk size (approximated as a
             sliding window) for chunked-attention layers.
-        intermediate_size (int): FFN hidden dim for dense layers and the
-            shared expert.
-        moe_intermediate_size (int): FFN hidden dim of each routed expert.
+        intermediate_size (int): FFN hidden dim of the dense layers.
+        moe_intermediate_size (int): FFN hidden dim of each routed expert and
+            of the shared expert.
         num_experts (int): Total number of routable experts.
         top_k (int): Number of experts routed to per token.
         use_chunked_attention (bool): If True, local chunked attention with
@@ -146,13 +146,12 @@ class Llama4MaverickModel(Block):
     Llama 4 Maverick does not tie input/output embeddings; the named
     ``Llama4Maverick_400B`` preset passes ``tie_weights=False``.
 
-    Notes:
-        - This models the language-model component only; the reference
-          checkpoint also includes an early-fusion vision encoder, omitted
-          here.
-        - Attention temperature tuning (used alongside NoPE for
-          length generalization in the reference implementation) is not
-          modeled; the NoPE/chunked alternation is applied statically.
+    Implementation note:
+        This models the language-model component only; the reference
+        checkpoint also includes an early-fusion vision encoder, omitted
+        here. Attention temperature tuning (used alongside NoPE for length
+        generalization in the reference implementation) is not modeled; the
+        NoPE/chunked alternation is applied statically.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits
@@ -161,9 +160,11 @@ class Llama4MaverickModel(Block):
     Args:
         vocab_size (int): Vocabulary size.
         embed_dim (int): Model dimension.
-        intermediate_size (int): FFN hidden dim for dense layers and shared
-            experts.
-        moe_intermediate_size (int): FFN hidden dim of each routed expert.
+        intermediate_size (int): FFN hidden dim of the dense layers
+            (``intermediate_size_mlp`` in the released config).
+        moe_intermediate_size (int): FFN hidden dim of each routed expert and
+            of the shared expert (``intermediate_size`` in the released
+            config).
         num_layers (int): Number of transformer blocks.
         num_heads (int): Number of attention heads.
         num_kv_heads (int): Number of KV heads.
@@ -259,7 +260,7 @@ class Llama4Maverick_400B(Llama4MaverickModel):
         super().__init__(
             vocab_size=202048,
             embed_dim=5120,
-            intermediate_size=8192,
+            intermediate_size=16384,
             moe_intermediate_size=8192,
             num_layers=48,
             num_heads=40,
