@@ -527,14 +527,14 @@ class PartialScaledRotaryPositionalEmbedding(PositionalEmbeddingBase):
 
     def _compute_yarn_inv_freq(self) -> torch.Tensor:
         """
-        Compute inverse frequencies for YaRN scaling (arXiv:2309.00071).
+        Compute inverse frequencies for the ``"yarn"`` scaling type.
 
-        High-frequency dimensions, which complete more than ``yarn_beta``
-        (``beta_fast``) rotations over ``original_max_seq_len``, keep their
-        original frequency. Low-frequency dimensions, with fewer than
-        ``yarn_beta_slow`` rotations, are interpolated by ``scaling_factor``.
-        Dimensions in between blend the two with a linear ramp. This matches
-        the Hugging Face ``transformers`` YaRN frequencies.
+        Implementation note: this still uses the earlier wavelength-threshold
+        rule, not the YaRN ramp of ``ScaledRotaryPositionalEmbedding``.
+        Dimensions whose wavelength is longer than ``yarn_beta`` keep their
+        frequency and the others are divided by ``scaling_factor``, so the
+        result does not match the Hugging Face ``transformers`` YaRN
+        frequencies.
         """
         dim_indices = torch.arange(0, self.rotary_dim, 2, dtype=torch.float32)
         inv_freq_base = 1.0 / (self.base ** (dim_indices / self.rotary_dim))
