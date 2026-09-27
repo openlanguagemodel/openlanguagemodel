@@ -27,15 +27,21 @@ const CHART_HEIGHT = 320;
 const MARGIN = { top: 18, right: 20, bottom: 48, left: 64 };
 
 export default function CostTimeChart({
-  points,
+  points: allPoints,
   tokenCount,
 }: {
   points: ChartPoint[];
   tokenCount: number;
 }) {
+  // Log axes need finite, positive values; anything else is left off the chart
+  // (the table still shows it).
+  const points = allPoints.filter(
+    (point) => plottable(point.hours) && plottable(point.cost)
+  );
   const container = useRef<HTMLElement>(null);
   const [width, setWidth] = useState(720);
   const [active, setActive] = useState<string | null>(null);
+  const empty = points.length === 0;
 
   useEffect(() => {
     const node = container.current;
@@ -45,7 +51,9 @@ export default function CostTimeChart({
     });
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [empty]);
+
+  if (empty) return null;
 
   const hours = points.map((point) => point.hours);
   const costs = points.map((point) => point.cost);
@@ -184,6 +192,10 @@ export default function CostTimeChart({
 
 type Scale = { scale: (value: number) => number; ticks: number[] };
 
+function plottable(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
 function formatHoursTick(hours: number): string {
   return hours < 1
     ? `${Number((hours * 60).toPrecision(3))} min`
@@ -205,6 +217,8 @@ const TICK_STEPS = [
 function logScale(values: number[], from: number, to: number, unit = 1): Scale {
   let low = Math.min(...values);
   let high = Math.max(...values);
+  // log10 of zero or infinity would make the tick loop below never end.
+  if (!(low > 0 && Number.isFinite(high))) return { scale: () => from, ticks: [] };
   if (high / low < 2.5) {
     const middle = Math.sqrt(low * high);
     low = middle / 1.6;

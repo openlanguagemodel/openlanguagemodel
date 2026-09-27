@@ -24,7 +24,7 @@ export type Cell = {
   gpu: string;
   model: string;
   context: number;
-  status: "measured" | "oom";
+  status: "measured" | "oom" | "incomplete";
   seedsRun: number[];
   selectedBatch: number | null;
   batches: BatchResult[];
@@ -122,9 +122,30 @@ export function selectedBatch(cell: Cell | undefined): BatchResult | undefined {
   return cell.batches.find((item) => item.batch === cell.selectedBatch);
 }
 
+/** Why a (GPU, model, context) cell has no selected batch, as one sentence. */
+export function noResultReason(gpu: string, model: string, context: number): string {
+  const cell = cellFor(gpu, model, context);
+  if (!cell) return notRunReason(gpu, model, context);
+  if (cell.buildOom) return "Out of memory while building the model: no batch was attempted.";
+  // Batches that fit some seeds but not all sit at the edge of memory and are
+  // never selected; say which seeds they fit.
+  if (cell.batches.length > 0) {
+    const partial = cell.batches
+      .map((item) => `batch ${item.batch} fit only seed ${item.seeds.join(" and ")}`)
+      .join("; ");
+    return `No batch completed for every seed: ${partial}.`;
+  }
+  const first = cell.oom[0];
+  return first
+    ? `Out of memory at every batch tried, down to batch ${first.batch} ` +
+        `(seed${first.seeds.length > 1 ? "s" : ""} ${first.seeds.join(" and ")}).`
+    : "No complete batch.";
+}
+
 /** Why a (GPU, model, context) cell has no rows at all. */
-export function notRunReason(gpu: string, model: string, context: number): string {
+function notRunReason(gpu: string, model: string, context: number): string {
   const baseline = cellFor(gpu, model, 2048);
+  if (!baseline) return "Not run: this model was not measured on this GPU.";
   if (!selectedBatch(baseline)) {
     return "Not run: the model does not fit at 2,048 tokens, so the context sweep skips it.";
   }

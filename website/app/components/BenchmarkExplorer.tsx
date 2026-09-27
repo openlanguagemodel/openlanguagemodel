@@ -16,7 +16,7 @@ import {
   formatUsd,
   gpuLabel,
   modelLabel,
-  notRunReason,
+  noResultReason,
   providerById,
   selectedBatch,
   type BatchResult,
@@ -86,14 +86,24 @@ export default function BenchmarkExplorer() {
     }
     try {
       const saved = JSON.parse(window.localStorage.getItem(PRICE_STORAGE_KEY) ?? "{}");
-      if (saved && typeof saved === "object") setOverrides(saved);
+      if (saved && typeof saved === "object") {
+        setOverrides(
+          Object.fromEntries(
+            Object.entries(saved).filter(
+              (entry): entry is [string, number] => validPrice(entry[1])
+            )
+          )
+        );
+      }
     } catch {
       // Storage can be unavailable (private windows); edits then last one visit.
     }
     setHydrated(true);
   }, []);
 
-  const tokenCount = Math.max(0, Number(tokens) || 0) * UNIT_SCALE[unit];
+  // A budget that is empty, negative or too large to represent counts as none.
+  const requested = Number(tokens) * UNIT_SCALE[unit];
+  const tokenCount = Number.isFinite(requested) && requested > 0 ? requested : 0;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -130,13 +140,15 @@ export default function BenchmarkExplorer() {
     `${context.toLocaleString("en-US")} tokens; time and cost for ` +
     `${formatCompact(tokenCount)} tokens.`;
 
+  // Only a positive price overrides the quote. Typing "0" on the way to
+  // "0.34" keeps the quote until the number is complete.
   const setOverride = (gpu: string, value: string) => {
     const key = `${providerId}|${gpu}`;
     const price = Number(value);
     setOverrides((current) => {
       const next = { ...current };
-      if (value === "" || !Number.isFinite(price) || price < 0) delete next[key];
-      else next[key] = price;
+      if (validPrice(price)) next[key] = price;
+      else delete next[key];
       return next;
     });
   };
@@ -268,14 +280,16 @@ export default function BenchmarkExplorer() {
         <div className="bench-summary-item">
           <span className="bench-summary-label">Cost–time frontier</span>
           <span className="bench-summary-value">
-            {priced.length
-              ? rows
-                  .filter((row) => row.pareto)
-                  .map((row) => row.gpu.name)
-                  .join(" · ")
-              : rows.some((row) => row.result)
-                ? "No price quote for the GPUs that fit"
-                : "No measured GPU fits this model and context"}
+            {!rows.some((row) => row.result)
+              ? "No measured GPU fits this model and context"
+              : tokenCount <= 0
+                ? "Enter a token budget"
+                : priced.length
+                  ? rows
+                      .filter((row) => row.pareto)
+                      .map((row) => row.gpu.name)
+                      .join(" · ")
+                  : "No price quote for the GPUs that fit"}
           </span>
         </div>
       </div>
@@ -414,7 +428,7 @@ export default function BenchmarkExplorer() {
                       </>
                     ) : (
                       <td colSpan={8} className="bench-status">
-                        {statusText(row, model, context)}
+                        {noResultReason(row.gpu.id, model, context)}
                       </td>
                     )}
                   </tr>
@@ -461,8 +475,8 @@ function buildRows(
     const quote = provider.quotes[gpu.id];
     const override = overrides[`${providerId}|${gpu.id}`];
     const price = override ?? quote?.usd ?? null;
-    const hours = result && tokenCount > 0 ? tokenCount / result.tps / 3600 : null;
-    const cost = hours !== null && price !== null ? hours * price : null;
+    const hours = result && tokenCount > 0 ? positive(tokenCount / result.tps / 3600) : null;
+    const cost = hours !== null && price !== null ? positive(hours * price) : null;
     return {
       gpu,
       cell,
@@ -514,15 +528,13 @@ function rowClass(row: Row): string {
   return row.pareto ? "bench-row-pareto" : "";
 }
 
-function statusText(row: Row, model: string, context: number): string {
-  const cell = row.cell;
-  if (!cell) return notRunReason(row.gpu.id, model, context);
-  if (cell.buildOom) return "Out of memory while building the model: no batch was attempted.";
-  const first = cell.oom[0];
-  return first
-    ? `Out of memory at every batch tried, down to batch ${first.batch} ` +
-        `(seed${first.seeds.length > 1 ? "s" : ""} ${first.seeds.join(" and ")}).`
-    : "No complete batch.";
+function validPrice(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+/** The value if it is finite and positive, else null: the chart plots on log axes. */
+function positive(value: number): number | null {
+  return Number.isFinite(value) && value > 0 ? value : null;
 }
 
 function slug(value: string): string {
@@ -728,6 +740,9 @@ function CoverageMatrix({
   context: number;
   onPick: (context: number) => void;
 }) {
+  const incomplete = DATA.cells.some(
+    (cell) => cell.model === model && cell.status === "incomplete"
+  );
   return (
     <div className="bench-coverage">
       <h4>
@@ -768,14 +783,14 @@ function CoverageMatrix({
                   const label = result
                     ? formatCompact(result.tps)
                     : cell
-                      ? "OOM"
+                      ? cell.status === "oom"
+                        ? "OOM"
+                        : "partial"
                       : "—";
                   const state = result ? "measured" : cell ? "oom" : "not-run";
                   const description = result
                     ? `${formatInteger(result.tps)} tokens/s at batch ${result.batch}`
-                    : cell
-                      ? "out of memory"
-                      : "not run";
+                    : noResultReason(gpu.id, model, value);
                   return (
                     <td
                       key={value}
@@ -799,7 +814,13 @@ function CoverageMatrix({
       </div>
       <p className="bench-legend">
         <span className="measured">tokens/s</span> measured, best batch
-        <span className="oom">OOM</span> out of memory at every batch tried
+        <span className="oom">OOM</span> out of memory: no batch fit every seed
+        {incomplete && (
+          <>
+            <span className="oom">partial</span> no batch completed for every seed,
+            without running out of memory
+          </>
+        )}
         <span className="not-run">—</span> not run
       </p>
     </div>
@@ -840,7 +861,7 @@ function downloadCsv(
       context,
       tokenCount,
       row.overridden ? `${providerLabel} (edited)` : providerLabel,
-      row.result ? "measured" : row.cell ? "oom" : "not_run",
+      row.result ? "measured" : row.cell ? row.cell.status : "not_run",
       row.result?.batch ?? "",
       row.result?.tps ?? "",
       row.result?.mfu ?? "",
