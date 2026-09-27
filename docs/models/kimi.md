@@ -118,7 +118,7 @@ Values for `KimiK2_1T` next to the released [`config.json`](https://huggingface.
 | `tie_weights` | `tie_word_embeddings` | false | false |
 | fixed in the block | `scoring_func`, `topk_method` | sigmoid, noaux_tc | sigmoid, noaux_tc |
 | no group-limited routing | `n_group`, `topk_group` | — | 1, 1 |
-| **not supported** | **`rope_scaling`** | **none** | **YaRN, factor 32** |
+| **not applied (no argument in this family)** | **`rope_scaling`** | **none** | **YaRN, factor 32** |
 
 </div>
 
@@ -543,7 +543,7 @@ Like `Qwen3Model`, Kimi Linear's MoE layers return only their output. To add a l
 
 Kimi K2:
 
-- **RoPE base and scaling.** The release uses `rope_theta: 50000.0` with YaRN scaling (factor 32 from a 4,096-token original context). `KimiK2_1T` passes `rope_theta=10000.0` and OLM applies plain RoPE, as the docstring of `KimiK2Model` notes for the scaling.
+- **RoPE base and scaling.** The release uses `rope_theta: 50000.0` with YaRN scaling (factor 32 from a 4,096-token original context). `KimiK2_1T` passes `rope_theta=10000.0` and OLM applies plain RoPE, as the docstring of `KimiK2Model` notes for the scaling. OLM does have a `yarn` mode in `ScaledRotaryPositionalEmbedding` (`olm/nn/embeddings/positional/rope.py`), but `MultiHeadLatentAttention` always builds plain `RotaryPositionalEmbedding`.
 - **DeepSeek-V3's routing differences apply**: the router's gate has a learned bias the release does not have, and `update_expert_bias_` moves each expert's bias in proportion to its imbalance rather than by a fixed step. See the [DeepSeek-V3 guide](deepseek-v3.md#known-differences-from-the-reference). Group-limited routing is not a difference here, because the release uses a single group.
 
 Kimi Linear:

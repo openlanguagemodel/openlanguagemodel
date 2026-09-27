@@ -516,7 +516,7 @@ Values for `DeepSeekV3_671B` next to the released [`config.json`](https://huggin
 | fixed in the block: `routing_method="noaux_tc"` | `topk_method` | noaux_tc | noaux_tc |
 | fixed in the block: `norm_weights=True` | `norm_topk_prob` | true | true |
 | **not supported** | **`n_group`, `topk_group`** | **—** | **8, 4** |
-| **not supported** | **`rope_scaling`** | **none** | **YaRN, factor 40** |
+| **not applied (no argument in this family)** | **`rope_scaling`** | **none** | **YaRN, factor 40** |
 
 </div>
 
@@ -606,7 +606,7 @@ The MTP loss falls more slowly than the next-token loss: predicting two tokens a
 - **No group-limited routing.** The release first scores 8 groups of 32 experts, keeps the best 4 groups (`n_group: 8`, `topk_group: 4`) and picks the top 8 experts from those. OLM picks the top 8 of all 256 directly. The group limit bounds how many devices a token's experts span in the release's expert-parallel training; OLM has no expert parallelism.
 - **A gate bias the release does not have.** `DeepSeekV3Block` passes `use_router_bias=True`, which gives the router's gate `Linear` a learned bias (256 parameters per MoE layer). The release's gate has no bias; its only bias is the balancing term, which OLM keeps separately as `expert_bias`.
 - **Bias update rule.** The DeepSeek-V3 report lowers an overloaded expert's bias and raises an underloaded one's by a fixed step γ, using only the sign of the imbalance. `update_expert_bias_` moves each bias in proportion to its imbalance, `update_rate * (1 / num_experts - fraction)`. In both, it is a manual step outside the optimizer.
-- **No YaRN.** The release extends RoPE with YaRN (`rope_scaling.type: "yarn"`, factor 40 from a 4,096-token original context). Its attention also multiplies the softmax scale by `mscale²`, with `mscale = 0.1 · ln(40) + 1` (about 1.87 in total). OLM uses plain RoPE and the unscaled `192 ** -0.5`. The docstring of `DeepSeekV3Model` notes the RoPE simplification.
+- **No YaRN.** The release extends RoPE with YaRN (`rope_scaling.type: "yarn"`, factor 40 from a 4,096-token original context). Its attention also multiplies the softmax scale by `mscale²`, with `mscale = 0.1 · ln(40) + 1` (about 1.87 in total). OLM uses plain RoPE and the unscaled `192 ** -0.5`. The docstring of `DeepSeekV3Model` notes the RoPE simplification. OLM does have a `yarn` mode in `ScaledRotaryPositionalEmbedding` (`olm/nn/embeddings/positional/rope.py`), but `MultiHeadLatentAttention` always builds plain `RotaryPositionalEmbedding`.
 - **A simpler MTP module.** The release's MTP module normalises the hidden state and the embedding, projects their concatenation, runs a full transformer block (with MoE) and reuses the main output head; the released checkpoint lists 14B parameters for its MTP module. OLM's `MultiTokenPredictionHead` projects the concatenation, applies an RMSNorm and uses its own untied output matrix, 1.03B parameters.
 - **Reading-first MoE.** Experts run in a Python loop over the tokens each one received: correct and readable, much slower than production grouped-GEMM kernels, and with no expert parallelism or FP8 training (the release was trained in FP8).
 - **Initialisation.** OLM uses PyTorch's default initialisers; the release config specifies `initializer_range: 0.02`.

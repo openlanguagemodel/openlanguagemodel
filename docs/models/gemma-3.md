@@ -258,7 +258,7 @@ Values for `Gemma3_27B` next to the `text_config` of the released [`config.json`
 | `tie_weights` | `tie_word_embeddings` (unset, defaults to true) | true | true |
 | fixed: no soft-caps | `attn_logit_softcapping`, `final_logit_softcapping` | none | null |
 | **fixed: scale `head_dim ** -0.5`** | **`query_pre_attn_scalar`** | **128** | **168** |
-| **not supported** | **`rope_scaling`** (global layers) | **none** | **linear, factor 8.0** |
+| **not applied (no argument in this family)** | **`rope_scaling`** (global layers) | **none** | **linear, factor 8.0** |
 | **fixed: exact GELU** | **`hidden_activation`** | **`gelu`** | **`gelu_pytorch_tanh`** |
 
 </div>
@@ -325,7 +325,7 @@ The loss starts far above ln(256) ≈ 5.55 because of the initialisation, not th
 - **Language model only.** The Gemma 3 4B and 27B releases are multimodal (`Gemma3ForConditionalGeneration` with a SigLIP vision encoder). The presets build the text decoder alone, which is why `Gemma3_4B` counts 3.88B.
 - **Vocabulary size.** The presets use 262,144 tokens; the released `text_config` has 262,208. The extra 64 ids start at the image token (`image_token_index: 262144` in the same config).
 - **Attention scale.** OLM scales attention logits by `head_dim ** -0.5`. The release uses `query_pre_attn_scalar ** -0.5`, and for 27B `query_pre_attn_scalar` is 168 (= 5,376 / 32), not the head size 128. `GroupedQueryAttention` accepts an `attention_scale` argument and `Gemma2Block` passes it, but `Gemma3Block` does not.
-- **No RoPE scaling on global layers.** The release applies linear RoPE scaling with factor 8.0 to the global layers (`rope_scaling` applies to full-attention layers only). OLM uses plain RoPE with base 1,000,000.
+- **No RoPE scaling on global layers.** The release applies linear RoPE scaling with factor 8.0 to the global layers (`rope_scaling` applies to full-attention layers only). OLM uses plain RoPE with base 1,000,000. OLM does have linear scaling, as `ScaledRotaryPositionalEmbedding` in `olm/nn/embeddings/positional/rope.py`, but the attention modules `Gemma3Block` builds always use unscaled RoPE and `Gemma3Model` has no argument to change that.
 - **Exact GELU.** `GeGLUFFN` uses exact (erf) GELU; the release uses the tanh approximation (`gelu_pytorch_tanh`).
 - **RMSNorm parameterisation.** Gemma's RMSNorm stores a zero-initialised weight and multiplies by `1 + weight`; OLM's stores the scale itself, initialised to one. The two compute the same function at initialisation, but weight decay on norm parameters pulls Gemma's scale toward 1 and OLM's toward 0.
 - **Attention masks are ignored.** `Gemma3Model.forward(x)` and `Gemma3Block.forward(x)` take no `mask` argument, so a padding mask cannot be passed through; attention is always causal (plus the window on local layers).

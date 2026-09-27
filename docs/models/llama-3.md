@@ -248,7 +248,7 @@ Values for `Llama3_1_8B` next to the released [`config.json`](https://huggingfac
 | fixed in the block: `eps=1e-5` | `rms_norm_eps` | 1e-5 | 1e-5 |
 | fixed: `use_bias=False`, `bias=False` | `attention_bias`, `mlp_bias` | false | false |
 | **`tie_weights`** | **`tie_word_embeddings`** | **true** | **false** |
-| **not supported** | **`rope_scaling`** | **none** | **`llama3`, factor 8.0** |
+| **not applied (no argument in this family)** | **`rope_scaling`** | **none** | **`llama3`, factor 8.0** |
 
 </div>
 
@@ -305,7 +305,7 @@ The first loss is close to ln(256) ≈ 5.55, the loss of a uniform guess over th
 ## Known differences from the reference
 
 - **Tied output head on the 3.1 presets.** `Llama3_1_8B`, `Llama3_1_70B` and `Llama3_1_405B` keep the default `tie_weights=True`, but the Llama 3.1 releases set `tie_word_embeddings: false`. The presets therefore have one `vocab_size x embed_dim` matrix fewer than the release (525M parameters at 8B). Build the base class with `tie_weights=False` for the released parameter count, as in the example above. The 3.2 presets match their releases, which are tied. This is tracked in [issue #83](https://github.com/openlanguagemodel/openlanguagemodel/issues/83).
-- **No Llama 3.1 RoPE scaling.** The releases rescale RoPE frequencies for long context (`rope_scaling.rope_type: "llama3"`, factor 8.0 for 3.1 and 32.0 for 3.2). `GroupedQueryAttention` always builds plain RoPE with base `rope_theta`, so positions beyond the original 8,192-token training context behave differently from Meta's checkpoints. OLM has the frequency-dependent rotation as `Llama3RotaryPositionalEmbedding` in `olm/nn/embeddings/positional/llama3_rope.py`, but `Llama3Block` does not use it. The docstring of `Llama3Model` notes this.
+- **No Llama 3.1 RoPE scaling.** The releases rescale RoPE frequencies for long context (`rope_scaling.rope_type: "llama3"`, factor 8.0 for 3.1 and 32.0 for 3.2). `GroupedQueryAttention` always builds plain RoPE with base `rope_theta`, so its low-frequency components rotate differently from Meta's checkpoints at every position. The difference grows with distance and matters most beyond the original 8,192-token training context. OLM has the frequency-dependent rotation as `Llama3RotaryPositionalEmbedding` in `olm/nn/embeddings/positional/llama3_rope.py`, but `Llama3Block` does not use it. The docstring of `Llama3Model` notes this.
 - **Initialisation.** OLM builds every layer with PyTorch's default initialisers. Meta's configs specify `initializer_range: 0.02` for the Hugging Face implementation. This matters only when you train from scratch and compare against a recipe that assumes that initialisation.
 - **Architecture only.** There is no tokenizer, chat template or weight loading in the preset.
 
