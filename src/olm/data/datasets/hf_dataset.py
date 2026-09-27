@@ -1,8 +1,26 @@
 # src/olm/data/datasets/hf_dataset.py
 import torch
-from datasets import load_dataset
 from typing import Optional, Iterator, Callable, Any, Dict
 from olm.data.datasets.base_dataset import BaseTextDataset
+
+
+def _import_load_dataset():
+    """
+    Import ``datasets.load_dataset`` on first use.
+
+    Only the Hugging Face dataset classes need the ``datasets`` package, so a
+    missing or broken install breaks them alone and not ``import olm``.
+    """
+    try:
+        from datasets import load_dataset
+    except Exception as exc:
+        raise ImportError(
+            "HuggingFaceTextDataset and FineWebEduDataset need the Hugging Face "
+            "`datasets` package, which could not be imported "
+            f"({type(exc).__name__}: {exc}). Install or repair it with "
+            "`pip install -U datasets`."
+        ) from exc
+    return load_dataset
 
 
 class HuggingFaceTextDataset(BaseTextDataset):
@@ -12,6 +30,9 @@ class HuggingFaceTextDataset(BaseTextDataset):
     The Hugging Face dataset is read in streaming mode by default, then text is
     extracted with ``text_fn`` and passed through ``BaseTextDataset`` for
     tokenization, sharding, and next-token target construction.
+
+    Needs the Hugging Face ``datasets`` package, which is imported when the
+    dataset is created, not when ``olm`` is imported.
 
     Iteration:
         Yields ``(input_ids, labels)`` tensors shaped ``[context_length]``.
@@ -28,6 +49,9 @@ class HuggingFaceTextDataset(BaseTextDataset):
         shuffle (bool): Whether to shuffle the dataset stream.
         seed (int): Shuffle seed.
         shuffle_buffer_size (int): Streaming shuffle buffer size.
+
+    Raises:
+        ImportError: If the ``datasets`` package cannot be imported.
     """
 
     def __init__(
@@ -60,6 +84,7 @@ class HuggingFaceTextDataset(BaseTextDataset):
         self.shuffle_buffer_size = shuffle_buffer_size
 
         # Load dataset
+        load_dataset = _import_load_dataset()
         self.dataset = load_dataset(
             dataset_name,
             split=split,

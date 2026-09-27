@@ -1,8 +1,26 @@
 from typing import List, Optional, Union
 from olm.data.tokenization.base import TokenizerBase
-from transformers import AutoTokenizer
 import torch
 import os
+
+
+def _import_auto_tokenizer():
+    """
+    Import ``transformers.AutoTokenizer`` on first use.
+
+    ``import olm`` loads this module, and OLM model code does not need
+    ``transformers``, so importing it lazily keeps a missing or broken install
+    from breaking ``import olm`` and saves its import time.
+    """
+    try:
+        from transformers import AutoTokenizer
+    except Exception as exc:
+        raise ImportError(
+            "HFTokenizer needs the Hugging Face `transformers` package, which could "
+            f"not be imported ({type(exc).__name__}: {exc}). Install or repair it "
+            "with `pip install -U transformers`."
+        ) from exc
+    return AutoTokenizer
 
 
 class HFTokenizer(TokenizerBase):
@@ -39,6 +57,7 @@ class HFTokenizer(TokenizerBase):
     """
 
     def __init__(self, model_path: str):
+        AutoTokenizer = _import_auto_tokenizer()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
         # ``tokenizer.vocab_size`` leaves out added tokens, whose ids come after
         # the base vocabulary, so an embedding sized with it can be too small.
@@ -145,6 +164,6 @@ class HFTokenizer(TokenizerBase):
     def load(cls, path: str) -> "HFTokenizer":
         """Load a tokenizer written by ``HFTokenizer.save``."""
         obj = cls.__new__(cls)
-        obj.tokenizer = AutoTokenizer.from_pretrained(path, use_fast=True)
+        obj.tokenizer = _import_auto_tokenizer().from_pretrained(path, use_fast=True)
         obj.vocab_size = len(obj.tokenizer)
         return obj
