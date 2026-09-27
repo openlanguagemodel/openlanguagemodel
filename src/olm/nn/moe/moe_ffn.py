@@ -28,6 +28,10 @@ class MoEFeedForward(FeedForwardBase):
         norm_weights: Re-normalize top-k weights.
         fp32_gate: Run gate in FP32.
         routed_scaling_factor: Scale factor on routed output.
+        num_expert_groups: Number of equal expert groups for DeepSeek-V3
+            group-limited routing (see ``MoERouter``). Defaults to 1 (off).
+        top_k_groups: Number of groups each token may route into. Defaults
+            to 1.
     """
 
     def __init__(
@@ -44,6 +48,8 @@ class MoEFeedForward(FeedForwardBase):
         norm_weights: bool = True,
         fp32_gate: bool = False,
         routed_scaling_factor: float = 1.0,
+        num_expert_groups: int = 1,
+        top_k_groups: int = 1,
     ):
         super().__init__(embed_dim)
         self.num_experts = num_experts
@@ -63,6 +69,8 @@ class MoEFeedForward(FeedForwardBase):
             norm_weights=norm_weights,
             fp32_gate=fp32_gate,
             routed_scaling_factor=routed_scaling_factor,
+            num_expert_groups=num_expert_groups,
+            top_k_groups=top_k_groups,
         )
 
         self.experts = nn.ModuleList(
@@ -71,7 +79,10 @@ class MoEFeedForward(FeedForwardBase):
 
         if num_shared_experts > 0:
             self.shared_experts = nn.ModuleList(
-                [expert_cls(embed_dim, **expert_kwargs) for _ in range(num_shared_experts)]
+                [
+                    expert_cls(embed_dim, **expert_kwargs)
+                    for _ in range(num_shared_experts)
+                ]
             )
         else:
             self.shared_experts = None
