@@ -44,9 +44,9 @@ def _dsa(**overrides):
         qk_rope_head_dim=2,
         v_head_dim=6,
         q_lora_rank=12,
-        index_n_heads=4,
+        index_num_heads=4,
         index_head_dim=8,
-        index_topk=3,
+        index_top_k=3,
     )
     kwargs.update(overrides)
     return DeepSeekSparseAttention(**kwargs)
@@ -57,7 +57,7 @@ def test_deepseek_sparse_attention_reuses_mla_and_trains_one_step():
     attention = _dsa()
     x = torch.randn(2, 8, 32, requires_grad=True)
 
-    out = attention(x)
+    out = attention(x, compute_alignment_loss=True)
     stats = attention.last_stats
     assert stats is not None
 
@@ -74,6 +74,17 @@ def test_deepseek_sparse_attention_reuses_mla_and_trains_one_step():
     assert stats.index_scores.shape == (2, 8, 8)
     assert stats.selection_mask[:, -1].sum(dim=-1).max() <= 3
     assert stats.metadata["mode"] == "reference_masked_sdpa"
+
+
+def test_dsa_indexer_builds_no_graph_without_alignment_loss():
+    attention = _dsa()
+    x = torch.randn(1, 6, 32, requires_grad=True)
+
+    attention(x).sum().backward()
+
+    assert not attention.last_stats.index_scores.requires_grad
+    assert attention.indexer.q_proj.weight.grad is None
+    assert attention.q_a_proj.weight.grad is not None
 
 
 def test_deepseek_sparse_attention_combines_external_mask():
@@ -123,7 +134,7 @@ def test_indexer_kl_alignment_loss_supports_sparse_mask():
 
 
 def test_dsa_uses_mla_query_latent_and_produces_alignment_loss():
-    attention = _dsa(index_n_heads=2)
+    attention = _dsa(index_num_heads=2)
     x = torch.randn(2, 8, 32, requires_grad=True)
 
     output = attention(x, compute_alignment_loss=True)
@@ -196,12 +207,53 @@ def test_dsa_dense_stage_matches_mla_with_the_same_weights():
 
     assert torch.allclose(dsa(x, use_sparse_attention=False), mla(x), atol=1e-6)
     # Keeping every key makes the sparse stage dense too.
-    dsa.index_topk = 7
+    dsa.index_top_k = 7
     assert torch.allclose(dsa(x), mla(x), atol=1e-6)
 
 
+def test_dsa_sparse_stage_matches_mla_restricted_to_the_selection():
+    torch.manual_seed(0)
+    dsa = _dsa(index_top_k=3)
+    mla = MultiHeadLatentAttention(
+        embed_dim=32,
+        num_heads=4,
+        max_seq_len=16,
+        kv_lora_rank=8,
+        qk_nope_head_dim=6,
+        qk_rope_head_dim=2,
+        v_head_dim=6,
+        q_lora_rank=12,
+    )
+    mla.load_state_dict(dsa.state_dict(), strict=False)
+    x = torch.randn(2, 7, 32)
+
+    sparse = dsa(x)
+    selection_mask = dsa.last_stats.selection_mask
+
+    # top_k < seq_len, so later queries attend to a strict subset of keys.
+    assert (selection_mask.sum(dim=-1) <= 3).all()
+    assert torch.allclose(sparse, mla(x, mask=selection_mask.unsqueeze(1)), atol=1e-6)
+
+
+def test_dsa_alignment_loss_skips_fully_masked_query_rows():
+    # Left padding: in batch 1 the first three keys are masked for every
+    # query, so queries 0-2 have no valid key.
+    torch.manual_seed(0)
+    attention = _dsa()
+    x = torch.randn(2, 10, 32, requires_grad=True)
+    mask = torch.ones(2, 1, 1, 10, dtype=torch.bool)
+    mask[1, ..., :3] = False
+
+    attention(x, mask=mask, compute_alignment_loss=True)
+    loss = attention.last_stats.alignment_loss
+    loss.backward()
+
+    assert torch.isfinite(loss)
+    assert torch.isfinite(attention.indexer.q_proj.weight.grad).all()
+
+
 def test_dsa_supports_dense_indexer_warmup_and_sparse_adaptation():
-    attention = _dsa(index_topk=2)
+    attention = _dsa(index_top_k=2)
     x = torch.randn(1, 6, 32)
 
     dense = attention(x, compute_alignment_loss=True, use_sparse_attention=False)

@@ -8,7 +8,7 @@ preceding token ``s``:
 
     I[t, s] = sum_j w[t, j] * ReLU(q[t, j] . k[s])
 
-with a handful of indexer heads ``j``. Only the ``index_topk`` highest-scoring
+with a handful of indexer heads ``j``. Only the ``index_top_k`` highest-scoring
 keys are kept, and the main MLA heads attend over that subset.
 
 DSA is added to an already-trained dense model in two continued-training
@@ -36,6 +36,7 @@ The indexer runs in FP32; DeepSeek notes it can run in FP8 for speed.
 
 from __future__ import annotations
 
+import contextlib
 import math
 from dataclasses import dataclass
 from typing import Optional
@@ -53,6 +54,13 @@ from olm.nn.embeddings.positional.rope import (
 from olm.nn.torch_nn_wrappers import Linear
 
 
+def _autocast_disabled(device_type: str):
+    """Disable autocast on ``device_type``; meta tensors have no autocast."""
+    if device_type == "meta":
+        return contextlib.nullcontext()
+    return torch.autocast(device_type=device_type, enabled=False)
+
+
 @dataclass
 class DeepSeekSparseAttentionStats:
     """
@@ -60,12 +68,14 @@ class DeepSeekSparseAttentionStats:
 
     Attributes:
         index_scores (torch.Tensor): Lightning-indexer scores
-            ``[batch, seq_len, seq_len]``; masked positions are ``-inf``.
+            ``[batch, seq_len, seq_len]``; masked positions are ``-inf``. They
+            carry an autograd graph only when the pass computed the alignment
+            loss.
         selected_indices (torch.Tensor): Top-k key positions per query
-            ``[batch, seq_len, min(index_topk, seq_len)]``.
+            ``[batch, seq_len, min(index_top_k, seq_len)]``.
         selection_mask (torch.Tensor): Boolean ``[batch, seq_len, seq_len]``
             mask of the selected (and valid) keys.
-        metadata (dict): Configuration of the pass (``index_topk``, ranks,
+        metadata (dict): Configuration of the pass (``index_top_k``, ranks,
             ``use_sparse_attention``).
         target_distribution (torch.Tensor, optional): Main attention
             distribution the indexer is aligned to, when requested.
@@ -255,7 +265,7 @@ class LightningIndexer(nn.Module):
 
         # Query-conditioned head weights, kept in FP32 under autocast: [B, T, H]
         bias = self.w_proj.bias
-        with torch.autocast(device_type=x.device.type, enabled=False):
+        with _autocast_disabled(x.device.type):
             weights = F.linear(
                 x.float(),
                 self.w_proj.weight.float(),
@@ -319,9 +329,10 @@ def indexer_kl_alignment_loss(
     KL divergence that aligns the lightning indexer with the main attention.
 
     Computes ``KL(p || softmax(index_scores))`` per query over the valid keys
-    and averages over queries. ``p`` is ``softmax(target_scores)``, or
-    ``target_scores`` renormalized over the valid keys when
-    ``target_is_probabilities`` is True.
+    and averages over the queries that have at least one valid key; fully
+    masked rows (e.g. left padding) contribute nothing. ``p`` is
+    ``softmax(target_scores)``, or ``target_scores`` renormalized over the
+    valid keys when ``target_is_probabilities`` is True.
 
     Args:
         index_scores (torch.Tensor): Indexer scores ``[batch, seq_len,
@@ -345,8 +356,7 @@ def indexer_kl_alignment_loss(
         if selection_mask.shape != index_scores.shape:
             raise ValueError("selection_mask must match index_scores")
         valid &= selection_mask
-    if not valid.any(dim=-1).all():
-        raise ValueError("every query row must contain at least one valid key")
+    has_valid_key = valid.any(dim=-1)
 
     masked_index = index_scores.masked_fill(~valid, float("-inf"))
     if target_is_probabilities:
@@ -359,13 +369,14 @@ def indexer_kl_alignment_loss(
     log_index = F.log_softmax(masked_index, dim=-1)
     target_log = target.clamp_min(1e-12).log()
     loss = target * (target_log - log_index)
-    return loss.masked_fill(~valid, 0.0).sum(dim=-1).mean()
+    per_query = loss.masked_fill(~valid, 0.0).sum(dim=-1)
+    return per_query.sum() / has_valid_key.sum().clamp_min(1)
 
 
 class DeepSeekSparseAttention(MultiHeadLatentAttention):
     """
     DeepSeek Sparse Attention (DSA): MLA plus a lightning indexer that picks
-    ``index_topk`` keys per query (DeepSeek-V3.2).
+    ``index_top_k`` keys per query (DeepSeek-V3.2).
 
     The MLA projections, decoupled RoPE and output projection are inherited
     unchanged from ``MultiHeadLatentAttention``. The indexer reads MLA's
@@ -382,9 +393,9 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
         qk_rope_head_dim (int): Per-head query/key dimension with RoPE. The
             indexer rotates the same number of leading channels.
         v_head_dim (int): Per-head value dimension.
-        index_n_heads (int): Number of lightning-indexer heads.
+        index_num_heads (int): Number of lightning-indexer heads.
         index_head_dim (int): Per-head lightning-indexer dimension.
-        index_topk (int): Keys kept per query in the sparse stage.
+        index_top_k (int): Keys kept per query in the sparse stage.
         q_lora_rank (int, optional): Rank of the query latent. None projects
             queries directly from ``x``. Defaults to None.
         dropout (float, optional): Attention dropout. Defaults to 0.0.
@@ -429,9 +440,9 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
         qk_nope_head_dim: int,
         qk_rope_head_dim: int,
         v_head_dim: int,
-        index_n_heads: int,
+        index_num_heads: int,
         index_head_dim: int,
-        index_topk: int,
+        index_top_k: int,
         q_lora_rank: Optional[int] = None,
         dropout: float = 0.0,
         rope_theta: float = 10_000.0,
@@ -447,8 +458,8 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
         rms_norm_eps: float = 1e-6,
         detach_indexer_input: bool = True,
     ):
-        if index_topk < 1:
-            raise ValueError(f"index_topk must be >= 1, got {index_topk}")
+        if index_top_k < 1:
+            raise ValueError(f"index_top_k must be >= 1, got {index_top_k}")
 
         attention_scale = (qk_nope_head_dim + qk_rope_head_dim) ** -0.5
         if rope_scaling_type == "yarn" and yarn_mscale_all_dim:
@@ -475,7 +486,7 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
             attention_scale=attention_scale,
             rope_interleaved=rope_interleaved,
         )
-        self.index_topk = index_topk
+        self.index_top_k = index_top_k
         self.detach_indexer_input = detach_indexer_input
         # Replace MLA's plain RoPE so that context extension (e.g. YaRN) applies.
         self.rope = _make_rope(
@@ -491,7 +502,7 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
         self.indexer = LightningIndexer(
             embed_dim=embed_dim,
             query_dim=q_lora_rank or embed_dim,
-            num_heads=index_n_heads,
+            num_heads=index_num_heads,
             head_dim=index_head_dim,
             rotary_dim=qk_rope_head_dim,
             max_seq_len=max_seq_len,
@@ -543,12 +554,14 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
                 ``[batch, heads, seq_len, seq_len]``; a 3-D mask is read as
                 ``[batch, seq_len, seq_len]``. Defaults to None.
             compute_alignment_loss (bool, optional): Compute the indexer KL
-                loss into ``last_stats.alignment_loss``. Defaults to False.
+                loss into ``last_stats.alignment_loss``. When False, the
+                indexer runs without building an autograd graph, since the
+                top-k selection is not differentiable. Defaults to False.
             alignment_on_selected (bool, optional): In the sparse stage,
                 restrict the KL loss to the selected keys. Defaults to True.
             use_sparse_attention (bool, optional): False keeps dense causal
                 attention (indexer warm-up); True attends only to the
-                ``index_topk`` selected keys. Defaults to True.
+                ``index_top_k`` selected keys. Defaults to True.
 
         Returns:
             torch.Tensor: Output ``[batch, seq_len, embed_dim]``.
@@ -562,11 +575,14 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
         q, k, value, q_latent = self._project_qkv(x)
 
         # --- Lightning indexer and top-k selection ---
+        # The top-k selection is not differentiable, so the indexer only needs
+        # an autograd graph when its KL loss is computed.
         index_x = x.detach() if self.detach_indexer_input else x
         index_q = q_latent.detach() if self.detach_indexer_input else q_latent
-        index_scores = self.indexer(index_x, query_states=index_q, mask=mask)
+        with torch.set_grad_enabled(compute_alignment_loss and torch.is_grad_enabled()):
+            index_scores = self.indexer(index_x, query_states=index_q, mask=mask)
         selected_indices, selection_mask = causal_topk_selection(
-            index_scores, self.index_topk
+            index_scores, self.index_top_k
         )
 
         # --- Main attention: dense (warm-up) or over the selected keys ---
@@ -608,7 +624,7 @@ class DeepSeekSparseAttention(MultiHeadLatentAttention):
             target_distribution=target_distribution,
             alignment_loss=alignment_loss,
             metadata={
-                "index_topk": self.index_topk,
+                "index_top_k": self.index_top_k,
                 "q_lora_rank": self.q_lora_rank,
                 "kv_lora_rank": self.kv_lora_rank,
                 "mode": "reference_masked_sdpa",
