@@ -58,6 +58,9 @@ export const NAV: NavTrack[] = [
     groups: [
       {
         items: [
+          { title: "What OLM Is (and Isn't)", path: "why-olm" },
+          { title: "OLM vs Other Libraries", path: "comparison" },
+          { title: "FAQ", path: "faq" },
           { title: "The Block System", path: "guides/architecture" },
           { title: "Building Blocks", path: "guides/components" },
           { title: "Datasets & Training", path: "guides/datasets-and-training" },
