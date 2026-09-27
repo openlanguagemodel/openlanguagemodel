@@ -186,10 +186,28 @@ class Sarvam30B_Model(Block):
 
 
 class Sarvam30B(Sarvam30B_Model):
-    """Sarvam 30B with default config."""
+    """Sarvam 30B (sarvamai/sarvam-30b)."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            vocab_size=262144,
+            embed_dim=4096,
+            intermediate_size=8192,
+            moe_intermediate_size=1024,
+            shared_expert_intermediate_size=1024,
+            num_layers=19,
+            num_heads=64,
+            num_kv_heads=4,
+            head_dim=64,
+            max_seq_len=131072,
+            num_experts=128,
+            num_experts_per_tok=6,
+            first_k_dense=1,
+            rope_theta=8000000.0,
+            rms_norm_eps=1e-6,
+            routed_scaling_factor=2.5,
+            tie_weights=False,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -302,8 +320,12 @@ class Sarvam105B_Model(Block):
 
     32 layers of Multi-Head Latent Attention with KV compression
     (kv_lora_rank=512, head_dim split into 128 nope + 64 rope).
-    First layer is dense FFN; remaining 31 use 128-expert top-8 MoE
-    with DeepSeek-YaRN RoPE scaling for 131K context.
+    First layer is dense FFN; remaining 31 use 128-expert top-8 MoE.
+
+    Implementation note:
+        The released config extends RoPE to 131K context with DeepSeek-style
+        YaRN (factor 40 over a 4,096-token original context); this
+        implementation uses plain RoPE at ``rope_theta``.
 
     Structure:
         Embedding -> [DenseBlock, MoEBlock x 31] -> RMSNorm -> OutputHead
@@ -370,7 +392,26 @@ class Sarvam105B_Model(Block):
 
 
 class Sarvam105B(Sarvam105B_Model):
-    """Sarvam 105B with default config."""
+    """Sarvam 105B (sarvamai/sarvam-105b)."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            vocab_size=262144,
+            embed_dim=4096,
+            intermediate_size=16384,
+            moe_intermediate_size=2048,
+            num_layers=32,
+            num_heads=64,
+            kv_lora_rank=512,
+            qk_nope_head_dim=128,
+            qk_rope_head_dim=64,
+            v_head_dim=128,
+            max_seq_len=131072,
+            num_experts=128,
+            num_experts_per_tok=8,
+            first_k_dense=1,
+            rope_theta=10000.0,
+            rms_norm_eps=1e-6,
+            routed_scaling_factor=2.5,
+            tie_weights=False,
+        )

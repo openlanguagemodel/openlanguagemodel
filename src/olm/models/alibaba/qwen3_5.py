@@ -234,7 +234,29 @@ class Qwen3_5_Model(Block):
 
 
 class Qwen3_5_397B(Qwen3_5_Model):
-    """Qwen3.5 397B-A17B with default config."""
+    """Qwen3.5-397B-A17B (397B total, ~17B active; language-model component)."""
 
     def __init__(self):
-        super().__init__()
+        super().__init__(
+            vocab_size=248320,
+            embed_dim=4096,
+            num_layers=60,
+            full_attn_heads=32,
+            full_attn_kv_heads=2,
+            full_attn_head_dim=256,
+            linear_num_key_heads=16,
+            linear_num_value_heads=64,
+            linear_key_head_dim=128,
+            linear_value_head_dim=128,
+            linear_conv_kernel_dim=4,
+            max_seq_len=262144,
+            moe_intermediate_size=1024,
+            shared_expert_intermediate_size=1024,
+            num_experts=512,
+            num_experts_per_tok=10,
+            num_mtp_heads=1,
+            rope_theta=10000000.0,
+            partial_rotary_factor=0.25,
+            rms_norm_eps=1e-6,
+            tie_weights=False,
+        )
