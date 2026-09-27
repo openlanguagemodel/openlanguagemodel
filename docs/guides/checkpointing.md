@@ -121,7 +121,7 @@ The Trainer counts the batches each epoch has used. On resume it creates the epo
 
 Skipping means reading: the skipped batches are loaded and thrown away. For a map-style dataset in memory that is quick. For a streaming dataset, the skipped text is downloaded and tokenized again, so resuming late in a long epoch can take minutes to hours before the first step. The Trainer prints how many batches it skips.
 
-Do not also set `skip_batches` on an OLM dataset when you resume through the Trainer; the data would be skipped twice. `skip_batches` is for hand-written training loops. It counts **samples in each DataLoader worker's shard**, and every optimizer step uses `batch_size × grad_accum_steps` samples on each process, spread over `num_workers` workers. After `N` optimizer steps, skip `N × batch_size × grad_accum_steps / num_workers` samples in each shard. The formula `N × batch_size` that earlier versions of these docs used ignores gradient accumulation and workers, and replays data the model has already seen.
+Do not also set `skip_batches` on an OLM dataset when you resume through the Trainer; the data would be skipped twice. `skip_batches` is for hand-written training loops. It counts **samples in each DataLoader worker's shard**, and every optimizer step uses `batch_size × grad_accum_steps` samples on each process, taken in turn from its `W = max(num_workers, 1)` workers. After `N` optimizer steps, skip `N × batch_size × grad_accum_steps / W` samples in each shard; this is exact when `N × grad_accum_steps` is a multiple of `W`. The formula `N × batch_size` that earlier versions of these docs used ignores gradient accumulation and workers, and replays data the model has already seen.
 
 ## What a checkpoint contains
 
