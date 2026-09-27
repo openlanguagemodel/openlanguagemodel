@@ -1665,7 +1665,7 @@ code.inline {
 
 .bench-matrix td button:hover { background: #dcdcd4; }
 .bench-matrix td.oom button { color: var(--red-accent); }
-.bench-matrix td.not-run button { color: #a3a39d; }
+.bench-matrix td.not-run button { color: var(--text-muted); }
 
 .entry .bench-legend {
     display: flex;
@@ -1687,7 +1687,7 @@ code.inline {
 
 .bench-legend span + span { margin-left: 0.6rem; }
 .bench-legend .oom { color: var(--red-accent); }
-.bench-legend .not-run { color: #a3a39d; }
+.bench-legend .not-run { color: var(--text-muted); }
 
 /* Scaling bars */
 .bench-bars { margin: 1.8rem 0; max-width: 760px; }

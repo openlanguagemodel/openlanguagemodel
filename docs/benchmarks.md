@@ -4,7 +4,7 @@ description: Measured OLM training throughput, MFU, peak memory and cost per bil
 
 # GPU Benchmarks
 
-How fast does an OLM model train on one GPU, and what does a billion training tokens cost? This page answers with measurements, not estimates: every measured number in the tables below is generated from the catalog in [`benchmarks/throughput/data/`](../benchmarks/throughput/data/benchmark_catalog.csv) by [`render_docs_tables.py`](../benchmarks/throughput/render_docs_tables.py), and the test suite fails if the page and the catalog disagree.
+How fast does an OLM model train on one GPU, and what does a billion training tokens cost? This page answers with measurements, not estimates: every measured number in the tables below is generated from the [benchmark catalog](../benchmarks/throughput/data/benchmark_catalog.csv) by [`render_docs_tables.py`](../benchmarks/throughput/render_docs_tables.py), and the test suite fails if the page and the catalog disagree.
 
 For every GPU, model size (150M to 8B) and context length (512 to 32,768 tokens), with any token budget and price, use the [interactive explorer on the website](https://openlanguagemodel.github.io/openlanguagemodel/benchmarks/).
 
