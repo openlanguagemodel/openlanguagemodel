@@ -27,6 +27,8 @@ from catalog import (
     PROVIDER_ORDER,
     SCALING_PATH,
     gpu_metadata,
+    gpu_profile,
+    gpus_by_price,
     load_catalog,
     load_price_profiles,
     model_parameters,
@@ -71,18 +73,15 @@ def build_payload() -> dict[str, Any]:
     providers = prices["providers"]
     scaling = json.loads(SCALING_PATH.read_text())
 
-    measured_gpus = sorted(
-        denominators,
-        key=lambda gpu: runpod["gpus"][gpu]["secure_usd_per_hour"],
-    )
+    measured_gpus = gpus_by_price(denominators, runpod)
     gpus = []
     for gpu in measured_gpus:
-        price = runpod["gpus"][gpu]
+        profile = gpu_profile(gpu, runpod)
         gpus.append(
             {
                 "id": gpu,
-                "name": price["display_name"],
-                "vramGb": price["vram_gb"],
+                "name": profile["display_name"],
+                "vramGb": profile["vram_gb"],
                 "ampDtype": denominators[gpu]["amp_dtype"],
                 "peakTflops": rounded(denominators[gpu]["peak_tflops"], 3),
                 "boardPeakTflops": rounded(
@@ -100,6 +99,7 @@ def build_payload() -> dict[str, Any]:
             "note": info["note"],
         }
         for gpu, info in NOT_YET_MEASURED.items()
+        if gpu not in denominators
     ]
     pending.extend(
         {

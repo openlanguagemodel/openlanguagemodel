@@ -18,7 +18,8 @@ were not run: the context sweep only extends models that trained at 2,048
 tokens, and 16,384/32,768 tokens only for models that fit the previous length.
 
 The 2,048-token sweep doubles the batch from 1 until it runs out of memory,
-stops improving by 1%, or reaches 64. Other contexts test only three batches
+two doublings in a row fail to add 1% throughput, or it reaches 64. Other
+contexts test only three batches
 around the token-equivalent batch. When the largest tested batch fits every
 seed and is also the fastest, a larger batch was simply not tried; such cells
 are flagged ``search_capped`` so consumers can say so.
@@ -48,7 +49,8 @@ PROTOCOL_SEEDS = (11, 22)
 OOM_STATUSES = {"oom", "oom_during_model_build"}
 
 # GPUs that are wanted in the catalog but have no rows yet. They are shown as
-# "not yet measured" instead of being silently absent.
+# "not yet measured" instead of being silently absent, and drop off this list
+# on their own once rows for them are merged.
 NOT_YET_MEASURED = {
     "Tesla T4": {
         "display_name": "T4",
@@ -312,6 +314,34 @@ def load_price_profiles(
         "providers": providers_snapshot,
         "profiles": profiles,
     }
+
+
+def gpu_profile(gpu: str, runpod: dict[str, Any]) -> dict[str, Any]:
+    """Display name, VRAM and RunPod Secure rate (``None`` if unpriced)."""
+
+    if gpu in runpod["gpus"]:
+        price = runpod["gpus"][gpu]
+        return {
+            "display_name": price["display_name"],
+            "vram_gb": price["vram_gb"],
+            "secure_usd_per_hour": price["secure_usd_per_hour"],
+        }
+    info = NOT_YET_MEASURED.get(gpu, {})
+    return {
+        "display_name": info.get("display_name", gpu.removeprefix("NVIDIA ")),
+        "vram_gb": info.get("vram_gb"),
+        "secure_usd_per_hour": None,
+    }
+
+
+def gpus_by_price(gpus: Any, runpod: dict[str, Any]) -> list[str]:
+    """Order GPUs by RunPod Secure rate; GPUs RunPod does not rent go last."""
+
+    def key(gpu: str) -> tuple[float, str]:
+        rate = gpu_profile(gpu, runpod)["secure_usd_per_hour"]
+        return (rate if rate is not None else float("inf"), gpu)
+
+    return sorted(gpus, key=key)
 
 
 def usd_per_billion_tokens(tokens_per_second: float, usd_per_hour: float) -> float:
