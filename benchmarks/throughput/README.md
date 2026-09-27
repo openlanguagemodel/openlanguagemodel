@@ -101,10 +101,10 @@ A *cell* is one GPU, model and context. `catalog.py` picks one batch per cell, a
 
 1. keep complete, warmup-stabilized rows and group them by batch;
 2. take the median of each metric across the seeds that completed that batch;
-3. consider only batches that every successful seed in the cell completed, so a batch that fit one seed at the edge of memory is never the headline;
+3. consider only batches that every seed with rows in the cell completed, so a batch that fit one seed at the edge of memory is never the headline, even when no other batch fit;
 4. choose the batch with the highest median tokens/s (MFU picks the same batch, because for a fixed cell it is proportional to tokens/s).
 
-A cell with rows but no complete batch is *OOM*. A cell with no rows was *not run*. When the fastest batch is also the largest batch the sweep tried, and it fit every seed, a larger batch might have been faster; those cells are flagged `search_capped`. Four RTX PRO 6000 cells for the 2B model have an edge-of-memory batch that fit seed 11 at about 98 GB but ran out of memory on seed 22; they are reported and never selected.
+A cell with rows but no batch that every seed completed is *OOM* when an attempt ran out of memory (every such cell in the current catalog) and *incomplete* otherwise. A cell with no rows was *not run*. When the fastest batch is also the largest batch the sweep tried, and it fit every seed, a larger batch might have been faster; those cells are flagged `search_capped`. Four RTX PRO 6000 cells for the 2B model have an edge-of-memory batch that fit seed 11 at about 98 GB but ran out of memory on seed 22; they are reported and never selected.
 
 ## Cost
 
@@ -157,6 +157,8 @@ The suite skips stages that already completed and stops, rather than overwrite, 
    ```
 
 3. Open a pull request with those changes, and attach `$out` (results, logs, telemetry and manifests) as a zip so reviewers can audit the raw data.
+
+The catalog holds one board per GPU, and cells are keyed by GPU name, so `merge_into_catalog.py` refuses rows for a GPU that is already in it. It checks both files before writing either catalog.
 
 If the GPU is rented somewhere other than RunPod, the website shows its measurements without a price until a dated quote is added to a price snapshot.
 

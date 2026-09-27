@@ -10,7 +10,11 @@ This script appends them to ``data/benchmark_catalog.csv`` and
 - the rows use the catalog's columns (``amp_dtype`` may be new: rows exported
   before ``--amp-dtype`` existed are all BF16 and are filled in as such);
 - every row comes from one GPU board and both protocol seeds are present;
+- the GPU is not in the catalog yet: cells are keyed by GPU name, so rows
+  from a second board of the same GPU would be mixed with the first;
 - no row repeats a (board, seed, model, context, batch) already in the file.
+
+Both files are checked before either catalog is written.
 
 Rebuild the website data and the docs tables afterwards:
 
@@ -56,7 +60,7 @@ def merged_columns(existing: list[str], new: list[str], name: str) -> list[str]:
 def check_new_rows(rows: list[dict[str, str]], name: str) -> None:
     if not rows:
         raise SystemExit(f"{name}: no rows")
-    boards = {row["gpu_uuid"] for row in rows}
+    boards = {(row["gpu_name"], row["gpu_uuid"]) for row in rows}
     if len(boards) != 1:
         raise SystemExit(f"{name}: expected one GPU board, found {len(boards)}")
     seeds = {int(row["seed"]) for row in rows}
@@ -66,27 +70,51 @@ def check_new_rows(rows: list[dict[str, str]], name: str) -> None:
         )
 
 
-def merge(target: Path, source: Path) -> int:
-    """Append ``source`` rows to ``target``; return the number appended."""
+def plan_merge(
+    target: Path, source: Path
+) -> tuple[list[str], list[dict[str, str]], list[dict[str, str]]]:
+    """Check ``source`` against ``target``; return columns, old and new rows."""
 
     existing_columns, existing_rows = read_rows(target)
     new_columns, new_rows = read_rows(source)
     check_new_rows(new_rows, source.name)
     columns = merged_columns(existing_columns, new_columns, source.name)
 
+    gpu = new_rows[0]["gpu_name"]
+    if any(row["gpu_name"] == gpu for row in existing_rows):
+        raise SystemExit(
+            f"{source.name}: {gpu} is already in {target.name}; the catalog "
+            "holds one board per GPU, so a second board's rows would be mixed "
+            "with the first"
+        )
     seen = {tuple(row[field] for field in ROW_KEY) for row in existing_rows}
     for row in new_rows:
         key = tuple(row[field] for field in ROW_KEY)
         if key in seen:
             raise SystemExit(f"{source.name}: row already in {target.name}: {key}")
         seen.add(key)
+    return columns, existing_rows, new_rows
 
+
+def write_merge(
+    target: Path,
+    columns: list[str],
+    existing_rows: list[dict[str, str]],
+    new_rows: list[dict[str, str]],
+) -> None:
     with target.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
         writer.writeheader()
         for row in existing_rows:
             writer.writerow({**LEGACY_DEFAULTS, **row})
         writer.writerows(new_rows)
+
+
+def merge(target: Path, source: Path) -> int:
+    """Append ``source`` rows to ``target``; return the number appended."""
+
+    columns, existing_rows, new_rows = plan_merge(target, source)
+    write_merge(target, columns, existing_rows, new_rows)
     return len(new_rows)
 
 
@@ -100,10 +128,15 @@ def main() -> int:
     parser.add_argument("--selected-catalog", type=Path, default=SELECTED_PATH)
     args = parser.parse_args()
 
-    appended = merge(args.catalog, args.all_rows)
-    print(f"Appended {appended} rows to {args.catalog}")
-    appended = merge(args.selected_catalog, args.selected_rows)
-    print(f"Appended {appended} rows to {args.selected_catalog}")
+    # Check both files first so a rejected file never leaves one catalog
+    # merged and the other not.
+    plans = [
+        (args.catalog, plan_merge(args.catalog, args.all_rows)),
+        (args.selected_catalog, plan_merge(args.selected_catalog, args.selected_rows)),
+    ]
+    for target, (columns, existing_rows, new_rows) in plans:
+        write_merge(target, columns, existing_rows, new_rows)
+        print(f"Appended {len(new_rows)} rows to {target}")
     return 0
 
 
