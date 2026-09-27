@@ -1,0 +1,10 @@
+{
+  "affected_file_pattern": "rtx4090_*_v2.json",
+  "affected_field": "environment.dense_bf16_peak_source",
+  "raw_value": "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf",
+  "corrected_value": "https://images.nvidia.com/aem-dam/Solutions/geforce/ada/nvidia-ada-gpu-architecture.pdf",
+  "scope": "metadata_only",
+  "measurement_impact": "none",
+  "numeric_peak_impact": "none; the raw files already use the correct RTX 4090 dense BF16 peak of 165.2 TFLOP/s",
+  "resolution": "Original raw JSON is retained unchanged. Every _clock_adjusted.json derivative contains the corrected source and an embedded metadata_corrections record. The benchmark harness now selects a source per GPU."
+}

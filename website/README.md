@@ -31,9 +31,21 @@ here or the Markdown in `../docs`.
   python ../scripts/gen_api.py
   ```
 
+- **Benchmarks** — `app/benchmarks/page.tsx` and
+  `app/components/BenchmarkExplorer.tsx` render
+  `app/lib/benchmarks.generated.json`, which
+  `../benchmarks/throughput/build_site_data.py` writes from the benchmark
+  catalog and price snapshots. Re-run it after changing anything under
+  `../benchmarks/throughput/data/`:
+
+  ```bash
+  python ../benchmarks/throughput/build_site_data.py
+  ```
+
 - Markdown features supported: GFM tables, fenced code with syntax highlighting,
   GitHub-style alerts (`> [!NOTE]`), `<details>`, and Mermaid diagrams. Internal
-  `*.md` links are rewritten to site routes automatically.
+  `*.md` links are rewritten to site routes automatically, and relative links
+  to files outside `docs/` point at the same file on GitHub.
 
 ## Build (static export)
 

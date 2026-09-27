@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "description": "Weak scaling of one Llama-3-style OLM model with DistributedDataParallel on a single NVLink node. Each GPU processes one 2,048-token sequence per step on synthetic tokens. Reported in arXiv:2607.16669.",
+  "source": {
+    "repository_branch": "benchmarking",
+    "commit": "2d59162c5a6965d0a8d1cd3b46aa7e52b36af333",
+    "raw_runs": "benchmarks/demo2026/results/raw/scaling/olm_*gpu_rep*.json",
+    "summary": "benchmarks/demo2026/results/derived/scaling_summary.json",
+    "paper": "https://arxiv.org/abs/2607.16669"
+  },
+  "workload": {
+    "model": "olm.models.meta.llama3.Llama3Model",
+    "parameters": 348447744,
+    "embed_dim": 1024,
+    "intermediate_size": 2816,
+    "num_layers": 28,
+    "num_heads": 16,
+    "num_kv_heads": 4,
+    "vocab_size": 32000,
+    "tie_weights": true,
+    "gpu_model": "NVIDIA A100-SXM4-80GB",
+    "interconnect": "nvlink",
+    "parallelism": "torch.nn.parallel.DistributedDataParallel",
+    "precision": "bf16",
+    "optimizer": "adamw",
+    "fused_optimizer": false,
+    "attention_backend": "sdpa",
+    "compile": false,
+    "sequence_length": 2048,
+    "local_batch_size": 1,
+    "grad_accum_steps": 1,
+    "warmup_steps": 50,
+    "measured_steps": 200,
+    "olm_commit": "898850dd38bb82deb8db713aa979efc48e842080",
+    "torch_version": "2.13.0+cu130",
+    "measured_at": "2026-07-16"
+  },
+  "efficiency_formula": "mean_tokens_per_second(N) / (N * mean_tokens_per_second(1))",
+  "peak_memory_note": "torch.cuda.max_memory_allocated() on the reporting rank's own GPU.",
+  "rows": [
+    {
+      "gpu_count": 1,
+      "replicate_tokens_per_second": [
+        17853.339215976495,
+        17836.591845249513,
+        17665.531903446452
+      ],
+      "mean_tokens_per_second": 17785.154321557486,
+      "std_tokens_per_second": 103.93392512849303,
+      "scaling_efficiency": 1.0,
+      "peak_allocated_gb_per_gpu": [
+        9.060877824
+      ]
+    },
+    {
+      "gpu_count": 2,
+      "replicate_tokens_per_second": [
+        32945.759686925936,
+        32142.467993124086,
+        32190.09303198092
+      ],
+      "mean_tokens_per_second": 32426.106904010314,
+      "std_tokens_per_second": 450.66206538324445,
+      "scaling_efficiency": 0.9116060034606067,
+      "peak_allocated_gb_per_gpu": [
+        10.465641984
+      ]
+    },
+    {
+      "gpu_count": 4,
+      "replicate_tokens_per_second": [
+        63955.45556248521,
+        64754.19104120673,
+        64572.78445739099
+      ],
+      "mean_tokens_per_second": 64427.47702036097,
+      "std_tokens_per_second": 418.72458691161023,
+      "scaling_efficiency": 0.9056356196789935,
+      "peak_allocated_gb_per_gpu": [
+        10.465641984
+      ]
+    }
+  ]
+}

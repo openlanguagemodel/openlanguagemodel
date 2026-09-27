@@ -62,6 +62,7 @@ export const NAV: NavTrack[] = [
           { title: "Building Blocks", path: "guides/components" },
           { title: "Datasets & Training", path: "guides/datasets-and-training" },
           { title: "Distributed Training", path: "tutorials/distributed-training" },
+          { title: "GPU Benchmarks", path: "benchmarks" },
           { title: "Experiment Tracking", path: "tutorials/experiment-tracking" },
           { title: "Roadmap", path: "roadmap" },
           { title: "v2.2 Release Notes", path: "release-v2.2.0" },

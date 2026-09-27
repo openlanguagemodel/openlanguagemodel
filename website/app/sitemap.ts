@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/docs/", priority: 0.9 },
     { path: "/articles/", priority: 0.85 },
     { path: "/models/", priority: 0.8 },
+    { path: "/benchmarks/", priority: 0.8 },
     { path: "/education/", priority: 0.8 },
   ];
 

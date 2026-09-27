@@ -1,0 +1,815 @@
+{
+  "captured_at": "2026-07-27T05:22:34+00:00",
+  "comparison_policy": {
+    "benchmark_transfer": "Prices outside RunPod are projections using measured RunPod TPS, not measurements on the quoted provider.",
+    "excluded_costs": [
+      "persistent storage unless inseparable from the instance",
+      "network egress",
+      "tax",
+      "setup and idle time",
+      "commitment discounts"
+    ],
+    "included_costs": "advertised accelerator or bundled-instance rate",
+    "vast_quote_rule": "Median of the three cheapest verified, rentable, single-GPU, on-demand offers with reliability >=0.98, CUDA >=12.8, and VRAM matching the measured SKU.",
+    "warning": "Provider products differ in CPU, RAM, storage, networking, availability, tenancy, and minimum rental commitment."
+  },
+  "currency": "USD",
+  "quotes": [
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 8,
+      "match_quality": "near",
+      "notes": "A100 80 GB; instance fabric/clock may differ from measured PCIe host.",
+      "price_type": "capacity_block",
+      "product": "p4de.24xlarge",
+      "provider": "AWS",
+      "region": "us-east-1",
+      "source_url": "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+      "usd_per_gpu_hour": 2.214
+    },
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 1,
+      "match_quality": "near",
+      "notes": "Full A100 80 GB VM; interconnect/clock may differ from measured PCIe host.",
+      "price_type": "on_demand",
+      "product": "a2-ultragpu-1g",
+      "provider": "Google Cloud",
+      "region": "us-central1",
+      "source_url": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+      "usd_per_gpu_hour": 5.06879789
+    },
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 8,
+      "match_quality": "near",
+      "notes": "Measured device is PCIe; Lambda quote is an 8-GPU SXM instance.",
+      "price_type": "on_demand",
+      "product": "8x A100 SXM 80 GB",
+      "provider": "Lambda",
+      "region": null,
+      "source_url": "https://lambda.ai/instances",
+      "usd_per_gpu_hour": 2.79
+    },
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "A100 PCIe 80GB",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 1.19
+    },
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "A100 PCIe 80GB",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 1.39
+    },
+    {
+      "gpu": "NVIDIA A100 80GB PCIe",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $0.867--$1.000/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "A100 PCIE",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 0.988
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "capacity_block",
+      "product": "p6-b200.48xlarge",
+      "provider": "AWS",
+      "region": "us-east-1",
+      "source_url": "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+      "usd_per_gpu_hour": 12.355
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "No ordinary on-demand price was listed at capture time.",
+      "price_type": "flex_start",
+      "product": "a4-highgpu-8g",
+      "provider": "Google Cloud",
+      "region": "us-central1",
+      "source_url": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+      "usd_per_gpu_hour": 8.055
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "1x B200 SXM6 180 GB",
+      "provider": "Lambda",
+      "region": null,
+      "source_url": "https://lambda.ai/instances",
+      "usd_per_gpu_hour": 6.99
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "B200 180GB",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 5.98
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "B200 180GB",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 5.89
+    },
+    {
+      "gpu": "NVIDIA B200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $6.237--$6.487/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "B200",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 6.25
+    },
+    {
+      "gpu": "NVIDIA B300 SXM6 AC",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "capacity_block",
+      "product": "p6-b300.48xlarge",
+      "provider": "AWS",
+      "region": "us-east-1",
+      "source_url": "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+      "usd_per_gpu_hour": 14.04
+    },
+    {
+      "gpu": "NVIDIA B300 SXM6 AC",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "B300 288GB",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 6.94
+    },
+    {
+      "gpu": "NVIDIA B300 SXM6 AC",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "B300 288GB",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 7.39
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 4090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 4090",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.34
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 4090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "RTX 4090",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.69
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 4090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $0.253--$0.253/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 4090",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 0.2533333333333333
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 5090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 5090",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.69
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 5090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "RTX 5090",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.99
+    },
+    {
+      "gpu": "NVIDIA GeForce RTX 5090",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $0.280--$0.307/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 5090",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 0.29333333333333333
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Single-H100 Capacity Block effective hourly rate.",
+      "price_type": "capacity_block",
+      "product": "p5.4xlarge",
+      "provider": "AWS",
+      "region": "us-east-1",
+      "source_url": "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+      "usd_per_gpu_hour": 5.191
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "a3-highgpu-8g",
+      "provider": "Google Cloud",
+      "region": "us-central1",
+      "source_url": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+      "usd_per_gpu_hour": 11.061250014875
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "1x H100 SXM 80 GB",
+      "provider": "Lambda",
+      "region": null,
+      "source_url": "https://lambda.ai/instances",
+      "usd_per_gpu_hour": 4.29
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "H100 SXM 80GB",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 2.69
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "H100 SXM 80GB",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 2.99
+    },
+    {
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $2.267--$3.000/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "H100 SXM",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 2.5453333333333332
+    },
+    {
+      "gpu": "NVIDIA H200",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "capacity_block",
+      "product": "p5e.48xlarge",
+      "provider": "AWS",
+      "region": "us-east-2",
+      "source_url": "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+      "usd_per_gpu_hour": 5.97
+    },
+    {
+      "gpu": "NVIDIA H200",
+      "instance_gpu_count": 8,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "a3-ultragpu-8g",
+      "provider": "Google Cloud",
+      "region": "us-central1",
+      "source_url": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+      "usd_per_gpu_hour": 10.600863561625
+    },
+    {
+      "gpu": "NVIDIA H200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "H200 SXM 141GB",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 3.59
+    },
+    {
+      "gpu": "NVIDIA H200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "H200 SXM 141GB",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 4.39
+    },
+    {
+      "gpu": "NVIDIA H200",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $3.934--$4.287/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "H200",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 4.078947368421053
+    },
+    {
+      "gpu": "NVIDIA RTX 6000 Ada Generation",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 6000 Ada",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.74
+    },
+    {
+      "gpu": "NVIDIA RTX 6000 Ada Generation",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "RTX 6000 Ada",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.84
+    },
+    {
+      "gpu": "NVIDIA RTX 6000 Ada Generation",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $0.533--$0.560/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX 6000Ada",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 0.5479999999999999
+    },
+    {
+      "gpu": "NVIDIA RTX A6000",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "1x RTX A6000",
+      "provider": "Lambda",
+      "region": null,
+      "source_url": "https://lambda.ai/instances",
+      "usd_per_gpu_hour": 1.09
+    },
+    {
+      "gpu": "NVIDIA RTX A6000",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX A6000",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.33
+    },
+    {
+      "gpu": "NVIDIA RTX A6000",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "RTX A6000",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 0.53
+    },
+    {
+      "gpu": "NVIDIA RTX A6000",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 1 cheapest eligible offers; range $0.387--$0.387/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX A6000",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 0.38666666666666666
+    },
+    {
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "g4-standard-48",
+      "provider": "Google Cloud",
+      "region": "us-central1",
+      "source_url": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+      "usd_per_gpu_hour": 4.49993
+    },
+    {
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX PRO 6000",
+      "provider": "RunPod Community",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 1.69
+    },
+    {
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "",
+      "price_type": "on_demand",
+      "product": "RTX PRO 6000",
+      "provider": "RunPod Secure",
+      "region": null,
+      "source_url": "https://www.runpod.io/pricing",
+      "usd_per_gpu_hour": 1.99
+    },
+    {
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "instance_gpu_count": 1,
+      "match_quality": "exact",
+      "notes": "Median of 3 cheapest eligible offers; range $1.267--$1.333/GPU-hour.",
+      "price_type": "marketplace_on_demand",
+      "product": "RTX PRO 6000 S",
+      "provider": "Vast.ai",
+      "region": null,
+      "source_url": "https://docs.vast.ai/api-reference/search/search-offers",
+      "usd_per_gpu_hour": 1.2666666666666666
+    }
+  ],
+  "schema_version": 1,
+  "sources": [
+    "https://aws.amazon.com/ec2/capacityblocks/pricing/",
+    "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
+    "https://docs.vast.ai/api-reference/search/search-offers",
+    "https://lambda.ai/instances",
+    "https://www.runpod.io/pricing"
+  ],
+  "unit": "per GPU-hour",
+  "vast_query_audit": {
+    "NVIDIA A100 80GB PCIe": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9981,
+          "total_usd_per_hour_at_listed_storage": 0.8733333333333334,
+          "usd_per_gpu_hour": 0.8666666666666667,
+          "vram_mb": 81920.0
+        },
+        {
+          "country_code": "JP",
+          "cuda_max_good": 13.3,
+          "reliability": 0.992683,
+          "total_usd_per_hour_at_listed_storage": 0.9914311111111112,
+          "usd_per_gpu_hour": 0.988,
+          "vram_mb": 81920.0
+        },
+        {
+          "country_code": "GB",
+          "cuda_max_good": 13.1,
+          "reliability": 0.9896447,
+          "total_usd_per_hour_at_listed_storage": 1.0022222222222221,
+          "usd_per_gpu_hour": 1.0,
+          "vram_mb": 81920.0
+        }
+      ],
+      "eligible_offer_count": 6,
+      "query_gpu_name": "A100 PCIE",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA B200": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9976631,
+          "total_usd_per_hour_at_listed_storage": 6.247916666666667,
+          "usd_per_gpu_hour": 6.2375,
+          "vram_mb": 183359.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9981403,
+          "total_usd_per_hour_at_listed_storage": 6.252083333333333,
+          "usd_per_gpu_hour": 6.25,
+          "vram_mb": 183359.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9957008,
+          "total_usd_per_hour_at_listed_storage": 6.497916666666667,
+          "usd_per_gpu_hour": 6.4875,
+          "vram_mb": 183359.0
+        }
+      ],
+      "eligible_offer_count": 5,
+      "query_gpu_name": "B200",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA B300 SXM6 AC": {
+      "cheapest_three_sanitized": [],
+      "eligible_offer_count": 0,
+      "query_gpu_name": "B300",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA GeForce RTX 4090": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9955969,
+          "total_usd_per_hour_at_listed_storage": 0.26296296296296295,
+          "usd_per_gpu_hour": 0.2533333333333333,
+          "vram_mb": 24564.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9961348,
+          "total_usd_per_hour_at_listed_storage": 0.26296296296296295,
+          "usd_per_gpu_hour": 0.2533333333333333,
+          "vram_mb": 24564.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9933616,
+          "total_usd_per_hour_at_listed_storage": 0.26296296296296295,
+          "usd_per_gpu_hour": 0.2533333333333333,
+          "vram_mb": 24564.0
+        }
+      ],
+      "eligible_offer_count": 38,
+      "query_gpu_name": "RTX 4090",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA GeForce RTX 5090": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9933666,
+          "total_usd_per_hour_at_listed_storage": 0.2896296296296297,
+          "usd_per_gpu_hour": 0.28,
+          "vram_mb": 32607.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9945708,
+          "total_usd_per_hour_at_listed_storage": 0.302962962962963,
+          "usd_per_gpu_hour": 0.29333333333333333,
+          "vram_mb": 32607.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9949772,
+          "total_usd_per_hour_at_listed_storage": 0.30814814814814817,
+          "usd_per_gpu_hour": 0.3066666666666667,
+          "vram_mb": 32607.0
+        }
+      ],
+      "eligible_offer_count": 55,
+      "query_gpu_name": "RTX 5090",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA H100 80GB HBM3": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "MY",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9905361,
+          "total_usd_per_hour_at_listed_storage": 2.2696296296296294,
+          "usd_per_gpu_hour": 2.2666666666666666,
+          "vram_mb": 81559.0
+        },
+        {
+          "country_code": "CZ",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9958913,
+          "total_usd_per_hour_at_listed_storage": 2.551851851851852,
+          "usd_per_gpu_hour": 2.5453333333333332,
+          "vram_mb": 81559.0
+        },
+        {
+          "country_code": "TW",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9834368,
+          "total_usd_per_hour_at_listed_storage": 3.005333333333333,
+          "usd_per_gpu_hour": 3.0,
+          "vram_mb": 81559.0
+        }
+      ],
+      "eligible_offer_count": 8,
+      "query_gpu_name": "H100 SXM",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA H200": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "SA",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9974872,
+          "total_usd_per_hour_at_listed_storage": 3.9356725146198834,
+          "usd_per_gpu_hour": 3.93421052631579,
+          "vram_mb": 143771.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 12.8,
+          "reliability": 0.9994338,
+          "total_usd_per_hour_at_listed_storage": 4.0811403508771935,
+          "usd_per_gpu_hour": 4.078947368421053,
+          "vram_mb": 143771.0
+        },
+        {
+          "country_code": "JP",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9971439,
+          "total_usd_per_hour_at_listed_storage": 4.2911900584795335,
+          "usd_per_gpu_hour": 4.286842105263159,
+          "vram_mb": 143771.0
+        }
+      ],
+      "eligible_offer_count": 3,
+      "query_gpu_name": "H200",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA RTX 6000 Ada Generation": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "CN",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9961997,
+          "total_usd_per_hour_at_listed_storage": 0.5355555555555556,
+          "usd_per_gpu_hour": 0.5333333333333333,
+          "vram_mb": 49140.0
+        },
+        {
+          "country_code": "JP",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9939217,
+          "total_usd_per_hour_at_listed_storage": 0.5502222222222222,
+          "usd_per_gpu_hour": 0.5479999999999999,
+          "vram_mb": 49140.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9968621,
+          "total_usd_per_hour_at_listed_storage": 0.5659259259259259,
+          "usd_per_gpu_hour": 0.56,
+          "vram_mb": 49140.0
+        }
+      ],
+      "eligible_offer_count": 5,
+      "query_gpu_name": "RTX 6000Ada",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA RTX A6000": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "RO",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9916833,
+          "total_usd_per_hour_at_listed_storage": 0.3888888888888889,
+          "usd_per_gpu_hour": 0.38666666666666666,
+          "vram_mb": 49140.0
+        }
+      ],
+      "eligible_offer_count": 1,
+      "query_gpu_name": "RTX A6000",
+      "quote_rule": "median of three cheapest eligible offers"
+    },
+    "NVIDIA RTX PRO 6000 Blackwell Server Edition": {
+      "cheapest_three_sanitized": [
+        {
+          "country_code": "AU",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9982606,
+          "total_usd_per_hour_at_listed_storage": 1.2688888888888887,
+          "usd_per_gpu_hour": 1.2666666666666666,
+          "vram_mb": 97887.0
+        },
+        {
+          "country_code": "US",
+          "cuda_max_good": 13.2,
+          "reliability": 0.9967968,
+          "total_usd_per_hour_at_listed_storage": 1.2688888888888887,
+          "usd_per_gpu_hour": 1.2666666666666666,
+          "vram_mb": 97887.0
+        },
+        {
+          "country_code": "BG",
+          "cuda_max_good": 13.0,
+          "reliability": 0.9978267,
+          "total_usd_per_hour_at_listed_storage": 1.3362962962962963,
+          "usd_per_gpu_hour": 1.3333333333333333,
+          "vram_mb": 97887.0
+        }
+      ],
+      "eligible_offer_count": 10,
+      "query_gpu_name": "RTX PRO 6000 S",
+      "quote_rule": "median of three cheapest eligible offers"
+    }
+  }
+}
