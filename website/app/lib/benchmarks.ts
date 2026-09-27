@@ -128,9 +128,17 @@ export function notRunReason(gpu: string, model: string, context: number): strin
   if (!selectedBatch(baseline)) {
     return "Not run: the model does not fit at 2,048 tokens, so the context sweep skips it.";
   }
-  const previous = DATA.contexts.filter((value) => value < context).pop();
-  if (context > 8192 && previous && !selectedBatch(cellFor(gpu, model, previous))) {
-    return `Not run: out of memory at ${previous.toLocaleString("en-US")} tokens.`;
+  // 16,384 and 32,768 tokens only extend models that trained at the previous
+  // length, so name the nearest shorter context that ran out of memory.
+  const blocked = DATA.contexts
+    .filter((value) => value < context)
+    .reverse()
+    .find((value) => {
+      const cell = cellFor(gpu, model, value);
+      return cell !== undefined && !selectedBatch(cell);
+    });
+  if (context > 8192 && blocked) {
+    return `Not run: out of memory at ${blocked.toLocaleString("en-US")} tokens, so longer contexts were skipped.`;
   }
   return "Not run.";
 }

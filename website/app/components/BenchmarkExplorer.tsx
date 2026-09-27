@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import CostTimeChart from "./CostTimeChart";
 import {
   DATA,
   PRICE_TYPE_LABELS,
@@ -272,12 +273,29 @@ export default function BenchmarkExplorer() {
                   .filter((row) => row.pareto)
                   .map((row) => row.gpu.name)
                   .join(" · ")
-              : "No priced GPU fits"}
+              : rows.some((row) => row.result)
+                ? "No price quote for the GPUs that fit"
+                : "No measured GPU fits this model and context"}
           </span>
         </div>
       </div>
 
-      {priced.length > 0 && <CostTimeChart rows={priced} tokenCount={tokenCount} />}
+      {priced.length > 0 && (
+        <CostTimeChart
+          tokenCount={tokenCount}
+          points={priced.map((row) => ({
+            id: row.gpu.id,
+            name: row.gpu.name,
+            label: gpuLabel(row.gpu),
+            hours: row.hours!,
+            cost: row.cost!,
+            price: row.price!,
+            tokensPerSecond: row.result!.tps,
+            batch: row.result!.batch,
+            pareto: row.pareto,
+          }))}
+        />
+      )}
 
       <div className="bench-table-tools">
         <label className="bench-inline bench-muted">
@@ -502,7 +520,8 @@ function statusText(row: Row, model: string, context: number): string {
   if (cell.buildOom) return "Out of memory while building the model: no batch was attempted.";
   const first = cell.oom[0];
   return first
-    ? `Out of memory at every batch tried, down to batch ${first.batch}, for both seeds.`
+    ? `Out of memory at every batch tried, down to batch ${first.batch} ` +
+        `(seed${first.seeds.length > 1 ? "s" : ""} ${first.seeds.join(" and ")}).`
     : "No complete batch.";
 }
 
@@ -785,283 +804,6 @@ function CoverageMatrix({
       </p>
     </div>
   );
-}
-
-/* ---------- cost vs time chart ---------- */
-
-const CHART_HEIGHT = 320;
-const MARGIN = { top: 18, right: 20, bottom: 48, left: 64 };
-
-function CostTimeChart({ rows, tokenCount }: { rows: Row[]; tokenCount: number }) {
-  const container = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(720);
-  const [active, setActive] = useState<string | null>(null);
-
-  useEffect(() => {
-    const node = container.current;
-    if (!node) return;
-    const observer = new ResizeObserver((entries) => {
-      setWidth(Math.max(280, Math.floor(entries[0].contentRect.width)));
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  const hours = rows.map((row) => row.hours!);
-  const costs = rows.map((row) => row.cost!);
-  const x = logScale(hours, MARGIN.left, width - MARGIN.right);
-  const y = logScale(costs, CHART_HEIGHT - MARGIN.bottom, MARGIN.top);
-  const frontier = rows
-    .filter((row) => row.pareto)
-    .sort((a, b) => a.hours! - b.hours!);
-  const labels = placeLabels(rows, x, y, width);
-  const hovered = rows.find((row) => row.gpu.id === active);
-
-  return (
-    <figure className="bench-chart" ref={container}>
-      <figcaption>
-        <span>
-          Time and compute cost for {formatCompact(tokenCount)} tokens, one GPU.
-          Both axes are logarithmic.
-        </span>
-        <span className="bench-chart-legend" aria-hidden="true">
-          <span className="key pareto" /> on the cost–time frontier
-          <span className="key other" /> slower and costlier than another GPU
-        </span>
-      </figcaption>
-      <svg
-        width={width}
-        height={CHART_HEIGHT}
-        viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
-        role="group"
-        aria-label="Cost against training time for each measured GPU"
-      >
-        {x.ticks.map((tick) => (
-          <g key={`x${tick}`}>
-            <line
-              className="grid"
-              x1={x.scale(tick)}
-              x2={x.scale(tick)}
-              y1={MARGIN.top}
-              y2={CHART_HEIGHT - MARGIN.bottom}
-            />
-            <text
-              className="tick"
-              x={x.scale(tick)}
-              y={CHART_HEIGHT - MARGIN.bottom + 18}
-              textAnchor="middle"
-            >
-              {formatHoursTick(tick)}
-            </text>
-          </g>
-        ))}
-        {y.ticks.map((tick) => (
-          <g key={`y${tick}`}>
-            <line
-              className="grid"
-              x1={MARGIN.left}
-              x2={width - MARGIN.right}
-              y1={y.scale(tick)}
-              y2={y.scale(tick)}
-            />
-            <text className="tick" x={MARGIN.left - 8} y={y.scale(tick) + 4} textAnchor="end">
-              {Number.isInteger(tick) ? `$${tick.toLocaleString("en-US")}` : formatUsd(tick)}
-            </text>
-          </g>
-        ))}
-        <text
-          className="axis-title"
-          x={(MARGIN.left + width - MARGIN.right) / 2}
-          y={CHART_HEIGHT - 8}
-          textAnchor="middle"
-        >
-          Wall-clock time
-        </text>
-        <text
-          className="axis-title"
-          transform={`translate(14 ${(MARGIN.top + CHART_HEIGHT - MARGIN.bottom) / 2}) rotate(-90)`}
-          textAnchor="middle"
-        >
-          Compute cost
-        </text>
-        {frontier.length > 1 && (
-          <polyline
-            className="frontier"
-            points={frontier.map((row) => `${x.scale(row.hours!)},${y.scale(row.cost!)}`).join(" ")}
-          />
-        )}
-        {labels.map((label) => (
-          <text
-            key={`label-${label.row.gpu.id}`}
-            aria-hidden="true"
-            className={label.row.pareto ? "point-label pareto" : "point-label"}
-            x={label.x}
-            y={label.y}
-            textAnchor={label.anchor}
-          >
-            {label.text}
-          </text>
-        ))}
-        {rows.map((row) => (
-          <g
-            key={row.gpu.id}
-            className={row.pareto ? "point pareto" : "point"}
-            tabIndex={0}
-            role="img"
-            aria-label={`${row.gpu.name}: ${formatHours(row.hours!)}, ${formatUsd(row.cost!)}, ${formatInteger(row.result!.tps)} tokens/s at batch ${row.result!.batch}${row.pareto ? ", on the frontier" : ""}`}
-            onPointerEnter={() => setActive(row.gpu.id)}
-            onPointerLeave={() => setActive(null)}
-            onFocus={() => setActive(row.gpu.id)}
-            onBlur={() => setActive(null)}
-          >
-            <circle className="hit" cx={x.scale(row.hours!)} cy={y.scale(row.cost!)} r={14} />
-            <circle className="dot" cx={x.scale(row.hours!)} cy={y.scale(row.cost!)} r={5.5} />
-          </g>
-        ))}
-      </svg>
-      {hovered && (
-        <div
-          className="bench-tooltip"
-          aria-hidden="true"
-          style={{
-            left: Math.min(x.scale(hovered.hours!) + 12, width - 190),
-            top: Math.max(0, y.scale(hovered.cost!) - 70),
-          }}
-        >
-          <strong>{formatUsd(hovered.cost!)}</strong> · {formatHours(hovered.hours!)}
-          <span>{gpuLabel(hovered.gpu)}</span>
-          <span>
-            {formatInteger(hovered.result!.tps)} tokens/s · batch {hovered.result!.batch}
-          </span>
-          <span>{formatUsd(hovered.price!)}/GPU-hour</span>
-        </div>
-      )}
-    </figure>
-  );
-}
-
-type Scale = { scale: (value: number) => number; ticks: number[] };
-
-function formatHoursTick(hours: number): string {
-  if (hours < 1) return `${Math.round(hours * 60)} min`;
-  if (hours < 48) return `${Number(hours.toPrecision(3))} h`;
-  return `${Number((hours / 24).toPrecision(3))} d`;
-}
-
-/* Tick mantissas from coarse to fine; the first set that puts at least three
-   ticks inside the domain is used, so narrow ranges still get a readable axis. */
-const TICK_STEPS = [
-  [1, 2, 5],
-  [1, 1.5, 2, 3, 5, 7],
-  [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8],
-];
-
-/** A log10 scale padded around the data, with round ticks inside it. */
-function logScale(values: number[], from: number, to: number): Scale {
-  let low = Math.min(...values);
-  let high = Math.max(...values);
-  if (high / low < 2.5) {
-    const middle = Math.sqrt(low * high);
-    low = middle / 1.6;
-    high = middle * 1.6;
-  } else {
-    low /= 1.25;
-    high *= 1.25;
-  }
-  const span = Math.log10(high) - Math.log10(low);
-  const scale = (value: number) => from + ((Math.log10(value) - Math.log10(low)) / span) * (to - from);
-  let ticks: number[] = [];
-  for (const steps of TICK_STEPS) {
-    ticks = [];
-    for (let exponent = Math.floor(Math.log10(low)); exponent <= Math.ceil(Math.log10(high)); exponent++) {
-      for (const step of steps) {
-        const tick = Number((step * 10 ** exponent).toPrecision(3));
-        if (tick >= low && tick <= high) ticks.push(tick);
-      }
-    }
-    if (ticks.length >= 3) break;
-  }
-  return { scale, ticks };
-}
-
-type Label = {
-  row: Row;
-  text: string;
-  x: number;
-  y: number;
-  anchor: "start" | "middle" | "end";
-};
-
-type Box = { left: number; right: number; top: number; bottom: number };
-
-/** "H100 SXM 80GB" -> "H100", "RTX PRO 6000" stays: names for narrow charts. */
-function shortName(name: string): string {
-  return name.replace(/\s+\d+\s?GB$/, "").replace(/\s+(SXM|PCIe)$/, "");
-}
-
-/**
- * Put each GPU name next to its point: to the right if it fits, otherwise to
- * the left, above or below, skipping spots that cover another label or dot.
- * Frontier GPUs are placed first so they get the best spots.
- */
-function placeLabels(rows: Row[], x: Scale, y: Scale, width: number): Label[] {
-  const narrow = width < 560;
-  const charWidth = 6.4;
-  const plot: Box = {
-    left: MARGIN.left,
-    right: width - 4,
-    top: 0,
-    bottom: CHART_HEIGHT - MARGIN.bottom,
-  };
-  const dots = rows.map((row) => ({ x: x.scale(row.hours!), y: y.scale(row.cost!) }));
-  const placed: Box[] = [];
-  const order = [...rows].sort((a, b) => Number(b.pareto) - Number(a.pareto));
-
-  return order.map((row) => {
-    const text = narrow ? shortName(row.gpu.name) : row.gpu.name;
-    const textWidth = text.length * charWidth;
-    const px = x.scale(row.hours!);
-    const py = y.scale(row.cost!);
-    const candidates: Omit<Label, "row" | "text">[] = [
-      { x: px + 9, y: py + 4, anchor: "start" },
-      { x: px - 9, y: py + 4, anchor: "end" },
-      { x: px, y: py - 11, anchor: "middle" },
-      { x: px, y: py + 20, anchor: "middle" },
-    ];
-    const boxOf = (candidate: Omit<Label, "row" | "text">): Box => {
-      const left =
-        candidate.anchor === "start"
-          ? candidate.x
-          : candidate.anchor === "end"
-            ? candidate.x - textWidth
-            : candidate.x - textWidth / 2;
-      return { left, right: left + textWidth, top: candidate.y - 10, bottom: candidate.y + 3 };
-    };
-    const fits = (box: Box) =>
-      box.left >= plot.left &&
-      box.right <= plot.right &&
-      box.top >= plot.top &&
-      box.bottom <= plot.bottom &&
-      !placed.some(
-        (other) =>
-          box.left < other.right &&
-          box.right > other.left &&
-          box.top < other.bottom &&
-          box.bottom > other.top
-      ) &&
-      !dots.some(
-        (dot) =>
-          dot.x > box.left - 6 &&
-          dot.x < box.right + 6 &&
-          dot.y > box.top - 6 &&
-          dot.y < box.bottom + 6
-      );
-    const choice =
-      candidates.find((candidate) => fits(boxOf(candidate))) ??
-      candidates[px + 9 + textWidth > plot.right ? 1 : 0];
-    placed.push(boxOf(choice));
-    return { row, text, ...choice };
-  });
 }
 
 /* ---------- CSV export ---------- */
