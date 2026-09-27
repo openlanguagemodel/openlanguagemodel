@@ -24,22 +24,16 @@ OpenLanguageModel (OLM) is a PyTorch-native library for building, training, teac
 | Let OLM pick CPU/GPU/single-node DDP/FSDP | [`datasets-and-training.md#6-automatic-trainer-selection-autotrainer`](datasets-and-training.md#6-automatic-trainer-selection-autotrainer) |
 | Build a custom architecture | [`architecture.md`](architecture.md) |
 | Run the guided Colabs | [`colab-notebooks.md`](colab-notebooks.md) |
+| Find a model family or preset | [`models/index.md`](models/index.md) |
 | Look up model constructors | [`api.md`](api.md) |
 | Inspect runnable scripts | [`../examples`](../examples) |
 
 ## Implemented Models
 
-Each model family is implemented as source code, not hidden configuration:
+OLM implements model families from GPT-2 to recent frontier models such as DeepSeek-V3, Kimi K2 and Qwen3.5, each as a readable source file that assembles the architecture from public OLM blocks. Presets build a released model's architecture with randomly initialised weights; OLM does not load pretrained checkpoints.
 
-- GPT-2: [`../src/olm/models/openai/gpt2.py`](../src/olm/models/openai/gpt2.py)
-- Llama 2: [`../src/olm/models/meta/llama2.py`](../src/olm/models/meta/llama2.py)
-- Llama 3 / 3.1 / 3.2: [`../src/olm/models/meta/llama3.py`](../src/olm/models/meta/llama3.py)
-- Qwen 2.5: [`../src/olm/models/alibaba/qwen2.py`](../src/olm/models/alibaba/qwen2.py)
-- Phi-3 / Phi-3.5: [`../src/olm/models/microsoft/phi3.py`](../src/olm/models/microsoft/phi3.py)
-- Phi-4: [`../src/olm/models/microsoft/phi4.py`](../src/olm/models/microsoft/phi4.py)
-- Gemma 2: [`../src/olm/models/google/gemma2.py`](../src/olm/models/google/gemma2.py)
-- OLMo: [`../src/olm/models/allenai/olmo.py`](../src/olm/models/allenai/olmo.py)
-- OPT: [`../src/olm/models/facebook/opt.py`](../src/olm/models/facebook/opt.py)
+- [`models/index.md`](models/index.md): the Model Zoo, generated from the code. It lists every family and preset with parameter counts measured on the `meta` device, layer counts, context lengths and the attention and feed-forward layers each preset builds.
+- Annotated architecture guides that walk through the source section by section: [GPT-2](models/gpt-2.md), [Llama 3](models/llama-3.md), [Qwen3](models/qwen-3.md), [Gemma 3](models/gemma-3.md), [DeepSeek-V3](models/deepseek-v3.md), and [Kimi K2 and Kimi Linear](models/kimi.md).
 
 ## Project Direction
 
