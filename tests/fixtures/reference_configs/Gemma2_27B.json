@@ -1,0 +1,23 @@
+{
+  "preset": "Gemma2_27B",
+  "reference": "https://huggingface.co/google/gemma-2-27b",
+  "source": "https://huggingface.co/unsloth/gemma-2-27b/blob/ae96b425538ec2e31f9111dbe83f4a705f1eacaa/config.json",
+  "source_note": "google/gemma-2-27b is gated, so the fields were read from this ungated copy of its config.",
+  "config": {
+    "vocab_size": 256000,
+    "hidden_size": 4608,
+    "num_hidden_layers": 46,
+    "num_attention_heads": 32,
+    "num_key_value_heads": 16,
+    "max_position_embeddings": 8192,
+    "rope_theta": 10000.0,
+    "intermediate_size": 36864,
+    "head_dim": 128,
+    "sliding_window": 4096,
+    "attn_logit_softcapping": 50.0,
+    "final_logit_softcapping": 30.0,
+    "query_pre_attn_scalar": 144
+  },
+  "num_parameters": 27227128320,
+  "num_parameters_source": "transformers 5.12.1 Gemma2ForCausalLM.from_config(<source config>) on the meta device"
+}

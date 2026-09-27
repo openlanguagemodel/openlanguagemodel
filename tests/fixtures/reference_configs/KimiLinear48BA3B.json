@@ -1,0 +1,41 @@
+{
+  "preset": "KimiLinear48BA3B",
+  "reference": "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct",
+  "source": "https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Instruct/blob/e1df551a447157d4658b573f9a695d57658590e9/config.json",
+  "config": {
+    "vocab_size": 163840,
+    "hidden_size": 2304,
+    "num_hidden_layers": 27,
+    "linear_attn_config": {
+      "num_heads": 32,
+      "head_dim": 128,
+      "short_conv_kernel_size": 4,
+      "full_attn_layers": [
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        27
+      ]
+    },
+    "num_attention_heads": 32,
+    "model_max_length": 1048576,
+    "kv_lora_rank": 512,
+    "qk_nope_head_dim": 128,
+    "qk_rope_head_dim": 64,
+    "v_head_dim": 128,
+    "q_lora_rank": null,
+    "intermediate_size": 9216,
+    "moe_intermediate_size": 1024,
+    "num_experts": 256,
+    "num_shared_experts": 1,
+    "num_experts_per_token": 8,
+    "first_k_dense_replace": 1,
+    "rope_theta": 10000.0,
+    "routed_scaling_factor": 2.446,
+    "rms_norm_eps": 1e-05,
+    "tie_word_embeddings": false
+  }
+}

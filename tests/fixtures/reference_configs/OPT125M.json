@@ -1,0 +1,13 @@
+{
+  "preset": "OPT125M",
+  "reference": "https://huggingface.co/facebook/opt-125m",
+  "source": "https://huggingface.co/facebook/opt-125m/blob/27dcfa74d334bc871f3234de431e71c6eeba5dd6/config.json",
+  "config": {
+    "vocab_size": 50272,
+    "hidden_size": 768,
+    "ffn_dim": 3072,
+    "num_hidden_layers": 12,
+    "num_attention_heads": 12,
+    "dropout": 0.1
+  }
+}

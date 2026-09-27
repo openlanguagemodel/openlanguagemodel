@@ -1,0 +1,20 @@
+{
+  "preset": "Nanbeige4_1_3B",
+  "reference": "https://huggingface.co/Nanbeige/Nanbeige4.1-3B",
+  "source": "https://huggingface.co/Nanbeige/Nanbeige4.1-3B/blob/9c4555c37921c0982af8fffeee1e0a6e6b953c4f/config.json",
+  "config": {
+    "vocab_size": 166144,
+    "hidden_size": 2560,
+    "num_hidden_layers": 32,
+    "num_attention_heads": 20,
+    "num_key_value_heads": 4,
+    "max_position_embeddings": 262144,
+    "rope_theta": 70000000,
+    "tie_word_embeddings": false,
+    "intermediate_size": 10496,
+    "rms_norm_eps": 1e-05,
+    "head_dim": 128
+  },
+  "num_parameters": 3933637120,
+  "num_parameters_source": "transformers 5.12.1 LlamaForCausalLM.from_config(<source config>) on the meta device"
+}

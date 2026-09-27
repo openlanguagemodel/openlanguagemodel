@@ -1,0 +1,15 @@
+{
+  "preset": "GPT2Large",
+  "reference": "https://huggingface.co/openai-community/gpt2-large",
+  "source": "https://huggingface.co/openai-community/gpt2-large/blob/32b71b12589c2f8d625668d2335a01cac3249519/config.json",
+  "config": {
+    "vocab_size": 50257,
+    "n_embd": 1280,
+    "n_layer": 36,
+    "n_head": 20,
+    "n_positions": 1024,
+    "resid_pdrop": 0.1
+  },
+  "num_parameters": 774030080,
+  "num_parameters_source": "transformers 5.12.1 GPT2LMHeadModel.from_config(<source config>) on the meta device"
+}
