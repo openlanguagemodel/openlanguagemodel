@@ -20,6 +20,20 @@ class MiniMaxM2_5_Block(Block):
     Structure:
         x = x + GQA(RMSNorm(x))
         x = x + MoE(RMSNorm(x))
+
+    Args:
+        embed_dim (int): Model dimension.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length (for the RoPE cache).
+        moe_intermediate_size (int): Hidden dimension of each MoE expert.
+        num_experts (int): Total number of routable experts.
+        num_experts_per_tok (int): Number of experts routed to per token.
+        rope_theta (float): RoPE base frequency.
+        partial_rotary_factor (float): Fraction of ``head_dim`` rotated by
+            RoPE.
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
     """
 
     def __init__(
@@ -33,18 +47,23 @@ class MiniMaxM2_5_Block(Block):
         num_experts: int,
         num_experts_per_tok: int,
         rope_theta: float,
+        partial_rotary_factor: float,
         rms_norm_eps: float,
     ):
         super().__init__([])
 
         self.attn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         self.self_attn = GroupedQueryAttention(
-            embed_dim, num_heads, num_kv_heads, max_seq_len,
+            embed_dim,
+            num_heads,
+            num_kv_heads,
+            max_seq_len,
             head_dim=head_dim,
             rope_theta=rope_theta,
             use_bias=False,
             use_qk_norm=True,
             rms_norm_eps=rms_norm_eps,
+            partial_rotary_factor=partial_rotary_factor,
         )
 
         self.ffn_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
@@ -88,6 +107,24 @@ class MiniMaxM2_5_Model(Block):
 
     Forward:
         Token IDs ``[batch, seq_len]`` -> logits ``[batch, seq_len, vocab_size]``.
+
+    Args:
+        vocab_size (int): Vocabulary size.
+        embed_dim (int): Model dimension.
+        num_layers (int): Number of transformer blocks.
+        num_heads (int): Number of query heads.
+        num_kv_heads (int): Number of key/value heads (GQA).
+        head_dim (int): Dimension per attention head.
+        max_seq_len (int): Maximum context length.
+        moe_intermediate_size (int): Hidden dimension of each MoE expert.
+        num_experts (int): Total number of routable experts.
+        num_experts_per_tok (int): Number of experts routed to per token.
+        num_mtp_modules (int): Number of Multi-Token-Prediction heads.
+        rope_theta (float): RoPE base frequency.
+        partial_rotary_factor (float): Fraction of ``head_dim`` rotated by
+            RoPE (``rotary_dim / head_dim`` in the released config).
+        rms_norm_eps (float): Epsilon for RMSNorm layers.
+        tie_weights (bool): Whether to tie the output head to the embedding.
     """
 
     def __init__(
@@ -104,23 +141,35 @@ class MiniMaxM2_5_Model(Block):
         num_experts_per_tok: int,
         num_mtp_modules: int = 3,
         rope_theta: float = 5000000.0,
+        partial_rotary_factor: float = 0.5,
         rms_norm_eps: float = 1e-6,
         tie_weights: bool = False,
     ):
         embedding = Embedding(vocab_size, embed_dim)
 
-        transformer_blocks = nn.ModuleList([
-            MiniMaxM2_5_Block(
-                embed_dim, num_heads, num_kv_heads, head_dim, max_seq_len,
-                moe_intermediate_size, num_experts, num_experts_per_tok,
-                rope_theta, rms_norm_eps,
-            )
-            for _ in range(num_layers)
-        ])
+        transformer_blocks = nn.ModuleList(
+            [
+                MiniMaxM2_5_Block(
+                    embed_dim,
+                    num_heads,
+                    num_kv_heads,
+                    head_dim,
+                    max_seq_len,
+                    moe_intermediate_size,
+                    num_experts,
+                    num_experts_per_tok,
+                    rope_theta,
+                    partial_rotary_factor,
+                    rms_norm_eps,
+                )
+                for _ in range(num_layers)
+            ]
+        )
 
         final_norm = RMSNorm(embed_dim, eps=rms_norm_eps)
         output_head = OutputHead(
-            embed_dim, vocab_size,
+            embed_dim,
+            vocab_size,
             tied_embedding=embedding if tie_weights else None,
             tie_weights=tie_weights,
             use_norm=False,
@@ -130,7 +179,9 @@ class MiniMaxM2_5_Model(Block):
 
         self.transformer_blocks = transformer_blocks
         self.mtp = MultiTokenPredictionHead(
-            embed_dim, vocab_size, num_heads=num_mtp_modules,
+            embed_dim,
+            vocab_size,
+            num_heads=num_mtp_modules,
             rms_norm_eps=rms_norm_eps,
         )
 
@@ -176,6 +227,7 @@ class MiniMaxM2_5_230B(MiniMaxM2_5_Model):
             num_experts_per_tok=8,
             num_mtp_modules=3,
             rope_theta=5000000.0,
+            partial_rotary_factor=0.5,
             rms_norm_eps=1e-6,
             tie_weights=False,
         )

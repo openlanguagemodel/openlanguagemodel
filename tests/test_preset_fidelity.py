@@ -10,7 +10,15 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from olm.models import Gemma2Model, Gemma3Model, MistralSmall3_1_Model, Olmo3Model
+import olm.models.minimax as minimax_package
+from olm.models import (
+    Gemma2Model,
+    Gemma3Model,
+    MiniMaxM2_5_Model,
+    MistralSmall3_1_Model,
+    Olmo3Model,
+)
+from olm.nn.embeddings.positional.rope import PartialRotaryPositionalEmbedding
 from olm.nn.activations import GeGLU
 from olm.nn.feedforward import GeGLUFFN
 
@@ -142,3 +150,37 @@ def test_gemma3_query_pre_attn_scalar_sets_local_and_global_scale():
     default = _tiny_gemma3()
     assert default.transformer_blocks[0].self_attn.scale == pytest.approx(8**-0.5)
     assert default.transformer_blocks[5].self_attn.scale == pytest.approx(8**-0.5)
+
+
+def test_minimax_package_exports_both_families():
+    assert minimax_package.__all__ == [
+        "MiniMaxM2Model",
+        "MiniMaxM2",
+        "MiniMaxM2_5_Model",
+        "MiniMaxM2_5_230B",
+    ]
+    namespace = {}
+    exec("from olm.models.minimax import *", namespace)
+    assert {"MiniMaxM2Model", "MiniMaxM2"} <= namespace.keys()
+
+
+def test_minimax_m2_5_applies_partial_rope():
+    model = MiniMaxM2_5_Model(
+        vocab_size=128,
+        embed_dim=32,
+        num_layers=1,
+        num_heads=4,
+        num_kv_heads=2,
+        head_dim=8,
+        max_seq_len=16,
+        moe_intermediate_size=16,
+        num_experts=4,
+        num_experts_per_tok=2,
+        num_mtp_modules=1,
+    )
+    rope = model.transformer_blocks[0].self_attn.rope
+
+    # rotary_dim=64 of head_dim=128 in the release -> half of each head.
+    assert isinstance(rope, PartialRotaryPositionalEmbedding)
+    assert rope.rotary_dim == 4
+    assert model(torch.randint(0, 128, (1, 8))).shape == (1, 8, 128)
