@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from olm.core import seed_everything
 from olm.models.openai import GPT2
 from olm.data.datasets.fineweb_edu import FineWebEduDataset
+from olm.data.tokenization import HFTokenizer
 from olm.train.optim import AdamW
 from olm.data.datasets import DataLoader
 from olm.train.schedulers.cosine import CosineAnnealingLR
@@ -66,7 +67,10 @@ def setup_training(config: Dict[str, Any], resume_path: Optional[str] = None):
     data_config = config["data"]
     train_config = config["training"]
 
+    # The GPT-2 tokenizer, the one prepare_data.py checks the data with.
+    tokenizer = HFTokenizer("gpt2")
     train_dataset = FineWebEduDataset(
+        tokenizer=tokenizer,
         split="train",
         context_length=data_config["context_length"],
         subset=data_config["subset"],
