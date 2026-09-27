@@ -137,14 +137,18 @@ class DeepSeekV3Model(Block):
     R1 shares this base architecture (it differs only in RL post-training,
     not model structure).
 
-    Notes:
-        - This models the language-model component only.
-        - Long-context YaRN RoPE scaling is approximated with plain RoPE,
-          the same simplification used for the other MLA models in this
-          repo (e.g. Mistral Large 3).
-        - Multi-Token Prediction is exposed as an optional auxiliary head
-          via ``forward_with_mtp`` (training-time only); the default
-          ``forward`` does not use it.
+    Implementation note:
+        This models the language-model component only. Long-context YaRN
+        RoPE scaling is approximated with plain RoPE, the same
+        simplification used for the other MLA models in this repo (e.g.
+        Mistral Large 3). The released router restricts each token to the
+        best ``topk_group=4`` of ``n_group=8`` expert groups before its
+        top-8 choice; this router picks the top 8 of all experts.
+        Multi-Token Prediction is exposed as an optional auxiliary head via
+        ``forward_with_mtp`` (training-time only); the default ``forward``
+        does not use it. That head is the library's lightweight
+        ``MultiTokenPredictionHead``, whereas the released MTP module
+        (stored as layer 61, about 14B parameters) is a full decoder layer.
 
     Forward:
         Accepts token IDs shaped ``[batch, seq_len]`` and returns logits
